@@ -6,6 +6,7 @@ export default function Home() {
   const [tables, setTables] = useState<string[]>([])
   const [selectedTable, setSelectedTable] = useState<string |null>(null)
   const [query, setQuery] = useState("")
+  const [error, setError] = useState<string | null>(null)
 
   return (
     <div className="flex h-screen">
@@ -42,7 +43,10 @@ export default function Home() {
           </p>
           <textarea
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => 
+              {setQuery(e.target.value)
+              if (error) setError(null)
+            }}
             placeholder="Ask in English or Write SQL..."
             className="w-full border p-3 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
           </textarea>
@@ -53,6 +57,8 @@ export default function Home() {
             setSelectedTable={setSelectedTable}
             query={query}
             setQuery={setQuery}
+            error={error}
+            setError={setError}
           />
         </div>
       </div>

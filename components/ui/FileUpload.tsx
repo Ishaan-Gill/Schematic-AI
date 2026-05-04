@@ -10,7 +10,9 @@ export default function FileUpload({
     selectedTable,
     setSelectedTable,
     query,
-    setQuery
+    setQuery,
+    error,
+    setError
 }: {
     tables: string[]
     setTables: React.Dispatch<React.SetStateAction<string[]>>
@@ -18,12 +20,13 @@ export default function FileUpload({
     setSelectedTable: React.Dispatch<React.SetStateAction<string | null>>
     query: string
     setQuery: React.Dispatch<React.SetStateAction<string>>
+    error: string | null
+    setError: (val: string | null) => void
 }) {
     const [queryResult, setQueryResult] = useState<any[]>([])
-    const [error, setError] = useState<string | null>(null)
     const [schema, setSchema] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
-
+    const [schemas, setSchemas] = useState<Record<string, any[]>>({})
 
     // Use Effects:
     useEffect(() => {
@@ -82,7 +85,7 @@ export default function FileUpload({
                 await conn.query(`
                     CREATE TABLE ${tableName} AS
                     SELECT * FROM read_csv_auto('${tempName}')
-                `)
+                    `)
 
                 // updates React about tables uploaded and selected:
                 setTables(prev => {
@@ -94,6 +97,7 @@ export default function FileUpload({
                 setSelectedTable(prev => prev ?? tableName)
 
                 console.log("Created table:", tableName)
+                await loadSchema(tableName)
 
             } catch (err) {
                 console.error("CREATE TABLE failed", err)
@@ -106,6 +110,8 @@ export default function FileUpload({
     // Function to run the final Query:
     const runQuery = async (overrideQuery?: string) => {
         if (!selectedTable) return
+
+        setError(null)
 
         const db = await getDuckDB()
         const conn = await db.connect()
@@ -151,7 +157,10 @@ export default function FileUpload({
         try {
             const result = await conn.query(`DESCRIBE ${table}`)
             const schemaData = result.toArray().map(row => ({ ...row }))
-            setSchema(schemaData)
+            setSchemas(prev => ({
+                ...prev,
+                [table]: schemaData
+            }))
         } catch (err) {
             console.error("Schema Error:", err)
         } finally {
@@ -159,11 +168,41 @@ export default function FileUpload({
         }
     }
 
+    // function to detect relatons b/w tables for AI to use joins (helper):
+    const detectRelationships = (schemas: Record<string, any[]>) => {
+        const relations: string[] = []
+
+        for (const [tableA, colA] of Object.entries(schemas)) {
+            for (const [tableB, colB] of Object.entries(schemas)) {
+                if (tableA === tableB) continue
+
+                colA.forEach((colA: any) => {
+                    colB.forEach((colB: any) => {
+                        // heuristic (rule to check if column can relate or not)
+                        if (
+                            colA.column_name.toLowerCase() === `${tableB.slice(0. - 4)}_id` ||
+                            colB.column_name.toLowerCase() === "customer_id" && colB.column_name.toLowerCase() === "id"
+                        ) {
+                            relations.push(
+                                `${tableA}.${colA.column_name} -> ${tableB}.${colB.column_name}`
+                            )
+                        }
+
+                    })
+                })
+            }
+        }
+        return relations
+    }
+
     // AI
     const generateSQL = async () => {
         if (!selectedTable) return
 
+        setError(null)
         setLoading(true)
+
+        const relationships = detectRelationships(schemas)
 
         const db = await getDuckDB()
         const conn = await db.connect()
@@ -184,17 +223,27 @@ export default function FileUpload({
                 },
                 body: JSON.stringify({
                     query,
-                    schema,
+                    schemas,
+                    sampleText,
                     selectedTable,
-                    sampleText
+                    relationships
                 })
             })
             const data = await res.json()
-
+            console.log("RELATIONSHIPS:", relationships)
             // To double check columns of tables (acts as final firewall)
-            const validColumns = schema.map(col => col.column_name.toLowerCase())
+            const validColumns = Object.values(schemas)
+                .flat()
+                .map((col: any) => col.column_name.toLowerCase())
+
+            if (!data.sql) {
+                setError("AI failed to generate SQL")
+                return
+            }
+            console.log("AI RESPONSE:", data)
+            const sql = data.sql.toLowerCase()
             const isValid = validColumns.some(col =>
-                data.sql.toLowerCase().includes(col)
+                sql.includes(col)
             )
             if (!isValid) {
                 setError("AI generated invalid query (unknown columns).")
@@ -205,6 +254,10 @@ export default function FileUpload({
                 setError("Cannot answer this query with availablle data.")
                 return
             }
+            if (sql.includes("*") && sql.includes("Amount") && sql.includes("Price")) {
+                alert("This calculation might be incorrect")
+            }
+
 
             console.log("AI SQL:", data.sql)
             setQuery(data.sql)
@@ -265,7 +318,6 @@ export default function FileUpload({
             console.error("Suggestion failed:", err)
         }
     }
-
 
     return (
         <div className="flex flex-col gap-6 p-4">
