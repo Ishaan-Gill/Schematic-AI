@@ -150,6 +150,13 @@ STRICT OUTPUT RULES (CRITICAL):
 - DO NOT include multiple queries
 - Output must start with SELECT or WITH
 
+SPECIAL HANDLING:
+- If user mentions time like "last month", "last 7 days", etc:
+  - Convert it into a valid SQL date filter
+  - Use existing date columns only (do NOT invent)
+  - Example:
+    "last month" → column >= CURRENT_DATE - INTERVAL '1 month'
+
 Generate SQL:
 `
     try {

@@ -12,7 +12,9 @@ export default function FileUpload({
     query,
     setQuery,
     error,
-    setError
+    setError,
+    generatedSQL,
+    setGeneratedSQL
 }: {
     tables: string[]
     setTables: React.Dispatch<React.SetStateAction<string[]>>
@@ -22,11 +24,14 @@ export default function FileUpload({
     setQuery: React.Dispatch<React.SetStateAction<string>>
     error: string | null
     setError: (val: string | null) => void
+    generatedSQL: string
+    setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
 }) {
     const [queryResult, setQueryResult] = useState<any[]>([])
     const [schema, setSchema] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
     const [schemas, setSchemas] = useState<Record<string, any[]>>({})
+    const [lastSQL, setLastSQL] = useState("")
 
     // Use Effects:
     useEffect(() => {
@@ -171,25 +176,26 @@ export default function FileUpload({
     // function to detect relatons b/w tables for AI to use joins (helper):
     const detectRelationships = (schemas: Record<string, any[]>) => {
         const relations: string[] = []
+        const tableNames = Object.keys(schemas)
 
-        for (const [tableA, colA] of Object.entries(schemas)) {
-            for (const [tableB, colB] of Object.entries(schemas)) {
-                if (tableA === tableB) continue
+        for (let i = 0; i < tableNames.length; i++) {
+            for (let j = 0; j < tableNames.length; j++) {
+                if (i === j) continue
 
-                colA.forEach((colA: any) => {
-                    colB.forEach((colB: any) => {
-                        // heuristic (rule to check if column can relate or not)
-                        if (
-                            colA.column_name.toLowerCase() === `${tableB.slice(0. - 4)}_id` ||
-                            colB.column_name.toLowerCase() === "customer_id" && colB.column_name.toLowerCase() === "id"
-                        ) {
-                            relations.push(
-                                `${tableA}.${colA.column_name} -> ${tableB}.${colB.column_name}`
-                            )
-                        }
+                const tableA = tableNames[i]
+                const tableB = tableNames[j]
 
-                    })
-                })
+                const colsA = schemas[tableA].map((c: any) => c.column_name.toLowerCase())
+                const colsB = schemas[tableB].map((c: any) => c.column_name.toLowerCase())
+
+                // Try to match standard naming conventions (e.g., orders.customer_id -> customers.id)
+                const singularTableB = tableB.endsWith('s') ? tableB.slice(0, -1) : tableB
+                const expectedForeignKey = `${singularTableB}_id`
+
+                if (colsA.includes(expectedForeignKey) && colsB.includes('id')) {
+                    relations.push(`${tableA}.${expectedForeignKey} -> ${tableB}.id`)
+                }
+
             }
         }
         return relations
@@ -215,20 +221,45 @@ export default function FileUpload({
             .map(row => Object.values(row).join(", "))
             .join("\n")
 
+        const isFollowUp = generatedSQL.length > 0
+
+        let retries = 0
+        const MAX_RETRIES = 2
+
         try {
-            const res = await fetch("/api/generate-sql", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    query,
-                    schemas,
-                    sampleText,
-                    selectedTable,
-                    relationships
+            let res
+            // edit-sql:
+            if (isFollowUp || lastSQL) {
+                res = await fetch("/api/edit-sql", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        query,
+                        lastSQL: generatedSQL,
+                        schemas,
+                        relationships,
+                        isFollowUp
+                    })
                 })
-            })
+            }
+            // generate-sql:
+            else {
+                res = await fetch("/api/generate-sql", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        query,
+                        schemas,
+                        sampleText,
+                        selectedTable,
+                        relationships
+                    })
+                })
+            }
             const data = await res.json()
             console.log("RELATIONSHIPS:", relationships)
             // To double check columns of tables (acts as final firewall)
@@ -254,14 +285,36 @@ export default function FileUpload({
                 setError("Cannot answer this query with availablle data.")
                 return
             }
+
             if (sql.includes("*") && sql.includes("Amount") && sql.includes("Price")) {
                 alert("This calculation might be incorrect")
             }
 
+            if (data.error === "INVALID_TABLE_USED") {
+                setError("AI used a table that doesn't exist. Try again.")
+                return
+            }
+
+            if (error?.includes("does not have a column") || error?.includes("does not exist")) {
+                setError("AI used invalid column/table. Try rephrasing.")
+                return
+            }
+
+            if (sql === "INVALID_QUERY") {
+                setError("Cannot answer with available data.")
+                return
+            }
+
+            if (retries >= MAX_RETRIES) {
+                setError("Query failed. Please refine your request.")
+                return
+            }
 
             console.log("AI SQL:", data.sql)
-            setQuery(data.sql)
+            console.log("LastSQL:", generatedSQL)
+            setGeneratedSQL(data.sql)
             runQuery(data.sql)
+            setLastSQL(data.sql)
         } catch (err) {
             console.error("AI error:", err)
         } finally {

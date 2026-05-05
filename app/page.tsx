@@ -7,6 +7,7 @@ export default function Home() {
   const [selectedTable, setSelectedTable] = useState<string |null>(null)
   const [query, setQuery] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [generatedSQL, setGeneratedSQL] = useState("")
 
   return (
     <div className="flex h-screen">
@@ -41,6 +42,7 @@ export default function Home() {
           <p className="text-sm text-gray-50 mb-2">
             Running on: <span className="font-medium">{selectedTable}</span>
           </p>
+          {/* user input */}
           <textarea
             value={query}
             onChange={(e) => 
@@ -48,8 +50,15 @@ export default function Home() {
               if (error) setError(null)
             }}
             placeholder="Ask in English or Write SQL..."
-            className="w-full border p-3 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-          </textarea>
+            className="w-full border p-3 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          {/* AI generated SQL */}
+          <textarea
+            value={generatedSQL}
+            readOnly
+            placeholder="AI-generated SQL..."
+            className="w-full border p-3 rounded-lg bg-gray-100 mt-3 font-mono text-sm"
+          />
           <FileUpload 
             tables={tables}
             setTables={setTables}
@@ -59,6 +68,8 @@ export default function Home() {
             setQuery={setQuery}
             error={error}
             setError={setError}
+            generatedSQL={generatedSQL}
+            setGeneratedSQL={setGeneratedSQL}
           />
         </div>
       </div>
