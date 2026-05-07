@@ -28,136 +28,142 @@ export async function POST(req: Request) {
         .join("\n\n")
 
     const prompt = `
-You are a STRICT SQL generator.
+You are a STRICT SQL generator for DuckDB/PostgreSQL.
 
-RULES:
-- You can use MULTIPLE tables
-- Use JOINs when needed
-- Only use tables and columns provided
-- NEVER invent columns or tables
-- If query cannot be answered → return INVALID_QUERY
+YOUR JOB:
+Convert the user request into ONE valid SQL query using ONLY the provided schema.
+
+--------------------------------------------------
+HARD RULES (MUST FOLLOW)
+--------------------------------------------------
+
+- Use ONLY tables and columns from the schema
+- NEVER invent tables or columns
+- If impossible → return EXACTLY: INVALID_QUERY
+- Output ONLY SQL (no explanations, no comments)
+- Query MUST start with SELECT or WITH
+
+--------------------------------------------------
+SQL DIALECT (CRITICAL)
+--------------------------------------------------
+
+- Use DuckDB/PostgreSQL syntax
+- NEVER use: DATE_SUB, DATEADD, MONTH()
+- ALWAYS use:
+  CURRENT_DATE - INTERVAL '1 month'
+  CURRENT_DATE - INTERVAL '7 days'
+  EXTRACT(MONTH FROM column)
+
+--------------------------------------------------
+JOINS & RELATIONSHIPS
+--------------------------------------------------
+
+- Use provided relationships for joins
 - Prefer INNER JOIN
-- Match columns logically (e.g. customer_id with id)
-- Use LOWER() for string comparisons
-- Do NOT perform calculations unless clearly required
-- Prefer using existing aggregated fields (like Amount)
-COLUMN MEANINGS:
-- Amount = total money spent in the order (already final)
-- Price = price per product (do not multiply with Amount unless explicitly needed)
-- Add LIMIT 10 if not present
-- Return ONLY SQL
+- Match keys logically (e.g., customer_id ↔ id)
 
 RELATIONSHIPS:
 ${relationships.join("\n")}
-- Use the give relationships to JOIN tables correctly
 
-Sample Data:
-${sampleText}
+--------------------------------------------------
+STRING HANDLING (STRICT)
+--------------------------------------------------
+
+- ALL string comparisons MUST be case-insensitive
+- ALWAYS use LOWER(column) = 'value'
+- NEVER use direct equality without LOWER()
+
+Example:
+❌ City = 'Chicago'
+✅ LOWER(City) = 'chicago'
+
+--------------------------------------------------
+AGGREGATION RULES
+--------------------------------------------------
+
+- "top", "best", "most" → require aggregation
+- Use:
+  SUM(Amount) for revenue/spending
+  COUNT(*) for frequency
+
+- Always:
+  → GROUP BY non-aggregated columns
+  → ORDER BY aggregate DESC
+  → LIMIT 10 (unless using ROW_NUMBER)
+
+--------------------------------------------------
+COLUMN SEMANTICS
+--------------------------------------------------
+
+- Amount = total order value (already final)
+- Price = unit price (DO NOT multiply unless explicitly asked)
+
+--------------------------------------------------
+TIME FILTERING
+--------------------------------------------------
+
+- If user mentions time:
+  → MUST apply WHERE filter on a date column
+
+- Use:
+  column >= CURRENT_DATE - INTERVAL 'X'
+
+Examples:
+- "last month" → INTERVAL '1 month'
+- "last 7 days" → INTERVAL '7 days'
+
+- If NO date column exists → return INVALID_QUERY
+
+--------------------------------------------------
+ADVANCED QUERIES
+--------------------------------------------------
+
+- "top N per group":
+  → Use ROW_NUMBER() with PARTITION BY
+  → DO NOT use LIMIT
+
+Example:
+ROW_NUMBER() OVER (PARTITION BY City ORDER BY SUM(...) DESC)
+
+--------------------------------------------------
+FILTERING RULES
+--------------------------------------------------
+
+- Apply WHERE filters BEFORE aggregation
+- Use HAVING only for aggregated filters
+
+--------------------------------------------------
+DATA CONTEXT
+--------------------------------------------------
 
 Tables:
 ${schemaText}
 
-User request:
+Sample Data:
+${sampleText}
+
+--------------------------------------------------
+USER REQUEST
+--------------------------------------------------
+
 "${query}"
 
-INTERPRETATION RULES:
+--------------------------------------------------
+FINAL INSTRUCTION
+--------------------------------------------------
 
-- "top customers" → customers with highest total spending (SUM(Amount))
-- "best selling products" → products with highest total sales (SUM(Amount))
-- "high value users" → customers with highest total spending
-- "most popular products" → products with highest number of orders (COUNT)
+Return ONLY the SQL query.
+If uncertain → return INVALID_QUERY.
 
-- Always use appropriate aggregation (SUM, COUNT) when terms like "top", "best", "most" are used
+Examples:
+WHERE LOWER(City) = 'chicago'
+WHERE LOWER(Category) = 'electronics'
 
-- If the query is vague, infer the most reasonable business meaning
-- Prefer aggregation + GROUP BY for ranking queries
-
-ADVANCED RULES:
-
-- Combine filters, joins, and aggregations when needed
-- If a location is mentioned → filter by City
-- If a category is mentioned → filter by product Category
-- If time is mentioned → filter by OrderDate
-- Always apply filters BEFORE aggregation
-- Use LEFT JOIN when finding missing data (e.g., customers with no orders)
-- Use GROUP BY with partitions for per-group ranking
-- Use HAVING for filtering aggregated results
-
-ADVANCED GROUPING RULES:
-
-- For queries like "top X per group":
-  → Use ROW_NUMBER() with PARTITION BY
-
-- Example:
-  "top customer in each city" →
-  PARTITION BY City ORDER BY SUM(...) DESC
-
-- Do NOT use LIMIT for per-group ranking
-
-- For date filtering, use:
-  EXTRACT(MONTH FROM column) instead of MONTH(column)
-
-CRITICAL:
-
-- When using ROW_NUMBER() / PARTITION BY:
-  → DO NOT use LIMIT
-  → The WHERE clause (rn <= N) already limits results correctly
-
-EXAMPLES:
-
-Q: top customers
-A:
-SELECT c.FirstName, c.LastName, SUM(o.Amount) AS total_spent
-FROM customer_contact_exp c
-JOIN customer_order_exp o ON c.id = o.customer_id
-GROUP BY c.FirstName, c.LastName
-ORDER BY total_spent DESC
-LIMIT 10;
-
-Q: best selling products
-A:
-SELECT p.ProductName, SUM(o.Amount) AS revenue
-FROM customer_order_exp o
-JOIN customer_product_exp p ON o.product_id = p.id
-GROUP BY p.ProductName
-ORDER BY revenue DESC
-LIMIT 10;
-
-Q: top 2 customers in each city
-A:
-SELECT City, FirstName, LastName, total_spent
-FROM (
-  SELECT 
-    c.City,
-    c.FirstName,
-    c.LastName,
-    SUM(o.Amount) AS total_spent,
-    ROW_NUMBER() OVER (
-      PARTITION BY c.City 
-      ORDER BY SUM(o.Amount) DESC
-    ) as rn
-  FROM customer_contact_exp c
-  JOIN customer_order_exp o ON c.id = o.customer_id
-  GROUP BY c.City, c.FirstName, c.LastName
-) t
-WHERE rn <= 2;
-
-STRICT OUTPUT RULES (CRITICAL):
-
-- Return ONLY executable SQL
-- DO NOT include comments (--)
-- DO NOT include explanations
-- DO NOT include multiple queries
-- Output must start with SELECT or WITH
-
-SPECIAL HANDLING:
-- If user mentions time like "last month", "last 7 days", etc:
-  - Convert it into a valid SQL date filter
-  - Use existing date columns only (do NOT invent)
-  - Example:
-    "last month" → column >= CURRENT_DATE - INTERVAL '1 month'
-
-Generate SQL:
+Before returning SQL, verify:
+- All columns exist in schema
+- All string filters use LOWER()
+- SQL uses correct dialect
+If any rule is violated → fix it before returning
 `
     try {
         const completion = await groq.chat.completions.create({

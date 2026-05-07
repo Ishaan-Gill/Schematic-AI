@@ -1,8 +1,12 @@
 "use client"
 
-import { supabase } from "@/lib/supabase"
-import { getDuckDB } from "@/lib/duckdb"
 import React, { useEffect, useState } from "react"
+
+import { runQuery } from "@/lib/sql/runQuery"
+import { generateSQL } from "@/lib/sql/generateSQL"
+import { loadSchema } from "@/lib/sql/loadSchema"
+import { handleFile} from "@/lib/upload/upload.CSV"
+import { detectRelationships } from "@/lib/ai/relationships"
 
 export default function FileUpload({
     tables,
@@ -36,360 +40,91 @@ export default function FileUpload({
     // Use Effects:
     useEffect(() => {
         if (selectedTable) {
-            loadSchema(selectedTable)
+            loadSchema({ table: selectedTable, setSchemas, setSchema })
         }
     }, [selectedTable])
 
+    // resets memory when table is changed:
+    useEffect(() => {
+        setGeneratedSQL("")
+        setLastSQL("")
+    }, [tables])
+
     // Function for uploading file:
-    const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files
-        if (!files) return
-
-        for (const file of Array.from(files)) {
-            const filePath = `private/${Date.now()}-${file.name}`
-
-            // uploading into supabase:
-            const { error } = await supabase.storage
-                .from("csv-files")
-                .upload(filePath, file)
-
-            if (error) {
-                console.error("Upload error:", error)
-                continue
-            }
-
-            //  signedUrl generation:
-            const { data, error: signedError } = await supabase.storage
-                .from("csv-files")
-                .createSignedUrl(filePath, 60)
-
-            if (signedError || !data?.signedUrl) {
-                console.error("Signed URL error:", signedError)
-                continue
-            }
-
-            const url = data.signedUrl
-            console.log("Signed URL:", url)
-
-            //   duckDB reading csv from signedUrl:
-            const db = await getDuckDB()
-            const conn = await db.connect()
-
-            try {
-                console.log("creating table...")
-
-                const tableName = file.name
-                    .replace(".csv", "")
-                    .replace(/[^a-zA-Z0-9]/g, "_")
-
-                //   converts csv file to table:
-                const response = await fetch(url)
-                const csvText = await response.text()
-                const tempName = `${tableName}.csv`
-                await db.registerFileText(tempName, csvText)
-                await conn.query(`
-                    CREATE TABLE ${tableName} AS
-                    SELECT * FROM read_csv_auto('${tempName}')
-                    `)
-
-                // updates React about tables uploaded and selected:
-                setTables(prev => {
-                    if (prev.includes(tableName)) return prev
-                    return [...prev, tableName]
-                })
-
-                //  To auto-select first table:
-                setSelectedTable(prev => prev ?? tableName)
-
-                console.log("Created table:", tableName)
-                await loadSchema(tableName)
-
-            } catch (err) {
-                console.error("CREATE TABLE failed", err)
-            } finally {
-                await conn.close()
-            }
-        }
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        await handleFile(e, {
+            setTables,
+            setSelectedTable,
+            setError,
+            setQuery,
+            setGeneratedSQL,
+            setSchemas,
+            setSchema,
+        } as any)
     }
-
-    // Function to run the final Query:
-    const runQuery = async (overrideQuery?: string) => {
-        if (!selectedTable) return
-
-        setError(null)
-
-        const db = await getDuckDB()
-        const conn = await db.connect()
-
-        let finalQuery = overrideQuery
-            ? overrideQuery
-            : query.trim()
-                ? query
-                : `SELECT * FROM ${selectedTable} LIMIT 10`
-
-        console.log("Running Query:", finalQuery)
-
-        try {
-            const result = await conn.query(finalQuery)
-            console.log("Running query:", finalQuery)
-
-            // coverts duckDB's "proxy" object into normal JS:
-            const formatted = result.toArray().map(row => ({ ...row }))
-
-            if (formatted.length === 0) {
-                suggestFix(query)
-            }
-
-            console.log("Query result:", formatted)
-            // triggers UI re-render:
-            setQueryResult(formatted)
-        } catch (err) {
-            setQueryResult([])
-            console.error(err)
-            setError(String(err))
-
-            await fixQueryWithAI(finalQuery, String(err))
-        } finally {
-            await conn.close()
-        }
-    }
-
-    // Function to load schema for AI:
-    const loadSchema = async (table: string) => {
-        const db = await getDuckDB()
-        const conn = await db.connect()
-
-        try {
-            const result = await conn.query(`DESCRIBE ${table}`)
-            const schemaData = result.toArray().map(row => ({ ...row }))
-            setSchemas(prev => ({
-                ...prev,
-                [table]: schemaData
-            }))
-        } catch (err) {
-            console.error("Schema Error:", err)
-        } finally {
-            await conn.close()
-        }
-    }
-
-    // function to detect relatons b/w tables for AI to use joins (helper):
-    const detectRelationships = (schemas: Record<string, any[]>) => {
-        const relations: string[] = []
-        const tableNames = Object.keys(schemas)
-
-        for (let i = 0; i < tableNames.length; i++) {
-            for (let j = 0; j < tableNames.length; j++) {
-                if (i === j) continue
-
-                const tableA = tableNames[i]
-                const tableB = tableNames[j]
-
-                const colsA = schemas[tableA].map((c: any) => c.column_name.toLowerCase())
-                const colsB = schemas[tableB].map((c: any) => c.column_name.toLowerCase())
-
-                // Try to match standard naming conventions (e.g., orders.customer_id -> customers.id)
-                const singularTableB = tableB.endsWith('s') ? tableB.slice(0, -1) : tableB
-                const expectedForeignKey = `${singularTableB}_id`
-
-                if (colsA.includes(expectedForeignKey) && colsB.includes('id')) {
-                    relations.push(`${tableA}.${expectedForeignKey} -> ${tableB}.id`)
-                }
-
-            }
-        }
-        return relations
-    }
-
-    // AI
-    const generateSQL = async () => {
-        if (!selectedTable) return
-
-        setError(null)
-        setLoading(true)
-
-        const relationships = detectRelationships(schemas)
-
-        const db = await getDuckDB()
-        const conn = await db.connect()
-
-        const sampleRows = await conn.query(`
-        SELECT * FROM ${selectedTable} LIMIT 5    
-    `)
-        const sampleData = sampleRows.toArray()
-        const sampleText = sampleData
-            .map(row => Object.values(row).join(", "))
-            .join("\n")
-
-        const isFollowUp = generatedSQL.length > 0
-
-        let retries = 0
-        const MAX_RETRIES = 2
-
-        try {
-            let res
-            // edit-sql:
-            if (isFollowUp || lastSQL) {
-                res = await fetch("/api/edit-sql", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        query,
-                        lastSQL: generatedSQL,
-                        schemas,
-                        relationships,
-                        isFollowUp
-                    })
-                })
-            }
-            // generate-sql:
-            else {
-                res = await fetch("/api/generate-sql", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        query,
-                        schemas,
-                        sampleText,
-                        selectedTable,
-                        relationships
-                    })
-                })
-            }
-            const data = await res.json()
-            console.log("RELATIONSHIPS:", relationships)
-            // To double check columns of tables (acts as final firewall)
-            const validColumns = Object.values(schemas)
-                .flat()
-                .map((col: any) => col.column_name.toLowerCase())
-
-            if (!data.sql) {
-                setError("AI failed to generate SQL")
-                return
-            }
-            console.log("AI RESPONSE:", data)
-            const sql = data.sql.toLowerCase()
-            const isValid = validColumns.some(col =>
-                sql.includes(col)
-            )
-            if (!isValid) {
-                setError("AI generated invalid query (unknown columns).")
-                return
-            }
-
-            if (data.sql === "INVALID_QUERY") {
-                setError("Cannot answer this query with availablle data.")
-                return
-            }
-
-            if (sql.includes("*") && sql.includes("Amount") && sql.includes("Price")) {
-                alert("This calculation might be incorrect")
-            }
-
-            if (data.error === "INVALID_TABLE_USED") {
-                setError("AI used a table that doesn't exist. Try again.")
-                return
-            }
-
-            if (error?.includes("does not have a column") || error?.includes("does not exist")) {
-                setError("AI used invalid column/table. Try rephrasing.")
-                return
-            }
-
-            if (sql === "INVALID_QUERY") {
-                setError("Cannot answer with available data.")
-                return
-            }
-
-            if (retries >= MAX_RETRIES) {
-                setError("Query failed. Please refine your request.")
-                return
-            }
-
-            console.log("AI SQL:", data.sql)
-            console.log("LastSQL:", generatedSQL)
-            setGeneratedSQL(data.sql)
-            runQuery(data.sql)
-            setLastSQL(data.sql)
-        } catch (err) {
-            console.error("AI error:", err)
-        } finally {
-            setLoading(false)
-            await conn.close()
-        }
-    }
-
-    // to fix wrong query using AI:
-    const fixQueryWithAI = async (badQuery: string, errorMsg: string) => {
-        try {
-            const res = await fetch("/api/fix-sql", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    query: badQuery,
-                    error: errorMsg,
-                    schema,
-                    selectedTable
-                })
-            })
-            const data = await res.json()
-            console.log("FIXED SQL:", data.sql)
-            setQuery(data.sql)
-            runQuery(data.sql)
-        } catch (err) {
-            console.error("Fix Failed:", err)
-        }
-    }
-
-    // function to suggest fix
-    const suggestFix = async (userQuery: string) => {
-        try {
-            const res = await fetch("/api/suggest-fix", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    query: userQuery,
-                    schema,
-                    selectedTable
-                })
-            })
-            const data = await res.json()
-            console.log("Suggestion:", data.suggestion)
-
-            setError(null)
-            setError(`No results found. ${data.suggestion}`)
-
-        } catch (err) {
-            console.error("Suggestion failed:", err)
-        }
-    }
+    const relationships = detectRelationships(schemas)
 
     return (
         <div className="flex flex-col gap-6 p-4">
-            <input type="file" multiple accept=".csv" onChange={handleFile} />
+            <input type="file" multiple accept=".csv" onChange={handleFileChange} />
 
             {/* Buttons */}
             <div className="flex gap-4">
-                <button onClick={() => runQuery()}
+                <button onClick={() => runQuery({
+                    selectedTable,
+                    generatedSQL,
+                    query,
+                    schema,
+                    schemas,
+                    setError,
+                    setGeneratedSQL,
+                    setQueryResult,
+                    relationships
+                })}
                     disabled={!selectedTable || loading}
                     className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 w-fit">
                     Run Query on {selectedTable || "..."}
                 </button>
                 <button onClick={() =>
-                    runQuery(`SELECT * FROM ${selectedTable} LIMIT 10`)}
+                    runQuery({
+                        selectedTable,
+                        generatedSQL,
+                        query,
+                        schema,
+                        schemas,
+                        setError,
+                        setGeneratedSQL,
+                        setQueryResult,
+                        relationships
+                    }, `SELECT * FROM ${selectedTable} LIMIT 10`)}
                     disabled={!selectedTable || loading}
                     className="bg-gray-600 text-white px-4 py-2 rounded disabled:opacity-50 w-fit">
                     Preview Table
                 </button>
-                <button onClick={generateSQL}
+                <button onClick={() =>
+                    generateSQL({
+                        selectedTable,
+                        query,
+                        schemas,
+                        generatedSQL,
+                        lastSQL,
+                        setError,
+                        setLoading,
+                        setGeneratedSQL,
+                        setLastSQL,
+                        runQuery: (sql?: string) =>
+                            runQuery({
+                                selectedTable,
+                                generatedSQL,
+                                query,
+                                schema,
+                                schemas,
+                                setError,
+                                setGeneratedSQL,
+                                setQueryResult,
+                                relationships
+                            }, sql)
+                    })}
                     disabled={!selectedTable || loading}
                     className="bg-purple-600 text-white px-4 py-2 rounded disabled:opacity-50 w-fit">
                     {loading ? "Thinking..." : "Ask AI"}

@@ -18,39 +18,49 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { query, error, schema, selectedTable } = await req.json()
+        const { query, error, schemas, selectedTable, relationships } = await req.json()
 
-        if (!query || !error || !schema || !selectedTable) {
+        if (!query || !error || !schemas || !selectedTable) {
             return NextResponse.json(
-                {error: "Missing required fields"},
-                {status: 400}
+                { error: "Missing required fields" },
+                { status: 400 }
             )
         }
 
-        const schemaText = schema
-            .map((col: any) => `${col.column_name} (${col.column_type})`)
-            .join(", ")
+        const schemaText = Object.entries(schemas)
+            .map(([tableName, cols]) => {
+                const colText = (cols as any[])
+                    .map((col: any) =>
+                        `${col.column_name} (${col.column_type})`
+                    )
+                    .join(", ")
+
+                return `${tableName}: ${colText}`
+            })
+            .join("\n\n")
 
         const prompt = `
-You are a SQL debugger.
+You are a SQL repair engine.
 
-Fix the SQL query based on the error.
+Your ONLY job:
+- repair invalid SQL
+- preserve original intent
+- NEVER invent columns
+- NEVER invent tables
+- ONLY use provided schema
+- Return ONLY executable SQL
 
-IMPORTANT:
-- Use ONLY this table: ${selectedTable}
-- Use ONLY columns from schema
-- Return ONLY fixed SQL
+Relationships:
+${relationships.join("\n")}
 
-Schema:
+Tables:
 ${schemaText}
 
-Broken Query:
+Broken SQL:
 ${query}
 
-Error:
+Database Error:
 ${error}
-
-Return corrected SQL.
     `
         const completion = await groq.chat.completions.create({
             model: "llama-3.3-70b-versatile",
@@ -64,8 +74,8 @@ Return corrected SQL.
         return NextResponse.json({ sql: cleanedSQL })
     } catch (err) {
         return NextResponse.json(
-            {error: "Failed to fix SQL"},
-            {status: 500}
+            { error: "Failed to fix SQL" },
+            { status: 500 }
         )
     }
 }
