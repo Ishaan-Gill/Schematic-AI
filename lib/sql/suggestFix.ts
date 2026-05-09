@@ -1,16 +1,17 @@
 type SuggestFixArgs = {
     userQuery: string
-    schema: any[]
     schemas: Record<string, any[]>
     selectedTable: string | null
     setError: (val: string | null) => void
+    relationships: string[]
 }
 
 export const suggestFix = async ({
     userQuery,
-    schema,
+    schemas,
     selectedTable,
-    setError
+    setError,
+    relationships
 }: SuggestFixArgs) => {
     try {
         const res = await fetch("/api/suggest-fix", {
@@ -18,8 +19,9 @@ export const suggestFix = async ({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 query: userQuery,
-                schema,
-                selectedTable
+                schemas,
+                selectedTable,
+                relationships
             })
         })
         const data = await res.json()

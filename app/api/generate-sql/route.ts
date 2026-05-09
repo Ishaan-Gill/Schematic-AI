@@ -159,6 +159,44 @@ Examples:
 WHERE LOWER(City) = 'chicago'
 WHERE LOWER(Category) = 'electronics'
 
+TIME FILTERING RULES:
+
+- CSV datasets may contain historical/static dates
+- DO NOT assume CURRENT_DATE matches dataset dates
+
+- For relative time queries like:
+  "last month"
+  "last 7 days"
+  "recent"
+
+Use the latest date INSIDE the dataset.
+
+Example:
+WHERE OrderDate >= (
+    SELECT MAX(OrderDate) - INTERVAL '1 month'
+    FROM table_name
+)
+EXAMPLE:
+Q: top customers from last month
+
+A:
+SELECT 
+  co.customer_id,
+  cc.FirstName,
+  cc.LastName,
+  SUM(co.Amount) AS TotalSpent
+FROM customer_order_exp co
+INNER JOIN customer_contact_exp cc
+ON co.customer_id = cc.id
+WHERE co.OrderDate >= (
+    SELECT MAX(OrderDate) - INTERVAL '1 month'
+    FROM customer_order_exp
+)
+GROUP BY co.customer_id, cc.FirstName, cc.LastName
+ORDER BY TotalSpent DESC
+LIMIT 10;
+
+
 Before returning SQL, verify:
 - All columns exist in schema
 - All string filters use LOWER()

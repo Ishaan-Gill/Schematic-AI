@@ -3,7 +3,7 @@ import React from "react"
 import { getDuckDB } from "@/lib/duckdb"
 import { isFollowUpQuery, isTimeQuery } from "@/lib/ai/followUp"
 import { detectRelationships } from "@/lib/ai/relationships"
-import { getSQLValidationError } from "@/lib/ai/validations"
+import { validateSQL } from "./validateSQL"
 
 type GenerateSQLArgs = {
     selectedTable: string | null
@@ -47,7 +47,7 @@ export const generateSQL = async ({
             .map((row: any) => Object.values(row).join(", "))
             .join("\n")
 
-        const endpoint = isFollowUp || lastSQL ? "/api/edit-sql" : "/api/generate-sql"
+        const endpoint = isFollowUp && lastSQL ? "/api/edit-sql" : "/api/generate-sql"
         const body =
             endpoint === "/api/edit-sql"
                 ? { query, lastSQL: generatedSQL, schemas, relationships, isFollowUp }
@@ -71,9 +71,25 @@ export const generateSQL = async ({
         console.log("AI RESPONSE:", data)
         console.log("AI SQL:", data.sql)
 
+        const freshSQL = data.sql
         setGeneratedSQL(data.sql)
         setLastSQL(data.sql)
-        await runQuery(data.sql)
+        await runQuery(freshSQL)
+
+        if (!data.sql) {
+            setError("AI failed to generate SQL")
+            return
+        }
+
+        // validateSQL:
+        const validationError = validateSQL({
+            sql: data.sql,
+            schemas
+        })
+        if (validationError) {
+            setError(validationError)
+            return
+        }
     } catch (err) {
         console.error("AI error:", err)
     } finally {

@@ -38,7 +38,34 @@ export const runQuery = async (
 
     const db = await getDuckDB()
     const conn = await db.connect()
-    const finalQuery = overrideQuery || generatedSQL || `SELECT * FROM ${selectedTable} LIMIT 10`
+
+    const trimmedQuery = query.trim()
+
+    const manualSQL =
+        /^(SELECT|WITH|SHOW|DESCRIBE|PRAGMA|EXPLAIN)/i.test(trimmedQuery)
+
+    let finalQuery = ""
+
+    if (overrideQuery?.trim()) {
+        finalQuery = overrideQuery.trim()
+    } else if (manualSQL) {
+        finalQuery = trimmedQuery
+    } else if (trimmedQuery.length > 0) {
+        setError("Please enter valid SQL or use Ask AI.")
+        await conn.close()
+        return
+    } else {
+        finalQuery = `SELECT * FROM ${selectedTable} LIMIT 10`
+    }
+
+    // Timeout protection:
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Query timeout")), 8000)
+    )
+    const result = await Promise.race([
+        conn.query(finalQuery),
+        timeoutPromise
+    ])
 
     console.log("Running Query:", finalQuery)
 
@@ -47,7 +74,13 @@ export const runQuery = async (
         const formatted = result.toArray().map((row: any) => ({ ...row }))
 
         if (formatted.length === 0) {
-            await suggestFix({ userQuery: query, schema, schemas, selectedTable, setError })
+            await suggestFix({
+                userQuery: query,
+                schemas,
+                selectedTable,
+                setError,
+                relationships
+            })
         }
 
         setQueryResult(formatted)
