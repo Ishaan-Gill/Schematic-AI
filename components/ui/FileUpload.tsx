@@ -72,7 +72,7 @@ export default function FileUpload({
             <div className="flex gap-4">
                 <button onClick={() => runQuery({
                     selectedTable,
-                    generatedSQL: generatedSQL.trim(),
+                    generatedSQL: generatedSQL?.trim() || "",
                     query,
                     schema,
                     schemas,

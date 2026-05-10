@@ -67,29 +67,29 @@ export const generateSQL = async ({
 
         if (!isFollowUp) setLastSQL("")
 
+        if (!data.sql) {
+            setError("AI failed to generate SQL")
+            return
+        }
+
         console.log("RELATIONSHIPS:", relationships)
         console.log("AI RESPONSE:", data)
         console.log("AI SQL:", data.sql)
+
+        // validateSQL:
+        const validationError = await validateSQL({
+            sql: data.sql,
+        })
+        if (validationError) {
+            setError(validationError)
+            return
+        }
 
         const freshSQL = data.sql
         setGeneratedSQL(data.sql)
         setLastSQL(data.sql)
         await runQuery(freshSQL)
 
-        if (!data.sql) {
-            setError("AI failed to generate SQL")
-            return
-        }
-
-        // validateSQL:
-        const validationError = validateSQL({
-            sql: data.sql,
-            schemas
-        })
-        if (validationError) {
-            setError(validationError)
-            return
-        }
     } catch (err) {
         console.error("AI error:", err)
     } finally {

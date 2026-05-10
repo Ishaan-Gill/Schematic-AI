@@ -3,6 +3,8 @@ import React from "react"
 import { getDuckDB } from "@/lib/duckdb"
 import { supabase } from "@/lib/supabase"
 import { loadSchema } from "@/lib/sql/loadSchema"
+import { detectRelationships } from "@/lib/ai/relationships"
+import { relationshipsMemory } from "../ai/relationshipsMap"
 
 type UploadCSVArgs = {
     files: FileList | File[]
@@ -55,9 +57,95 @@ export const uploadCSV = async ({
                 SELECT * FROM read_csv_auto('${tempName}')
             `)
 
+            // normalization loop:
+            const columnsResult = await conn.query(`
+                DESCRIBE ${tableName}
+            `)
+            const columns = columnsResult.toArray()
+            const usedNames = new Set<string>()
+
+            for (const col of columns) {
+                const original = col.column_name
+                let cleaned = original
+                    .toLowerCase()
+                    .trim()
+                    .replace(/\s+/g, "_")
+                    .replace(/[^a-z0-9_]/g, "")
+
+                // fallback if empty
+                if (!cleaned) {
+                    cleaned = "column"
+                }
+
+                // handle duplicates
+                let finalName = cleaned
+                let counter = 1
+
+                while (usedNames.has(finalName)) {
+                    finalName = `${cleaned}_${counter}`
+                    counter++
+                }
+                usedNames.add(finalName)
+
+                if (original !== finalName) {
+                    await conn.query(`
+                        ALTER TABLE ${tableName}
+                        RENAME COLUMN "${original}" TO ${finalName}
+                    `)
+                }
+            }
+
+            // NULL normalization:
+            for (const col of columns) {
+                const columnName = col.column_name
+                await conn.query(`
+                    UPDATE ${tableName}
+                    SET ${columnName} = NULL
+                    WHERE TRIM(LOWER(${columnName})) IN (
+                        'n/a',
+                        'na',
+                        'null',
+                        'none',
+                        '-',
+                        '--',
+                        ''
+                    )
+                `).catch(() => { })
+            }
+
+            // column profiling: 
+            const profile: Record<string, any> = {}
+            for (const col of columns) {
+                const columnName = col.column_name
+                try {
+                    const stats = await conn.query(`
+                        SELECT
+                            COUNT(*) AS total_rows,
+                            COUNT(${columnName}) AS non_null_rows,
+                            COUNT(DISTINCT ${columnName}) AS unique_values
+                        FROM ${tableName}
+                    `)
+                    profile[columnName] = stats.toArray()[0]
+                } catch (err) {
+                    console.error("Profiling failed:", columnName)
+                }
+            }
+
             setTables(prev => (prev.includes(tableName) ? prev : [...prev, tableName]))
             setSelectedTable(prev => prev ?? tableName)
             await loadSchema({ table: tableName, setSchemas, setSchema })
+
+            setSchemas(prev => {
+                const updatedSchemas = {
+                    ...prev
+                }
+                const detected = detectRelationships(updatedSchemas)
+
+                relationshipsMemory.length = 0
+                relationshipsMemory.push(...detected.filter((item): item is Exclude<typeof item, string> => typeof item !== 'string'))
+
+                return prev
+            })
         } catch (err) {
             console.error("CREATE TABLE failed", err)
         } finally {

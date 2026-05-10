@@ -32,6 +32,8 @@ export const runQuery = async (
     }: RunQueryArgs,
     overrideQuery?: string
 ) => {
+    const startTime = performance.now()
+
     if (!selectedTable) return
 
     setError(null)
@@ -45,6 +47,12 @@ export const runQuery = async (
         /^(SELECT|WITH|SHOW|DESCRIBE|PRAGMA|EXPLAIN)/i.test(trimmedQuery)
 
     let finalQuery = ""
+
+    const lowerQuery = finalQuery.toLowerCase()
+    const hasLimit = lowerQuery.includes(" limit ")
+    if (lowerQuery.startsWith("select") && !hasLimit) {
+        finalQuery += " LIMIT 100"
+    }
 
     if (overrideQuery?.trim()) {
         finalQuery = overrideQuery.trim()
@@ -67,8 +75,6 @@ export const runQuery = async (
         timeoutPromise
     ])
 
-    console.log("Running Query:", finalQuery)
-
     try {
         const result = await conn.query(finalQuery)
         const formatted = result.toArray().map((row: any) => ({ ...row }))
@@ -82,6 +88,29 @@ export const runQuery = async (
                 relationships
             })
         }
+        if (formatted.length > 1000) {
+            setError("Query returned too many rows.")
+            setQueryResult([])
+            return
+        }
+        const resultSize = JSON.stringify(formatted, (_, value) =>
+            typeof value === "bigint"
+                ? value.toString()
+                : value
+        ).length
+        if (resultSize > 2_000_000) {
+            setError("Query result too large.")
+            setQueryResult([])
+            return
+        }
+
+        const executionTime = performance.now() - startTime
+        console.log("QUERY AUDIT", {
+            query,
+            sql: finalQuery,
+            rows: formatted.length,
+            executionTime
+        })
 
         setQueryResult(formatted)
     } catch (err) {
@@ -89,6 +118,12 @@ export const runQuery = async (
         setQueryResult([])
         console.error(err)
         setError(errorMsg)
+
+        console.log("QUERY FAILURE", {
+            query,
+            sql: finalQuery,
+            error: errorMsg
+        })
 
         if (retryCount >= 2) {
             setError("AI could not fix this query.")
