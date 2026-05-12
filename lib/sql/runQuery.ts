@@ -15,6 +15,8 @@ type RunQueryArgs = {
     setQueryResult: React.Dispatch<React.SetStateAction<any[]>>
     retryCount?: number
     relationships: string[]
+    page: number
+    PAGE_SIZE: number
 }
 
 export const runQuery = async (
@@ -28,7 +30,9 @@ export const runQuery = async (
         setGeneratedSQL,
         setQueryResult,
         retryCount = 0,
-        relationships
+        relationships,
+        page,
+        PAGE_SIZE = 100
     }: RunQueryArgs,
     overrideQuery?: string
 ) => {
@@ -48,12 +52,6 @@ export const runQuery = async (
 
     let finalQuery = ""
 
-    const lowerQuery = finalQuery.toLowerCase()
-    const hasLimit = lowerQuery.includes(" limit ")
-    if (lowerQuery.startsWith("select") && !hasLimit) {
-        finalQuery += " LIMIT 100"
-    }
-
     if (overrideQuery?.trim()) {
         finalQuery = overrideQuery.trim()
     } else if (manualSQL) {
@@ -66,17 +64,32 @@ export const runQuery = async (
         finalQuery = `SELECT * FROM ${selectedTable} LIMIT 10`
     }
 
+    // Pagination: 
+    finalQuery = finalQuery.replace(/;+\s*$/, "").trim()
+    finalQuery = finalQuery.replace(/limit\s+\d+/gi, "").replace(/offset\s+\d+/gi, "").trim()
+    const limitMatch = finalQuery.match(/limit\s+(\d+)/i)
+    if (limitMatch) {
+        const currentLimit = Number(limitMatch[1])
+        if (currentLimit > PAGE_SIZE) {
+            finalQuery = finalQuery.replace(
+                /limit\s+\d+/i,
+                `LIMIT ${PAGE_SIZE}`
+            )
+        }
+    } else {
+        finalQuery += ` LIMIT ${PAGE_SIZE} OFFSET ${page * PAGE_SIZE}`
+    }
+
     // Timeout protection:
     const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Query timeout")), 8000)
     )
-    const result = await Promise.race([
-        conn.query(finalQuery),
-        timeoutPromise
-    ])
 
     try {
-        const result = await conn.query(finalQuery)
+        const result = await Promise.race([
+            conn.query(finalQuery),
+            timeoutPromise
+        ]) as any
         const formatted = result.toArray().map((row: any) => ({ ...row }))
 
         if (formatted.length === 0) {
@@ -149,7 +162,9 @@ export const runQuery = async (
                         setGeneratedSQL,
                         setQueryResult,
                         retryCount: retryCount + 1,
-                        relationships
+                        relationships,
+                        page,
+                        PAGE_SIZE
                     },
                     sql
                 )

@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react"
 import { runQuery } from "@/lib/sql/runQuery"
 import { generateSQL } from "@/lib/sql/generateSQL"
 import { loadSchema } from "@/lib/sql/loadSchema"
-import { handleFile} from "@/lib/upload/upload.CSV"
+import { handleFile } from "@/lib/upload/upload.CSV"
 import { detectRelationships } from "@/lib/ai/relationships"
 
 export default function FileUpload({
@@ -36,6 +36,8 @@ export default function FileUpload({
     const [loading, setLoading] = useState(false)
     const [schemas, setSchemas] = useState<Record<string, any[]>>({})
     const [lastSQL, setLastSQL] = useState("")
+    const [page, setPage] = useState(0)
+    const PAGE_SIZE = 100
 
     // Use Effects:
     useEffect(() => {
@@ -49,6 +51,24 @@ export default function FileUpload({
         setGeneratedSQL("")
         setLastSQL("")
     }, [tables])
+
+    useEffect(() => {
+        if (!generatedSQL) return
+        runQuery({
+            selectedTable,
+            generatedSQL,
+            query: generatedSQL,
+            schema,
+            schemas,
+            setError,
+            setGeneratedSQL,
+            setQueryResult,
+            relationships,
+            page,
+            PAGE_SIZE
+        })
+    }, [page])
+
 
     // Function for uploading file:
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,7 +99,9 @@ export default function FileUpload({
                     setError,
                     setGeneratedSQL,
                     setQueryResult,
-                    relationships
+                    relationships,
+                    page,
+                    PAGE_SIZE
                 })}
                     disabled={!selectedTable || loading}
                     className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 w-fit">
@@ -95,7 +117,9 @@ export default function FileUpload({
                         setError,
                         setGeneratedSQL,
                         setQueryResult,
-                        relationships
+                        relationships,
+                        page,
+                        PAGE_SIZE
                     }, `SELECT * FROM ${selectedTable} LIMIT 10`)}
                     disabled={!selectedTable || loading}
                     className="bg-gray-600 text-white px-4 py-2 rounded disabled:opacity-50 w-fit">
@@ -122,7 +146,9 @@ export default function FileUpload({
                                 setError,
                                 setGeneratedSQL,
                                 setQueryResult,
-                                relationships
+                                relationships,
+                                page,
+                                PAGE_SIZE
                             }, sql)
                     })}
                     disabled={!selectedTable || loading}
@@ -205,8 +231,19 @@ export default function FileUpload({
                 ) : (
                     <p className="text-gray-500 italic">Run a query to see results.</p>
                 )}
-
             </div>
+
+            {/* prev/next button */}
+            {queryResult.length > 0 && (
+                <div className="flex gap-2 mt-4">
+                    <button onClick={() => setPage(p => Math.max(0, p - 1))}>
+                        Prev
+                    </button>
+                    <button onClick={() => setPage(p => p + 1)}>
+                        Next
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

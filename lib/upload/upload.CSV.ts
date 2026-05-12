@@ -97,7 +97,8 @@ export const uploadCSV = async ({
                     '${tempName}',
                     strict_mode = false,
                     ignore_errors = true,
-                    null_padding = true
+                    null_padding = true,
+                    parallel = false
                 )
             `)
 
