@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useEffectEvent, useRef, useState } from "react"
 
 import { runQuery } from "@/lib/sql/runQuery"
 import { generateSQL } from "@/lib/sql/generateSQL"
@@ -38,26 +38,30 @@ export default function FileUpload({
     const [lastSQL, setLastSQL] = useState("")
     const [page, setPage] = useState(0)
     const PAGE_SIZE = 100
+    const isMountedRef = useRef(true)
+    const schemaControllerRef = useRef<AbortController | null>(null)
+    const queryControllerRef = useRef<AbortController | null>(null)
+    const uploadControllerRef = useRef<AbortController | null>(null)
+    const generateControllerRef = useRef<AbortController | null>(null)
+    const relationships = detectRelationships(schemas)
 
-    // Use Effects:
-    useEffect(() => {
-        if (selectedTable) {
-            loadSchema({ table: selectedTable, setSchemas, setSchema })
-        }
-    }, [selectedTable])
+    const isControllerActive = (controller: AbortController) =>
+        isMountedRef.current && !controller.signal.aborted
 
-    // resets memory when table is changed:
-    useEffect(() => {
-        setGeneratedSQL("")
-        setLastSQL("")
-    }, [tables])
+    const startController = (ref: React.MutableRefObject<AbortController | null>) => {
+        ref.current?.abort()
+        const controller = new AbortController()
+        ref.current = controller
+        return controller
+    }
 
-    useEffect(() => {
-        if (!generatedSQL) return
-        runQuery({
+    const executeQuery = async (overrideQuery?: string) => {
+        const controller = startController(queryControllerRef)
+
+        await runQuery({
             selectedTable,
-            generatedSQL,
-            query: generatedSQL,
+            generatedSQL: generatedSQL?.trim() || "",
+            query,
             schema,
             schemas,
             setError,
@@ -65,13 +69,61 @@ export default function FileUpload({
             setQueryResult,
             relationships,
             page,
-            PAGE_SIZE
-        })
-    }, [page])
+            PAGE_SIZE,
+            signal: controller.signal,
+            guard: () => isControllerActive(controller)
+        }, overrideQuery)
+    }
+
+    const runQueryForPagination = useEffectEvent(async (overrideQuery?: string) => {
+        await executeQuery(overrideQuery)
+    })
+
+    useEffect(() => {
+        const schemaControllers = schemaControllerRef
+        const queryControllers = queryControllerRef
+        const uploadControllers = uploadControllerRef
+        const generateControllers = generateControllerRef
+
+        return () => {
+            isMountedRef.current = false
+            schemaControllers.current?.abort()
+            queryControllers.current?.abort()
+            uploadControllers.current?.abort()
+            generateControllers.current?.abort()
+        }
+    }, [])
+
+    useEffect(() => {
+        if (selectedTable) {
+            const controller = startController(schemaControllerRef)
+            void loadSchema({
+                table: selectedTable,
+                setSchemas,
+                setSchema,
+                signal: controller.signal,
+                guard: () => isControllerActive(controller)
+            })
+            return () => {
+                controller.abort()
+            }
+        }
+    }, [selectedTable])
+
+    useEffect(() => {
+        if (!generatedSQL) return
+        void runQueryForPagination(generatedSQL)
+    }, [generatedSQL, page])
 
 
     // Function for uploading file:
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const controller = startController(uploadControllerRef)
+        setGeneratedSQL("")
+        setLastSQL("")
+        setQueryResult([])
+        setPage(0)
+
         await handleFile(e, {
             setTables,
             setSelectedTable,
@@ -80,9 +132,10 @@ export default function FileUpload({
             setGeneratedSQL,
             setSchemas,
             setSchema,
-        } as any)
+            signal: controller.signal,
+            guard: () => isControllerActive(controller)
+        })
     }
-    const relationships = detectRelationships(schemas)
 
     return (
         <div className="flex flex-col gap-6 p-4">
@@ -90,43 +143,20 @@ export default function FileUpload({
 
             {/* Buttons */}
             <div className="flex gap-4">
-                <button onClick={() => runQuery({
-                    selectedTable,
-                    generatedSQL: generatedSQL?.trim() || "",
-                    query,
-                    schema,
-                    schemas,
-                    setError,
-                    setGeneratedSQL,
-                    setQueryResult,
-                    relationships,
-                    page,
-                    PAGE_SIZE
-                })}
+                <button onClick={() => void executeQuery()}
                     disabled={!selectedTable || loading}
                     className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 w-fit">
                     Run Query on {selectedTable || "..."}
                 </button>
                 <button onClick={() =>
-                    runQuery({
-                        selectedTable,
-                        generatedSQL,
-                        query,
-                        schema,
-                        schemas,
-                        setError,
-                        setGeneratedSQL,
-                        setQueryResult,
-                        relationships,
-                        page,
-                        PAGE_SIZE
-                    }, `SELECT * FROM ${selectedTable} LIMIT 10`)}
+                    void executeQuery(`SELECT * FROM ${selectedTable} LIMIT 10`)}
                     disabled={!selectedTable || loading}
                     className="bg-gray-600 text-white px-4 py-2 rounded disabled:opacity-50 w-fit">
                     Preview Table
                 </button>
-                <button onClick={() =>
-                    generateSQL({
+                <button onClick={() => {
+                    const controller = startController(generateControllerRef)
+                    return void generateSQL({
                         selectedTable,
                         query,
                         schemas,
@@ -137,20 +167,11 @@ export default function FileUpload({
                         setGeneratedSQL,
                         setLastSQL,
                         runQuery: (sql?: string) =>
-                            runQuery({
-                                selectedTable,
-                                generatedSQL,
-                                query,
-                                schema,
-                                schemas,
-                                setError,
-                                setGeneratedSQL,
-                                setQueryResult,
-                                relationships,
-                                page,
-                                PAGE_SIZE
-                            }, sql)
-                    })}
+                            executeQuery(sql),
+                        signal: controller.signal,
+                        guard: () => isControllerActive(controller)
+                    })
+                }}
                     disabled={!selectedTable || loading}
                     className="bg-purple-600 text-white px-4 py-2 rounded disabled:opacity-50 w-fit">
                     {loading ? "Thinking..." : "Ask AI"}

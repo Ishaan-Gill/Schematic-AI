@@ -12,6 +12,11 @@ type UploadCSVArgs = {
     setSelectedTable: React.Dispatch<React.SetStateAction<string | null>>
     setSchemas: React.Dispatch<React.SetStateAction<Record<string, any[]>>>
     setSchema?: React.Dispatch<React.SetStateAction<any[]>>
+    setError?: (val: string | null) => void
+    setQuery?: React.Dispatch<React.SetStateAction<string>>
+    setGeneratedSQL?: React.Dispatch<React.SetStateAction<string>>
+    signal?: AbortSignal
+    guard?: () => boolean
 }
 
 const normalizeTableName = (fileName: string) =>
@@ -22,9 +27,15 @@ export const uploadCSV = async ({
     setTables,
     setSelectedTable,
     setSchemas,
-    setSchema
+    setSchema,
+    signal,
+    guard
 }: UploadCSVArgs) => {
+    const isActive = () => !signal?.aborted && (guard?.() ?? true)
+
     for (const file of Array.from(files)) {
+        if (!isActive()) return
+
         const filePath = `private/${Date.now()}-${file.name}`
 
         const MAX_FILE_SIZE = 50 * 1024 * 1024
@@ -55,8 +66,10 @@ export const uploadCSV = async ({
 
         try {
             const tableName = normalizeTableName(file.name)
-            const response = await fetch(data.signedUrl)
+            const response = await fetch(data.signedUrl, { signal })
             const csvText = await response.text()
+            if (!isActive()) return
+
             const tempName = `${tableName}.csv`
             const lines = csvText.split("\n")
             const rawHeaders = lines[0].split(",")
@@ -243,7 +256,8 @@ export const uploadCSV = async ({
 
             setTables(prev => (prev.includes(tableName) ? prev : [...prev, tableName]))
             setSelectedTable(prev => prev ?? tableName)
-            await loadSchema({ table: tableName, setSchemas, setSchema })
+            await loadSchema({ table: tableName, setSchemas, setSchema, signal, guard })
+            if (!isActive()) return
 
             const rowCountResult = await conn.query(`
                 SELECT COUNT(*) AS count
@@ -263,6 +277,8 @@ export const uploadCSV = async ({
             }
 
             setSchemas(prev => {
+                if (!isActive()) return prev
+
                 const updatedSchemas = {
                     ...prev
                 }
@@ -274,6 +290,7 @@ export const uploadCSV = async ({
                 return prev
             })
         } catch (err) {
+            if (signal?.aborted) return
             console.error("CREATE TABLE failed", err)
         } finally {
             await conn.close()

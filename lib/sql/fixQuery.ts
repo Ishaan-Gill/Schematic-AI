@@ -6,6 +6,8 @@ type FixQueryArgs = {
     setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
     runQuery: (sql?: string) => Promise<void>
     relationships: string[]
+    signal?: AbortSignal
+    guard?: () => boolean
 }
 
 export const fixQueryWithAI = async ({
@@ -15,12 +17,17 @@ export const fixQueryWithAI = async ({
     selectedTable,
     setGeneratedSQL,
     runQuery,
-    relationships
+    relationships,
+    signal,
+    guard
 }: FixQueryArgs) => {
     try {
+        if (signal?.aborted || !(guard?.() ?? true)) return
+
         const res = await fetch("/api/fix-sql", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            signal,
             body: JSON.stringify({
                 query: badQuery,
                 error: errorMsg,
@@ -30,10 +37,13 @@ export const fixQueryWithAI = async ({
             })
         })
         const data = await res.json()
+        if (signal?.aborted || !(guard?.() ?? true)) return
+
         console.log("FIXED SQL:", data.sql)
         setGeneratedSQL(data.sql)
         await runQuery(data.sql)
     } catch (err) {
+        if (signal?.aborted) return
         console.error("Fix Failed:", err)
     }
 }

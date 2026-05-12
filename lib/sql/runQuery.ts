@@ -17,7 +17,12 @@ type RunQueryArgs = {
     relationships: string[]
     page: number
     PAGE_SIZE: number
+    signal?: AbortSignal
+    guard?: () => boolean
 }
+
+const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
+    !signal?.aborted && (guard?.() ?? true)
 
 export const runQuery = async (
     {
@@ -32,13 +37,15 @@ export const runQuery = async (
         retryCount = 0,
         relationships,
         page,
-        PAGE_SIZE = 100
+        PAGE_SIZE = 100,
+        signal,
+        guard
     }: RunQueryArgs,
     overrideQuery?: string
 ) => {
     const startTime = performance.now()
 
-    if (!selectedTable) return
+    if (!selectedTable || !isActive(guard, signal)) return
 
     setError(null)
 
@@ -81,8 +88,9 @@ export const runQuery = async (
     }
 
     // Timeout protection:
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
     const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Query timeout")), 8000)
+        timeoutId = setTimeout(() => reject(new Error("Query timeout")), 8000)
     )
 
     try {
@@ -90,6 +98,8 @@ export const runQuery = async (
             conn.query(finalQuery),
             timeoutPromise
         ]) as any
+        if (!isActive(guard, signal)) return
+
         const formatted = result.toArray().map((row: any) => ({ ...row }))
 
         if (formatted.length === 0) {
@@ -98,8 +108,11 @@ export const runQuery = async (
                 schemas,
                 selectedTable,
                 setError,
-                relationships
+                relationships,
+                signal,
+                guard
             })
+            if (!isActive(guard, signal)) return
         }
         if (formatted.length > 1000) {
             setError("Query returned too many rows.")
@@ -150,6 +163,8 @@ export const runQuery = async (
             selectedTable,
             setGeneratedSQL,
             relationships,
+            signal,
+            guard,
             runQuery: (sql?: string) =>
                 runQuery(
                     {
@@ -164,12 +179,17 @@ export const runQuery = async (
                         retryCount: retryCount + 1,
                         relationships,
                         page,
-                        PAGE_SIZE
+                        PAGE_SIZE,
+                        signal,
+                        guard
                     },
                     sql
                 )
         })
     } finally {
+        if (timeoutId) {
+            clearTimeout(timeoutId)
+        }
         await conn.close()
     }
 }
