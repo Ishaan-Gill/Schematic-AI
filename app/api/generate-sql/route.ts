@@ -1,13 +1,15 @@
 import Groq from "groq-sdk"
 import { NextResponse } from "next/server"
 
+
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY!,
 })
 
 export async function POST(req: Request) {
     const body = await req.json()
-    const { query, schemas, selectedTable, sampleText, relationships } = body
+    const { query, schemas, selectedTable, sampleText, relationships, datasetContext } = body
+    const safeDatasetContext = datasetContext ?? { metadata: [], metrics: [] }
     console.log("BODY:", body)
 
     if (!selectedTable || !query || !schemas) {
@@ -28,113 +30,249 @@ export async function POST(req: Request) {
         .join("\n\n")
 
     const prompt = `
-You are a STRICT SQL generator for DuckDB/PostgreSQL.
+You are a STRICT SQL generator for DuckDB.
 
-YOUR JOB:
-Convert the user request into ONE valid SQL query using ONLY the provided schema.
+YOUR TASK:
+Convert the user request into EXACTLY ONE valid DuckDB SQL query using ONLY the provided schema.
 
---------------------------------------------------
-HARD RULES (MUST FOLLOW)
---------------------------------------------------
+━━━━━━━━━━━━━━━━━━━━
+CORE RULES
+━━━━━━━━━━━━━━━━━━━━
 
-- Use ONLY tables and columns from the schema
-- NEVER invent tables or columns
-- If impossible → return EXACTLY: INVALID_QUERY
-- Output ONLY SQL (no explanations, no comments)
-- Query MUST start with SELECT or WITH
+* Output ONLY SQL
 
---------------------------------------------------
-SQL DIALECT (CRITICAL)
---------------------------------------------------
+* No markdown
 
-- Use DuckDB/PostgreSQL syntax
-- NEVER use: DATE_SUB, DATEADD, MONTH()
-- ALWAYS use:
-  CURRENT_DATE - INTERVAL '1 month'
-  CURRENT_DATE - INTERVAL '7 days'
-  EXTRACT(MONTH FROM column)
+* No explanations
 
---------------------------------------------------
-JOINS & RELATIONSHIPS
---------------------------------------------------
+* No comments
 
-- Use provided relationships for joins
-- Prefer INNER JOIN
-- Match keys logically (e.g., customer_id ↔ id)
+* Query MUST begin with:
+  SELECT
+  or
+  WITH
 
-RELATIONSHIPS:
-${relationships.join("\n")}
+* NEVER generate:
+  INSERT
+  UPDATE
+  DELETE
+  DROP
+  ALTER
+  CREATE
+  TRUNCATE
 
---------------------------------------------------
-STRING HANDLING (STRICT)
---------------------------------------------------
+* NEVER generate multiple statements
 
-- ALL string comparisons MUST be case-insensitive
-- ALWAYS use LOWER(column) = 'value'
-- NEVER use direct equality without LOWER()
+* NEVER use semicolons inside the query
 
-Example:
-❌ City = 'Chicago'
-✅ LOWER(City) = 'chicago'
+* If the request cannot be answered using the schema:
+  return EXACTLY:
+  INVALID_QUERY
 
---------------------------------------------------
-AGGREGATION RULES
---------------------------------------------------
+━━━━━━━━━━━━━━━━━━━━
+SCHEMA ENFORCEMENT
+━━━━━━━━━━━━━━━━━━━━
 
-- "top", "best", "most" → require aggregation
-- Use:
-  SUM(Amount) for revenue/spending
-  COUNT(*) for frequency
+Semantic Metadata:
+${JSON.stringify(safeDatasetContext.metadata, null, 2)}
 
-- Always:
-  → GROUP BY non-aggregated columns
-  → ORDER BY aggregate DESC
-  → LIMIT 10 (unless using ROW_NUMBER)
+Known Categories:
+${JSON.stringify(datasetContext.categories, null, 2)}
 
---------------------------------------------------
-COLUMN SEMANTICS
---------------------------------------------------
+Business Concepts:
+${JSON.stringify(datasetContext.BUSINESS_METRICS, null, 2)}
 
-- Amount = total order value (already final)
-- Price = unit price (DO NOT multiply unless explicitly asked)
+* Use ONLY tables and columns present in the schema
+* NEVER invent columns
+* NEVER invent tables
+* NEVER invent aliases referencing nonexistent columns
+* Before returning SQL:
+  verify every referenced column exists
 
---------------------------------------------------
-TIME FILTERING
---------------------------------------------------
+If a required column does not exist:
+return INVALID_QUERY
 
-- If user mentions time:
-  → MUST apply WHERE filter on a date column
+━━━━━━━━━━━━━━━━━━━━
+DUCKDB SQL RULES
+━━━━━━━━━━━━━━━━━━━━
 
-- Use:
-  column >= CURRENT_DATE - INTERVAL 'X'
+This query MUST be valid DuckDB SQL.
+
+NEVER use:
+
+* TO_DATE()
+* DATEADD()
+* DATE_SUB()
+* MONTH()
+* GETDATE()
+* NVL()
+
+ALWAYS prefer:
+
+* STRPTIME()
+* EXTRACT()
+* DATE_TRUNC()
+* CURRENT_DATE
+* INTERVAL
 
 Examples:
-- "last month" → INTERVAL '1 month'
-- "last 7 days" → INTERVAL '7 days'
 
-- If NO date column exists → return INVALID_QUERY
+Correct:
+STRPTIME(invoicedate, '%m/%d/%Y %H:%M')
 
---------------------------------------------------
-ADVANCED QUERIES
---------------------------------------------------
+Correct:
+EXTRACT(MONTH FROM order_date)
 
-- "top N per group":
-  → Use ROW_NUMBER() with PARTITION BY
-  → DO NOT use LIMIT
+Correct:
+CURRENT_DATE - INTERVAL '1 month'
+
+━━━━━━━━━━━━━━━━━━━━
+DATE/TIME HANDLING
+━━━━━━━━━━━━━━━━━━━━
+
+Some CSV datasets store dates as VARCHAR.
+
+If a date column is VARCHAR:
+
+* parse it using STRPTIME()
 
 Example:
-ROW_NUMBER() OVER (PARTITION BY City ORDER BY SUM(...) DESC)
+STRPTIME(invoicedate, '%m/%d/%Y %H:%M')
 
---------------------------------------------------
+If format is unclear:
+infer format from sample data.
+
+For relative date queries:
+DO NOT assume CURRENT_DATE matches dataset dates.
+
+Instead use dataset-relative filtering:
+
+Example:
+WHERE order_date >= (
+SELECT MAX(order_date) - INTERVAL '1 month'
+FROM table_name
+)
+
+━━━━━━━━━━━━━━━━━━━━
+STRING FILTERING
+━━━━━━━━━━━━━━━━━━━━
+
+ALL string comparisons MUST be case-insensitive.
+
+ALWAYS use:
+LOWER(column)
+
+Examples:
+
+Correct:
+WHERE LOWER(country) = 'france'
+
+Correct:
+WHERE LOWER(category) LIKE '%electronics%'
+
+NEVER use:
+WHERE country = 'France'
+
+━━━━━━━━━━━━━━━━━━━━
+AGGREGATION RULES
+━━━━━━━━━━━━━━━━━━━━
+
+Keywords:
+
+* top
+* best
+* highest
+* most
+* lowest
+
+usually require aggregation.
+
+Rules:
+
+* GROUP BY all non-aggregated columns
+* ORDER BY aggregate DESC
+* LIMIT 10 by default
+
+Use:
+
+* COUNT(*) for counts/frequency
+* COUNT(DISTINCT column) for unique counts
+* SUM(...) for totals
+* AVG(...) for averages
+
+━━━━━━━━━━━━━━━━━━━━
+DERIVED METRICS
+━━━━━━━━━━━━━━━━━━━━
+
+Use ONLY metrics derivable from existing columns.
+
+Derived Metrics:
+${JSON.stringify(safeDatasetContext.metrics, null, 2)}
+
+NEVER invent business metrics.
+
+If revenue/spending requires unavailable columns:
+return INVALID_QUERY
+
+━━━━━━━━━━━━━━━━━━━━
+JOINS & RELATIONSHIPS
+━━━━━━━━━━━━━━━━━━━━
+
+Use provided relationships when joining tables.
+
+Prefer:
+INNER JOIN
+
+Relationships:
+${relationships.join("\n")}
+
+━━━━━━━━━━━━━━━━━━━━
+ADVANCED ANALYTICS
+━━━━━━━━━━━━━━━━━━━━
+
+For:
+
+* top product per country
+* top N per group
+* ranking problems
+
+Use:
+ROW_NUMBER() OVER (
+PARTITION BY ...
+ORDER BY ...
+)
+
+Do NOT use LIMIT for grouped ranking problems.
+
+━━━━━━━━━━━━━━━━━━━━
 FILTERING RULES
---------------------------------------------------
+━━━━━━━━━━━━━━━━━━━━
 
-- Apply WHERE filters BEFORE aggregation
-- Use HAVING only for aggregated filters
+* Apply WHERE before aggregation
+* Use HAVING only for aggregated filters
 
---------------------------------------------------
+━━━━━━━━━━━━━━━━━━━━
+NULL HANDLING
+━━━━━━━━━━━━━━━━━━━━
+
+When appropriate:
+
+* exclude NULL values
+* use IS NOT NULL
+* avoid aggregating malformed values
+
+━━━━━━━━━━━━━━━━━━━━
+PERFORMANCE RULES
+━━━━━━━━━━━━━━━━━━━━
+
+* Avoid SELECT *
+* Select only required columns
+* Prefer aggregation over raw row expansion
+* Avoid unnecessary nested queries
+
+━━━━━━━━━━━━━━━━━━━━
 DATA CONTEXT
---------------------------------------------------
+━━━━━━━━━━━━━━━━━━━━
 
 Tables:
 ${schemaText}
@@ -142,66 +280,29 @@ ${schemaText}
 Sample Data:
 ${sampleText}
 
---------------------------------------------------
+━━━━━━━━━━━━━━━━━━━━
 USER REQUEST
---------------------------------------------------
+━━━━━━━━━━━━━━━━━━━━
 
 "${query}"
 
---------------------------------------------------
-FINAL INSTRUCTION
---------------------------------------------------
+━━━━━━━━━━━━━━━━━━━━
+FINAL VALIDATION
+━━━━━━━━━━━━━━━━━━━━
 
-Return ONLY the SQL query.
-If uncertain → return INVALID_QUERY.
+Before returning SQL verify:
 
-Examples:
-WHERE LOWER(City) = 'chicago'
-WHERE LOWER(Category) = 'electronics'
+* all columns exist
+* all tables exist
+* DuckDB syntax is valid
+* no hallucinated metrics exist
+* no forbidden SQL exists
+* string filters use LOWER()
+* query starts with SELECT or WITH
 
-TIME FILTERING RULES:
+If ANY rule fails:
+return INVALID_QUERY
 
-- CSV datasets may contain historical/static dates
-- DO NOT assume CURRENT_DATE matches dataset dates
-
-- For relative time queries like:
-  "last month"
-  "last 7 days"
-  "recent"
-
-Use the latest date INSIDE the dataset.
-
-Example:
-WHERE OrderDate >= (
-    SELECT MAX(OrderDate) - INTERVAL '1 month'
-    FROM table_name
-)
-EXAMPLE:
-Q: top customers from last month
-
-A:
-SELECT 
-  co.customer_id,
-  cc.FirstName,
-  cc.LastName,
-  SUM(co.Amount) AS TotalSpent
-FROM customer_order_exp co
-INNER JOIN customer_contact_exp cc
-ON co.customer_id = cc.id
-WHERE co.OrderDate >= (
-    SELECT MAX(OrderDate) - INTERVAL '1 month'
-    FROM customer_order_exp
-)
-GROUP BY co.customer_id, cc.FirstName, cc.LastName
-ORDER BY TotalSpent DESC
-LIMIT 10;
-
-
-Before returning SQL, verify:
-- All columns exist in schema
-- All string filters use LOWER()
-- SQL uses correct dialect
-If any rule is violated → fix it before returning
 `
     try {
         const completion = await groq.chat.completions.create({

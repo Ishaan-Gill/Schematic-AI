@@ -4,6 +4,7 @@ import { getDuckDB } from "@/lib/duckdb"
 import { isFollowUpQuery, isTimeQuery } from "@/lib/ai/followUp"
 import { detectRelationships } from "@/lib/ai/relationships"
 import { validateSQL } from "./validateSQL"
+import { buildDatasetContext } from "../metadata/buildDatasetContext"
 
 type GenerateSQLArgs = {
     selectedTable: string | null
@@ -57,17 +58,26 @@ export const generateSQL = async ({
             .join("\n")
         if (!isActive(guard, signal)) return
 
+        const datasetContext = buildDatasetContext(
+            schemas[selectedTable],
+            sampleRows.toArray()
+        )
+
         const endpoint = isFollowUp && lastSQL ? "/api/edit-sql" : "/api/generate-sql"
         const body =
             endpoint === "/api/edit-sql"
                 ? { query, lastSQL: generatedSQL, schemas, relationships, isFollowUp }
-                : { query, schemas, sampleText, selectedTable, relationships }
+                : { query, schemas, sampleText, selectedTable, relationships, datasetContext }
 
         const res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             signal,
-            body: JSON.stringify(body)
+            body: JSON.stringify(body, (_, value) =>
+                typeof value === "bigint"
+                    ? value.toString()
+                    : value
+            )
         })
         const data = await res.json()
         if (!isActive(guard, signal)) return
