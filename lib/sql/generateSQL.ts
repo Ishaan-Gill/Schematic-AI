@@ -2,7 +2,7 @@ import React from "react"
 
 import { getDuckDB } from "@/lib/duckdb"
 import { isFollowUpQuery, isTimeQuery } from "@/lib/ai/followUp"
-import { detectRelationships } from "@/lib/ai/relationships"
+import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelationships"
 import { validateSQL } from "./validateSQL"
 import { buildDatasetContext } from "../metadata/buildDatasetContext"
 
@@ -43,7 +43,7 @@ export const generateSQL = async ({
     setError(null)
     setLoading(true)
 
-    const relationships = detectRelationships(schemas)
+    const relationships = updateDetectedRelationships(schemas)
     const isFollowUp = isFollowUpQuery(query)
     const db = await getDuckDB()
     const conn = await db.connect()

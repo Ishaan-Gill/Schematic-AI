@@ -38,7 +38,7 @@ export default function Home() {
       <div className="flex-1 p-6 overflow-y-auto">
         <h1 className="text-2x1 font-bold mb-4">Multi-Table Analyst</h1>
         <div className="border p-4 rounded-lg">
-          <h2 className="text-lg font-semibold mb-2">Upload your CSVs here </h2>
+          <h2 className="text-lg font-semibold mb-2">Upload your Dataset(.csv/.xlsx) here </h2>
           <p className="text-sm text-gray-50 mb-2">
             Running on: <span className="font-medium">{selectedTable}</span>
           </p>

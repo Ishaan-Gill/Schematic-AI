@@ -5,8 +5,8 @@ import React, { useEffect, useEffectEvent, useRef, useState } from "react"
 import { runQuery } from "@/lib/sql/runQuery"
 import { generateSQL } from "@/lib/sql/generateSQL"
 import { loadSchema } from "@/lib/sql/loadSchema"
-import { handleFile } from "@/lib/upload/upload.CSV"
-import { detectRelationships } from "@/lib/ai/relationships"
+import { handleFile } from "@/lib/upload/uploadDataset"
+import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelationships"
 
 export default function FileUpload({
     tables,
@@ -43,7 +43,7 @@ export default function FileUpload({
     const queryControllerRef = useRef<AbortController | null>(null)
     const uploadControllerRef = useRef<AbortController | null>(null)
     const generateControllerRef = useRef<AbortController | null>(null)
-    const relationships = detectRelationships(schemas)
+    const relationships = updateDetectedRelationships(schemas)
 
     const isControllerActive = (controller: AbortController) =>
         isMountedRef.current && !controller.signal.aborted
