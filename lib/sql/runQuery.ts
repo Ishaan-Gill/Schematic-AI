@@ -3,6 +3,7 @@ import React from "react"
 import { getDuckDB } from "@/lib/duckdb"
 import { fixQueryWithAI } from "@/lib/sql/fixQuery"
 import { suggestFix } from "@/lib/sql/suggestFix"
+import { feedbackMemory } from "../upload/metadata/feedbackMemory"
 
 type RunQueryArgs = {
     selectedTable: string | null
@@ -131,6 +132,14 @@ export const runQuery = async (
         }
 
         const executionTime = performance.now() - startTime
+
+        feedbackMemory.push({
+            query,
+            generatedSQL: finalQuery,
+            outcome: "success",
+            timestamp: Date.now(),
+        })
+
         console.log("QUERY AUDIT", {
             query,
             sql: finalQuery,
@@ -141,6 +150,15 @@ export const runQuery = async (
         setQueryResult(formatted)
     } catch (err) {
         const errorMsg = String(err)
+
+        feedbackMemory.push({
+            query,
+            generatedSQL: finalQuery,
+            outcome: "failure",
+            error: errorMsg,
+            timestamp: Date.now(),
+        })
+
         setQueryResult([])
         console.error(err)
         setError(errorMsg)

@@ -37,6 +37,6 @@ export const buildDatasetContext = (
         metadata,
         metrics,
         categories,
-        BUSINESS_METRICS
+        BUSINESS_METRICS,
     }
 }

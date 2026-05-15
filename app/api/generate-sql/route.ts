@@ -1,6 +1,6 @@
 import Groq from "groq-sdk"
 import { NextResponse } from "next/server"
-
+import { feedbackMemory } from "@/lib/upload/metadata/feedbackMemory"
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY!,
@@ -9,7 +9,12 @@ const groq = new Groq({
 export async function POST(req: Request) {
     const body = await req.json()
     const { query, schemas, selectedTable, sampleText, relationships, datasetContext } = body
-    const safeDatasetContext = datasetContext ?? { metadata: [], metrics: [] }
+    const safeDatasetContext = datasetContext ?? {
+        metadata: [],
+        metrics: [],
+        categories: {},
+        BUSINESS_METRICS: [],
+    }
     console.log("BODY:", body)
 
     if (!selectedTable || !query || !schemas) {
@@ -28,6 +33,14 @@ export async function POST(req: Request) {
             return `${tableName}: ${colText}`
         })
         .join("\n\n")
+
+    // Feedback:
+    const recentFailures = feedbackMemory
+        .filter((item) => item.outcome === "failure")
+        .slice(-5)
+    const recentSuccesses = feedbackMemory
+        .filter((item) => item.outcome === "success")
+        .slice(-5)
 
     const prompt = `
 You are a STRICT SQL generator for DuckDB.
@@ -77,10 +90,10 @@ Semantic Metadata:
 ${JSON.stringify(safeDatasetContext.metadata, null, 2)}
 
 Known Categories:
-${JSON.stringify(datasetContext.categories, null, 2)}
+${JSON.stringify(safeDatasetContext.categories, null, 2)}
 
 Business Concepts:
-${JSON.stringify(datasetContext.BUSINESS_METRICS, null, 2)}
+${JSON.stringify(safeDatasetContext.BUSINESS_METRICS, null, 2)}
 
 * Use ONLY tables and columns present in the schema
 * NEVER invent columns
@@ -215,6 +228,23 @@ If revenue/spending requires unavailable columns:
 return INVALID_QUERY
 
 ━━━━━━━━━━━━━━━━━━━━
+PREVIOUS QUERY FEEDBACK
+━━━━━━━━━━━━━━━━━━━━
+
+Recent Successful Queries:
+${JSON.stringify(recentSuccesses, null, 2)}
+
+Recent Failed Queries:
+${JSON.stringify(recentFailures, null, 2)}
+
+Learn from previous failures.
+
+Avoid generating SQL patterns that previously failed.
+
+If a previous query failed because of a missing column/table:
+DO NOT repeat the same mistake.
+
+━━━━━━━━━━━━━━━━━━━━
 JOINS & RELATIONSHIPS
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -323,7 +353,11 @@ return INVALID_QUERY
 
         const sql = cleanedSQL.trim()
 
-        if (!sql.toLowerCase().startsWith("select") && !sql.toLowerCase().startsWith("with")) {
+        if (
+            sql !== "INVALID_QUERY" &&
+            !sql.toLowerCase().startsWith("select") &&
+            !sql.toLowerCase().startsWith("with")
+        ) {
             return NextResponse.json({
                 error: "Invalid SQL generated"
             })
@@ -332,6 +366,7 @@ return INVALID_QUERY
         return NextResponse.json({ sql: cleanedSQL })
     } catch (err) {
         console.error("Groq Error:", err)
+
         return NextResponse.json(
             { error: String(err) },
             { status: 500 }

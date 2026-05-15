@@ -7,6 +7,7 @@ import { profileTable } from "./profileTable"
 
 import { profileMemory } from "../metadata/profileMemory"
 import { schemaMemory } from "../metadata/schemaMemory"
+import { datasetMemory, DatasetMemory } from "../metadata/datasetMemory"
 
 import { inferSemanticContext } from "@/lib/metadata/sematicInference"
 
@@ -114,13 +115,9 @@ export const ingestParsedTable = async ({
     // clean headers inside duckdb
     for (const [index, column] of parsedColumns.entries()) {
 
-        const cleanedHeader =
-            cleanedHeaders[index]
+        const cleanedHeader = cleanedHeaders[index]
 
-        if (
-            !cleanedHeader ||
-            column.column_name === cleanedHeader
-        ) {
+        if (!cleanedHeader || column.column_name === cleanedHeader) {
             continue
         }
 
@@ -139,17 +136,14 @@ export const ingestParsedTable = async ({
         FROM "${tableName}"
     `)
 
-    const rowCount = Number(
-        rowCountResult.toArray()[0]?.count ?? 0
-    )
+    const rowCount = Number(rowCountResult.toArray()[0]?.count ?? 0)
 
     // schema
     const columnsResult = await conn.query(`
         DESCRIBE "${tableName}"
     `)
 
-    const columns =
-        columnsResult.toArray() as ColumnInfo[]
+    const columns =columnsResult.toArray() as ColumnInfo[]
 
     // null cleaning
     await cleanValues({
@@ -170,8 +164,7 @@ export const ingestParsedTable = async ({
             DESCRIBE "${tableName}"
         `)
 
-    const refreshedColumns =
-        refreshedColumnsResult.toArray() as ColumnInfo[]
+    const refreshedColumns = refreshedColumnsResult.toArray() as ColumnInfo[]
 
     // profiling
     const profile = await profileTable({
@@ -180,17 +173,23 @@ export const ingestParsedTable = async ({
         columns: refreshedColumns,
     })
 
-    // memory injection
-    profileMemory[tableName] = profile
-
-    schemaMemory[tableName] =
-        refreshedColumns.map((column) => ({
-            column_name: column.column_name,
-            column_type: String(column.column_type),
-        }))
-
     // semantic inference
-    inferSemanticContext(tableName)
+    const semantic = inferSemanticContext(tableName)
+
+    // Memory injection
+    datasetMemory[tableName] = {
+        schema: refreshedColumns.map((column) => ({
+            column_name: column.column_name,
+            column_type: String(column.column_type)
+        })),
+        profile,
+        semantic: semantic,
+        relationships: [],
+        feedback: {
+            successfulQueries: [],
+            failedQueries: []
+        }
+    }
 
     // validation
     validateTable({
