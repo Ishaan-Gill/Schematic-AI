@@ -7,9 +7,12 @@ import { generateSQL } from "@/lib/sql/generateSQL"
 import { loadSchema } from "@/lib/sql/loadSchema"
 import { handleFile } from "@/lib/upload/uploadDataset"
 import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelationships"
+import ResultTable from "@/components/ui/ResultTable"
+import ThinkPanel from "@/components/ui/ThinkPanel"
+import { motion } from "framer-motion"
+import { ArrowUp, Eye, Paperclip, Sparkles } from "lucide-react"
 
 export default function FileUpload({
-    tables,
     setTables,
     selectedTable,
     setSelectedTable,
@@ -18,9 +21,10 @@ export default function FileUpload({
     error,
     setError,
     generatedSQL,
-    setGeneratedSQL
+    setGeneratedSQL,
+    loading,
+    setLoading
 }: {
-    tables: string[]
     setTables: React.Dispatch<React.SetStateAction<string[]>>
     selectedTable: string | null
     setSelectedTable: React.Dispatch<React.SetStateAction<string | null>>
@@ -30,11 +34,12 @@ export default function FileUpload({
     setError: (val: string | null) => void
     generatedSQL: string
     setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
+    loading: boolean
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>
 }) {
-    const [queryResult, setQueryResult] = useState<any[]>([])
-    const [schema, setSchema] = useState<any[]>([])
-    const [loading, setLoading] = useState(false)
-    const [schemas, setSchemas] = useState<Record<string, any[]>>({})
+    const [queryResult, setQueryResult] = useState<Record<string, unknown>[]>([])
+    const [schema, setSchema] = useState<Record<string, unknown>[]>([])
+    const [schemas, setSchemas] = useState<Record<string, Record<string, unknown>[]>>({})
     const [lastSQL, setLastSQL] = useState("")
     const [page, setPage] = useState(0)
     const PAGE_SIZE = 100
@@ -118,7 +123,11 @@ export default function FileUpload({
 
     // Function for uploading file:
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+
+        console.log("FILE CHANGE TRIGGERED")
+        
         const controller = startController(uploadControllerRef)
+        
         setGeneratedSQL("")
         setLastSQL("")
         setQueryResult([])
@@ -138,133 +147,115 @@ export default function FileUpload({
     }
 
     return (
-        <div className="flex flex-col gap-6 p-4">
-            <input type="file" multiple accept=".csv" onChange={handleFileChange} />
+        <>
+            <div className="mx-auto w-full max-w-6xl px-4 pb-40 sm:px-6 lg:px-10">
+                <div className="space-y-5">
+                    <ThinkPanel
+                        loading={loading}
+                        generatedSQL={generatedSQL}
+                    />
 
-            {/* Buttons */}
-            <div className="flex gap-4">
-                <button onClick={() => void executeQuery()}
-                    disabled={!selectedTable || loading}
-                    className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 w-fit">
-                    Run Query on {selectedTable || "..."}
-                </button>
-                <button onClick={() =>
-                    void executeQuery(`SELECT * FROM ${selectedTable} LIMIT 10`)}
-                    disabled={!selectedTable || loading}
-                    className="bg-gray-600 text-white px-4 py-2 rounded disabled:opacity-50 w-fit">
-                    Preview Table
-                </button>
-                <button onClick={() => {
-                    const controller = startController(generateControllerRef)
-                    return void generateSQL({
-                        selectedTable,
-                        query,
-                        schemas,
-                        generatedSQL,
-                        lastSQL,
-                        setError,
-                        setLoading,
-                        setGeneratedSQL,
-                        setLastSQL,
-                        runQuery: (sql?: string) =>
-                            executeQuery(sql),
-                        signal: controller.signal,
-                        guard: () => isControllerActive(controller)
-                    })
-                }}
-                    disabled={!selectedTable || loading}
-                    className="bg-purple-600 text-white px-4 py-2 rounded disabled:opacity-50 w-fit">
-                    {loading ? "Thinking..." : "Ask AI"}
-                </button>
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="border border-red-400/25 bg-red-500/[0.08] p-4 text-sm text-red-100 shadow-[0_18px_60px_rgba(239,68,68,0.08)] backdrop-blur"
+                        >
+                            {error}
+                        </motion.div>
+                    )}
+
+                    <ResultTable rows={queryResult} page={page} setPage={setPage} />
+                </div>
             </div>
 
-            {/* AI Loading UI */}
-            {loading && (
-                <p className="text-sm text-gray-500">
-                    AI is generating SQL...
-                </p>
-            )}
+            <div className="sticky bottom-0 z-20 border-t border-white/[0.08] bg-black/55 px-4 py-4 backdrop-blur-2xl sm:px-6 lg:px-10">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/45 to-transparent" />
+                <div className="mx-auto max-w-6xl">
+                    <motion.div
+                        initial={{ opacity: 0, y: 18 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ y: -2 }}
+                        transition={{ type: "spring", stiffness: 170, damping: 24 }}
+                        className="relative overflow-hidden border border-white/[0.10] bg-[#080b0d]/86 shadow-[0_26px_100px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+                    >
+                        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(34,211,238,0.12),transparent_26rem)]" />
+                        <textarea
+                            value={query}
+                            onChange={(e) => {
+                                setQuery(e.target.value)
+                                if (error) setError(null)
+                            }}
+                            placeholder="Ask anything about your business data..."
+                            className="relative min-h-24 w-full resize-none border-0 bg-transparent p-5 text-[0.95rem] leading-7 text-zinc-100 placeholder:text-zinc-600 focus:outline-none"
+                        />
 
-            {/* Error UI */}
-            {error && (
-                <p className="text-red-500 bg-red-50 p-2 rounded">
-                    {error}
-                </p>
-            )}
+                        <div className="relative flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] px-4 py-3">
+                            <label className="inline-flex cursor-pointer items-center gap-2 border border-white/[0.09] bg-white/[0.035] px-3.5 py-2.5 text-sm font-medium text-zinc-300 transition duration-300 hover:border-cyan-200/25 hover:bg-cyan-300/[0.06] hover:text-cyan-100">
+                                <Paperclip className="size-4" aria-hidden="true" />
+                                Upload
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept=".csv,.xlsx"
+                                    onChange={handleFileChange}
+                                    className="sr-only"
+                                />
+                            </label>
 
-            {/* Schema UI */}
-            {schema.length > 0 && (
-                <div className="border rounded-lg p-4 bg-gray-50">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="text-gray-500 text-left border-b">
-                                <th className="py-2">Column</th>
-                                <th className="py-2">Type</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {schema.map((col, i) => (
-                                <tr key={i} className="border-b">
-                                    <td className="py-2 font-medium">{col.column_name}</td>
-                                    <td className="py-2 text-gray-500">{col.column_type}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+                            <div className="flex items-center gap-2">
+                                <motion.button
+                                    type="button"
+                                    onClick={() =>
+                                        void executeQuery(`SELECT * FROM ${selectedTable} LIMIT 10`)
+                                    }
+                                    disabled={!selectedTable || loading}
+                                    whileHover={{ y: -1 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className="inline-flex items-center gap-2 border border-white/[0.09] bg-white/[0.035] px-3.5 py-2.5 text-sm font-medium text-zinc-300 transition duration-300 hover:border-cyan-200/25 hover:bg-cyan-300/[0.06] disabled:cursor-not-allowed disabled:opacity-35"
+                                >
+                                    <Eye className="size-4" aria-hidden="true" />
+                                    Preview
+                                </motion.button>
 
-            {/* Result UI */}
-            <div>
-                {queryResult.length > 0 ? (
-                    <div className="border rounded-lg overflow-hidden">
-                        <div className="overflow-auto max-h-[400px]">
-                            <p className="text-sm text-gray-500 mb-2">
-                                {queryResult.length} rows returned
-                            </p>
-                            <table className="w-full text-left text-sm border-collapse">
-                                {/* header */}
-                                <thead className="bg-gray-100 sticky top-0 z-10">
-                                    <tr>
-                                        {/* Extract headers from the keys of the first row */}
-                                        {Object.keys(queryResult[0]).map((headerKey) => (
-                                            <th key={headerKey} className="p-3 border-b border-gray-300 font-semibold">
-                                                {headerKey}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                {/* body */}
-                                <tbody>
-                                    {queryResult.map((row, rowIndex) => (
-                                        <tr key={rowIndex} className="border-b hover:bg-gray-50">
-                                            {Object.values(row).map((val, colIndex) => (
-                                                <td key={colIndex} className="p-3 text-gray-700">
-                                                    {typeof val === "bigint" ? val.toString() : String(val)}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                <motion.button
+                                    type="button"
+                                    onClick={() => {
+                                        const controller = startController(generateControllerRef)
+
+                                        return void generateSQL({
+                                            selectedTable,
+                                            query,
+                                            schemas,
+                                            generatedSQL,
+                                            lastSQL,
+                                            setError,
+                                            setLoading,
+                                            setGeneratedSQL,
+                                            setLastSQL,
+                                            runQuery: (sql?: string) =>
+                                                executeQuery(sql),
+                                            signal: controller.signal,
+                                            guard: () => isControllerActive(controller)
+                                        })
+                                    }}
+                                    disabled={!selectedTable || loading}
+                                    whileHover={{ y: -1, boxShadow: "0 0 34px rgba(34,211,238,0.28)" }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className="inline-flex items-center gap-2 bg-cyan-300 px-4 py-2.5 text-sm font-semibold text-zinc-950 transition duration-300 hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-35"
+                                >
+                                    {loading ? <Sparkles className="size-4 animate-pulse" aria-hidden="true" /> : null}
+                                    {loading ? "Analyzing" : "Ask"}
+                                    <ArrowUp className="size-4" aria-hidden="true" />
+                                </motion.button>
+                            </div>
                         </div>
-                    </div>
-                ) : (
-                    <p className="text-gray-500 italic">Run a query to see results.</p>
-                )}
-            </div>
-
-            {/* prev/next button */}
-            {queryResult.length > 0 && (
-                <div className="flex gap-2 mt-4">
-                    <button onClick={() => setPage(p => Math.max(0, p - 1))}>
-                        Prev
-                    </button>
-                    <button onClick={() => setPage(p => p + 1)}>
-                        Next
-                    </button>
+                    </motion.div>
+                    <p className="mt-3 text-center font-mono text-[0.68rem] uppercase tracking-[0.18em] text-zinc-600">
+                        {selectedTable ? `Using ${selectedTable}` : "Upload a dataset to start"}
+                    </p>
                 </div>
-            )}
-        </div>
+            </div>
+        </>
     )
 }
