@@ -20,6 +20,7 @@ type RunQueryArgs = {
     PAGE_SIZE: number
     signal?: AbortSignal
     guard?: () => boolean
+    setHasMore: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
@@ -40,7 +41,8 @@ export const runQuery = async (
         page,
         PAGE_SIZE = 100,
         signal,
-        guard
+        guard,
+        setHasMore
     }: RunQueryArgs,
     overrideQuery?: string
 ) => {
@@ -72,21 +74,17 @@ export const runQuery = async (
         finalQuery = `SELECT * FROM ${selectedTable} LIMIT 10`
     }
 
-    // Pagination: 
+    // Clean existing pagination
     finalQuery = finalQuery.replace(/;+\s*$/, "").trim()
-    finalQuery = finalQuery.replace(/limit\s+\d+/gi, "").replace(/offset\s+\d+/gi, "").trim()
-    const limitMatch = finalQuery.match(/limit\s+(\d+)/i)
-    if (limitMatch) {
-        const currentLimit = Number(limitMatch[1])
-        if (currentLimit > PAGE_SIZE) {
-            finalQuery = finalQuery.replace(
-                /limit\s+\d+/i,
-                `LIMIT ${PAGE_SIZE}`
-            )
-        }
-    } else {
-        finalQuery += ` LIMIT ${PAGE_SIZE} OFFSET ${page * PAGE_SIZE}`
-    }
+
+    // Remove old LIMIT/OFFSET
+    finalQuery = finalQuery
+        .replace(/limit\s+\d+/gi, "")
+        .replace(/offset\s+\d+/gi, "")
+        .trim()
+
+    // Add fresh pagination
+    finalQuery += ` LIMIT ${PAGE_SIZE + 1} OFFSET ${page * PAGE_SIZE}`
 
     // Timeout protection:
     let timeoutId: ReturnType<typeof setTimeout> | null = null
@@ -99,9 +97,18 @@ export const runQuery = async (
             conn.query(finalQuery),
             timeoutPromise
         ]) as any
+
         if (!isActive(guard, signal)) return
 
-        const formatted = result.toArray().map((row: any) => ({ ...row }))
+        const rawRows = result.toArray().map((row: any) => ({ ...row }))
+
+        const hasMore = rawRows.length > PAGE_SIZE
+
+        const formatted = hasMore
+            ? rawRows.slice(0, PAGE_SIZE)
+            : rawRows
+
+        setHasMore(hasMore)
 
         if (formatted.length === 0) {
             await suggestFix({
@@ -139,6 +146,7 @@ export const runQuery = async (
             outcome: "success",
             timestamp: Date.now(),
         })
+        console.log("FEEDBACK MEMORY:", feedbackMemory)
 
         console.log("QUERY AUDIT", {
             query,
@@ -199,7 +207,8 @@ export const runQuery = async (
                         page,
                         PAGE_SIZE,
                         signal,
-                        guard
+                        guard,
+                        setHasMore
                     },
                     sql
                 )

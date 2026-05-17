@@ -7,7 +7,7 @@ import { generateSQL } from "@/lib/sql/generateSQL"
 import { loadSchema } from "@/lib/sql/loadSchema"
 import { handleFile } from "@/lib/upload/uploadDataset"
 import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelationships"
-import ResultTable from "@/components/ui/ResultTable"
+import ResultTable from "@/components/ui/resultTable"
 import ThinkPanel from "@/components/ui/ThinkPanel"
 import { motion } from "framer-motion"
 import { ArrowUp, Eye, Paperclip, Sparkles } from "lucide-react"
@@ -42,6 +42,7 @@ export default function FileUpload({
     const [schemas, setSchemas] = useState<Record<string, Record<string, unknown>[]>>({})
     const [lastSQL, setLastSQL] = useState("")
     const [page, setPage] = useState(0)
+    const [hasMore, setHasMore] = useState(false)
     const PAGE_SIZE = 100
     const isMountedRef = useRef(true)
     const schemaControllerRef = useRef<AbortController | null>(null)
@@ -76,7 +77,8 @@ export default function FileUpload({
             page,
             PAGE_SIZE,
             signal: controller.signal,
-            guard: () => isControllerActive(controller)
+            guard: () => isControllerActive(controller),
+            setHasMore
         }, overrideQuery)
     }
 
@@ -165,7 +167,7 @@ export default function FileUpload({
                         </motion.div>
                     )}
 
-                    <ResultTable rows={queryResult} page={page} setPage={setPage} />
+                    <ResultTable rows={queryResult} page={page} hasMore={hasMore} setPage={setPage} />
                 </div>
             </div>
 

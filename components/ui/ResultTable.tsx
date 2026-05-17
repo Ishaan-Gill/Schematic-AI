@@ -8,12 +8,14 @@ type ResultTableProps = {
     rows: Record<string, unknown>[]
     page: number
     setPage: React.Dispatch<React.SetStateAction<number>>
+    hasMore: boolean
 }
 
 export default function ResultTable({
     rows,
     page,
-    setPage
+    setPage,
+    hasMore
 }: ResultTableProps) {
 
     if (!rows.length) {
@@ -73,7 +75,12 @@ export default function ResultTable({
                     </span>
                     <motion.button
                         type="button"
-                        onClick={() => setPage((value) => value + 1)}
+                        disabled={!hasMore}
+                        onClick={() => {
+                            if (hasMore) {
+                                setPage((value) => value + 1)
+                            }
+                        }}
                         whileHover={{ x: 2 }}
                         whileTap={{ scale: 0.97 }}
                         className="inline-flex items-center gap-2 border border-white/[0.09] bg-white/[0.04] px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-cyan-200/25 hover:bg-cyan-300/[0.06]"
@@ -110,11 +117,10 @@ export default function ResultTable({
                                 {Object.values(row).map((value, colIndex) => (
                                     <td
                                         key={colIndex}
-                                        className={`whitespace-nowrap px-4 py-3 text-zinc-300 transition group-hover:text-zinc-50 ${
-                                            typeof value === "number" || typeof value === "bigint"
+                                        className={`whitespace-nowrap px-4 py-3 text-zinc-300 transition group-hover:text-zinc-50 ${typeof value === "number" || typeof value === "bigint"
                                                 ? "font-mono tabular-nums text-cyan-50/90"
                                                 : "text-zinc-300"
-                                        }`}
+                                            }`}
                                     >
                                         {typeof value === "bigint"
                                             ? value.toString()

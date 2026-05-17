@@ -39,9 +39,24 @@ export const fixQueryWithAI = async ({
         const data = await res.json()
         if (signal?.aborted || !(guard?.() ?? true)) return
 
-        console.log("FIXED SQL:", data.sql)
-        setGeneratedSQL(data.sql)
-        await runQuery(data.sql)
+        let fixedSQL = data.sql
+        fixedSQL = fixedSQL
+            .replace(/```sql/g, "")
+            .replace(/```/g, "")
+            .trim()
+
+        const VALID_SQL_START =
+            /^(SELECT|WITH|SHOW|DESCRIBE|PRAGMA|EXPLAIN)\s/i
+
+        if (!VALID_SQL_START.test(fixedSQL)) {
+            throw new Error("AI returned invalid SQL")
+        }
+
+        fixedSQL = fixedSQL.replace(/\bSTRPTIME\s*\(/gi, "TRY_STRPTIME(")
+
+        console.log("FIXED SQL:", fixedSQL)
+        setGeneratedSQL(fixedSQL)
+        await runQuery(fixedSQL)
     } catch (err) {
         if (signal?.aborted) return
         console.error("Fix Failed:", err)
