@@ -86,6 +86,7 @@ export default function FileUpload({
         await executeQuery(overrideQuery)
     })
 
+    // useEffects: 
     useEffect(() => {
         const schemaControllers = schemaControllerRef
         const queryControllers = queryControllerRef
@@ -122,14 +123,20 @@ export default function FileUpload({
         void runQueryForPagination(generatedSQL)
     }, [generatedSQL, page])
 
+    useEffect(() => {
+        setLastSQL("")
+        setQueryResult([])
+        setPage(0)
+        setHasMore(false)
+    }, [selectedTable])
 
     // Function for uploading file:
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
         console.log("FILE CHANGE TRIGGERED")
-        
+
         const controller = startController(uploadControllerRef)
-        
+
         setGeneratedSQL("")
         setLastSQL("")
         setQueryResult([])
@@ -224,7 +231,7 @@ export default function FileUpload({
                                     type="button"
                                     onClick={() => {
                                         const controller = startController(generateControllerRef)
-
+                                        setPage(0)
                                         return void generateSQL({
                                             selectedTable,
                                             query,
@@ -235,8 +242,6 @@ export default function FileUpload({
                                             setLoading,
                                             setGeneratedSQL,
                                             setLastSQL,
-                                            runQuery: (sql?: string) =>
-                                                executeQuery(sql),
                                             signal: controller.signal,
                                             guard: () => isControllerActive(controller)
                                         })

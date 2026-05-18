@@ -4,7 +4,6 @@ type FixQueryArgs = {
     schemas: Record<string, any[]>
     selectedTable: string | null
     setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
-    runQuery: (sql?: string) => Promise<void>
     relationships: string[]
     signal?: AbortSignal
     guard?: () => boolean
@@ -16,7 +15,6 @@ export const fixQueryWithAI = async ({
     schemas,
     selectedTable,
     setGeneratedSQL,
-    runQuery,
     relationships,
     signal,
     guard
@@ -56,7 +54,6 @@ export const fixQueryWithAI = async ({
 
         console.log("FIXED SQL:", fixedSQL)
         setGeneratedSQL(fixedSQL)
-        await runQuery(fixedSQL)
     } catch (err) {
         if (signal?.aborted) return
         console.error("Fix Failed:", err)

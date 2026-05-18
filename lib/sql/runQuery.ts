@@ -55,36 +55,20 @@ export const runQuery = async (
     const db = await getDuckDB()
     const conn = await db.connect()
 
-    const trimmedQuery = query.trim()
+    let baseQuery =
+        overrideQuery?.trim()
+        || generatedSQL?.trim()
+        || `SELECT * FROM "${selectedTable}" LIMIT 10`
 
-    const manualSQL =
-        /^(SELECT|WITH|SHOW|DESCRIBE|PRAGMA|EXPLAIN)/i.test(trimmedQuery)
-
-    let finalQuery = ""
-
-    if (overrideQuery?.trim()) {
-        finalQuery = overrideQuery.trim()
-    } else if (manualSQL) {
-        finalQuery = trimmedQuery
-    } else if (trimmedQuery.length > 0) {
-        setError("Please enter valid SQL or use Ask AI.")
-        await conn.close()
-        return
-    } else {
-        finalQuery = `SELECT * FROM ${selectedTable} LIMIT 10`
-    }
-
-    // Clean existing pagination
-    finalQuery = finalQuery.replace(/;+\s*$/, "").trim()
-
-    // Remove old LIMIT/OFFSET
-    finalQuery = finalQuery
-        .replace(/limit\s+\d+/gi, "")
-        .replace(/offset\s+\d+/gi, "")
-        .trim()
-
-    // Add fresh pagination
-    finalQuery += ` LIMIT ${PAGE_SIZE + 1} OFFSET ${page * PAGE_SIZE}`
+    // Pagination
+    let finalQuery = `
+    SELECT *
+    FROM (
+        ${baseQuery}
+    ) AS paginated_query
+    LIMIT ${PAGE_SIZE + 1}
+    OFFSET ${page * PAGE_SIZE}
+`
 
     // Timeout protection:
     let timeoutId: ReturnType<typeof setTimeout> | null = null
@@ -183,7 +167,7 @@ export const runQuery = async (
         }
 
         await fixQueryWithAI({
-            badQuery: finalQuery,
+            badQuery: baseQuery,
             errorMsg,
             schemas,
             selectedTable,
@@ -191,27 +175,6 @@ export const runQuery = async (
             relationships,
             signal,
             guard,
-            runQuery: (sql?: string) =>
-                runQuery(
-                    {
-                        selectedTable,
-                        generatedSQL,
-                        query,
-                        schema,
-                        schemas,
-                        setError,
-                        setGeneratedSQL,
-                        setQueryResult,
-                        retryCount: retryCount + 1,
-                        relationships,
-                        page,
-                        PAGE_SIZE,
-                        signal,
-                        guard,
-                        setHasMore
-                    },
-                    sql
-                )
         })
     } finally {
         if (timeoutId) {

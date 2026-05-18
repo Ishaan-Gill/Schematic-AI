@@ -1,6 +1,5 @@
 import Groq from "groq-sdk"
 import { NextResponse } from "next/server"
-import { feedbackMemory } from "@/lib/upload/metadata/feedbackMemory"
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY!,
@@ -8,7 +7,25 @@ const groq = new Groq({
 
 export async function POST(req: Request) {
     const body = await req.json()
-    const { query, schemas, selectedTable, sampleText, relationships, datasetContext } = body
+
+    type FeedbackItem = {
+        query: string
+        generatedSQL: string
+        outcome: "success" | "failure"
+        timestamp: number
+        error?: string
+    }
+    const {
+        query,
+        schemas,
+        selectedTable,
+        sampleText,
+        relationships,
+        datasetContext,
+    } = body
+
+    const feedbackMemory =(body.feedbackMemory ?? []) as FeedbackItem[]
+    
     const safeDatasetContext = datasetContext ?? {
         metadata: [],
         metrics: [],
@@ -132,7 +149,7 @@ NEVER use:
 
 ALWAYS prefer:
 
-* STRPTIME()
+* TRY_STRPTIME()
 * EXTRACT()
 * DATE_TRUNC()
 * CURRENT_DATE
@@ -141,7 +158,7 @@ ALWAYS prefer:
 Examples:
 
 Correct:
-STRPTIME(invoicedate, '%m/%d/%Y %H:%M')
+TRY_STRPTIME(invoicedate, '%m/%d/%Y %H:%M')
 
 Correct:
 EXTRACT(MONTH FROM order_date)
@@ -157,10 +174,10 @@ Some CSV datasets store dates as VARCHAR.
 
 If a date column is VARCHAR:
 
-* parse it using STRPTIME()
+* parse it using TRY_STRPTIME()
 
 Example:
-STRPTIME(invoicedate, '%m/%d/%Y %H:%M')
+TRY_STRPTIME(invoicedate, '%m/%d/%Y %H:%M')
 
 If format is unclear:
 infer format from sample data.

@@ -5,9 +5,7 @@ import { validateTable } from "../validation/validateTable"
 import { createDuckTable } from "./createDuckTable"
 import { profileTable } from "./profileTable"
 
-import { profileMemory } from "../metadata/profileMemory"
-import { schemaMemory } from "../metadata/schemaMemory"
-import { datasetMemory, DatasetMemory } from "../metadata/datasetMemory"
+import { datasetMemory } from "../metadata/datasetMemory"
 
 import { inferSemanticContext } from "@/lib/metadata/sematicInference"
 
@@ -51,42 +49,14 @@ export const ingestParsedTable = async ({
 
     const tableName = parsedTable.tableName
 
-    if (!parsedTable.rows.length) {
+    if (
+        !parsedTable.csvText &&
+        (!parsedTable.rows || !parsedTable.rows.length)
+    ) {
         throw new Error(`"${tableName}" is empty.`)
     }
 
-    // normalize headers
-    const cleanedHeaders = normalizeHeaders(parsedTable.headers)
-
-    // build csv text from parsed rows
-    const csvLines = [
-        cleanedHeaders.join(","),
-
-        ...parsedTable.rows.map((row) =>
-            cleanedHeaders
-                .map((header, index) => {
-
-                    const originalHeader =
-                        parsedTable.headers[index]
-
-                    const value =
-                        row[originalHeader]
-
-                    if (
-                        value === null ||
-                        value === undefined
-                    ) {
-                        return ""
-                    }
-
-                    return String(value)
-                        .replace(/"/g, '""')
-                })
-                .join(",")
-        ),
-    ]
-
-    const csvText = csvLines.join("\n")
+    const csvText = parsedTable.csvText ?? ""
 
     const tempName = `${tableName}.csv`
 
@@ -112,22 +82,19 @@ export const ingestParsedTable = async ({
     const parsedColumns =
         parsedColumnsResult.toArray() as ColumnInfo[]
 
-    // clean headers inside duckdb
-    for (const [index, column] of parsedColumns.entries()) {
-
-        const cleanedHeader = cleanedHeaders[index]
-
+    // clean headers after duckdb parsing:
+    for (const column of parsedColumns) {
+        const cleanedHeader = normalizeHeaders([column.column_name])[0]
         if (!cleanedHeader || column.column_name === cleanedHeader) {
             continue
         }
-
         await conn.query(`
-            ALTER TABLE "${tableName}"
-            RENAME COLUMN
-            "${escapeIdentifier(column.column_name)}"
-            TO
-            "${escapeIdentifier(cleanedHeader)}"
-        `)
+        ALTER TABLE "${tableName}"
+        RENAME COLUMN
+        "${escapeIdentifier(column.column_name)}"
+        TO
+        "${escapeIdentifier(cleanedHeader)}"
+    `)
     }
 
     // row count
@@ -143,7 +110,7 @@ export const ingestParsedTable = async ({
         DESCRIBE "${tableName}"
     `)
 
-    const columns =columnsResult.toArray() as ColumnInfo[]
+    const columns = columnsResult.toArray() as ColumnInfo[]
 
     // null cleaning
     await cleanValues({

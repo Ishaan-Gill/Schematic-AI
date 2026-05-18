@@ -2,8 +2,9 @@ import * as XLSX from "xlsx"
 
 export type ParsedTable = {
     tableName: string
-    headers: string[]
-    rows: any[]
+    headers?: string[]
+    rows?: any[]
+    csvText?: string
 }
 
 export const parseExcel = async (

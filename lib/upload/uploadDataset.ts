@@ -59,7 +59,8 @@ export const uploadDataset = async ({
     
                 setTables((prev) => (prev.includes(tableName) ? prev : [...prev, tableName]))
                 setSelectedTable((prev) => prev ?? tableName)
-    
+                
+
                 await loadSchema({
                     table: tableName,
                     setSchemas,

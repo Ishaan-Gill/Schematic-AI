@@ -5,6 +5,8 @@ import { isFollowUpQuery, isTimeQuery } from "@/lib/ai/followUp"
 import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelationships"
 import { validateSQL } from "./validateSQL"
 import { buildDatasetContext } from "../metadata/buildDatasetContext"
+import { feedbackMemory } from "@/lib/upload/metadata/feedbackMemory"
+
 
 type GenerateSQLArgs = {
     selectedTable: string | null
@@ -16,7 +18,6 @@ type GenerateSQLArgs = {
     setLoading: React.Dispatch<React.SetStateAction<boolean>>
     setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
     setLastSQL: React.Dispatch<React.SetStateAction<string>>
-    runQuery: (sql?: string) => Promise<void>
     signal?: AbortSignal
     guard?: () => boolean
 }
@@ -34,7 +35,6 @@ export const generateSQL = async ({
     setLoading,
     setGeneratedSQL,
     setLastSQL,
-    runQuery,
     signal,
     guard
 }: GenerateSQLArgs) => {
@@ -67,7 +67,7 @@ export const generateSQL = async ({
         const body =
             endpoint === "/api/edit-sql"
                 ? { query, lastSQL: generatedSQL, schemas, relationships, isFollowUp }
-                : { query, schemas, sampleText, selectedTable, relationships, datasetContext }
+                : { query, schemas, sampleText, selectedTable, relationships, datasetContext, feedbackMemory }
 
         const res = await fetch(endpoint, {
             method: "POST",
@@ -107,9 +107,8 @@ export const generateSQL = async ({
         }
 
         const freshSQL = data.sql
-        setGeneratedSQL(data.sql)
-        setLastSQL(data.sql)
-        await runQuery(freshSQL)
+        setGeneratedSQL(freshSQL)
+        setLastSQL(freshSQL)
 
     } catch (err) {
         if (signal?.aborted) return

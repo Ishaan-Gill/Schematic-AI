@@ -1,9 +1,9 @@
-export type FeedbackEntry = {
+type FeedbackItem = {
     query: string
     generatedSQL: string
     outcome: "success" | "failure"
-    error?: string
     timestamp: number
+    error?: string
 }
 
-export const feedbackMemory: FeedbackEntry[] = []
+export const feedbackMemory: FeedbackItem[] = []

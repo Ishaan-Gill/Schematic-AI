@@ -1,8 +1,9 @@
 "use client"
-import { useState } from "react"
+import React, { useState } from "react"
 import FileUpload from "@/components/ui/FileUpload"
 import Sidebar from "@/components/ui/Sidebar"
 import ChatPanel from "@/components/ui/ChatPanel"
+import { table } from "console"
 
 export default function Home() {
   const [tables, setTables] = useState<string[]>([])
@@ -12,6 +13,12 @@ export default function Home() {
   const [generatedSQL, setGeneratedSQL] = useState("")
   const [loading, setLoading] = useState(false)
 
+  const handleTableSelect: React.Dispatch<React.SetStateAction<string | null>> = (table) => {
+    setSelectedTable(table)
+    setGeneratedSQL("")
+    setError(null)
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#030405] text-zinc-100 md:h-screen md:flex-row">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_55%_-10%,rgba(34,211,238,0.14),transparent_34rem),radial-gradient(circle_at_95%_20%,rgba(255,255,255,0.055),transparent_26rem),linear-gradient(180deg,#030405_0%,#06080a_48%,#020303_100%)]" />
@@ -20,7 +27,7 @@ export default function Home() {
         <Sidebar
           tables={tables}
           selectedTable={selectedTable}
-          setSelectedTable={setSelectedTable}
+          setSelectedTable={handleTableSelect}
         />
       </div>
 
@@ -36,7 +43,7 @@ export default function Home() {
         <FileUpload
           setTables={setTables}
           selectedTable={selectedTable}
-          setSelectedTable={setSelectedTable}
+          setSelectedTable={handleTableSelect}
           query={query}
           setQuery={setQuery}
           error={error}
