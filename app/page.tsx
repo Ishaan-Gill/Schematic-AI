@@ -16,6 +16,7 @@ export default function Home() {
   const handleTableSelect: React.Dispatch<React.SetStateAction<string | null>> = (table) => {
     setSelectedTable(table)
     setGeneratedSQL("")
+    setQuery("")
     setError(null)
   }
 

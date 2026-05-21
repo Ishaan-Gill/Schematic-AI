@@ -216,7 +216,7 @@ export default function FileUpload({
                                 <motion.button
                                     type="button"
                                     onClick={() =>
-                                        void executeQuery(`SELECT * FROM ${selectedTable} LIMIT 10`)
+                                        void executeQuery(`SELECT * FROM "${selectedTable}" LIMIT 10`)
                                     }
                                     disabled={!selectedTable || loading}
                                     whileHover={{ y: -1 }}

@@ -19,7 +19,8 @@ export const getSQLValidationError = ({
     if (error?.includes("does not have a column") || error?.includes("does not exist")) {
         return "AI used invalid column/table. Try rephrasing."
     }
-    if (!sql.startsWith("select") && !sql.startsWith("with")) {
+    if (!sql.startsWith("select") && !sql.startsWith("with") && !sql.startsWith("describe")
+    ) {
         return "Invalid SQL generated."
     }
     if (!sql.toLowerCase().includes("select")) return "Invalid SQL generated"

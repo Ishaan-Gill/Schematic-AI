@@ -51,7 +51,7 @@ export const generateSQL = async ({
     try {
         if (!isActive(guard, signal)) return
 
-        const sampleRows = await conn.query(`SELECT * FROM ${selectedTable} LIMIT 5`)
+        const sampleRows = await conn.query(`SELECT * FROM "${selectedTable}" LIMIT 5`)
         const sampleText = sampleRows
             .toArray()
             .map((row: any) => Object.values(row).join(", "))

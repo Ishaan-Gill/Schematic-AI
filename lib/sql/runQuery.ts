@@ -3,7 +3,7 @@ import React from "react"
 import { getDuckDB } from "@/lib/duckdb"
 import { fixQueryWithAI } from "@/lib/sql/fixQuery"
 import { suggestFix } from "@/lib/sql/suggestFix"
-import { feedbackMemory } from "../upload/metadata/feedbackMemory"
+import { addFeedbackMemory } from "../upload/metadata/feedbackMemory"
 
 type RunQueryArgs = {
     selectedTable: string | null
@@ -85,9 +85,7 @@ export const runQuery = async (
         if (!isActive(guard, signal)) return
 
         const rawRows = result.toArray().map((row: any) => ({ ...row }))
-
         const hasMore = rawRows.length > PAGE_SIZE
-
         const formatted = hasMore
             ? rawRows.slice(0, PAGE_SIZE)
             : rawRows
@@ -124,13 +122,13 @@ export const runQuery = async (
 
         const executionTime = performance.now() - startTime
 
-        feedbackMemory.push({
+        addFeedbackMemory({
             query,
             generatedSQL: finalQuery,
             outcome: "success",
             timestamp: Date.now(),
         })
-        console.log("FEEDBACK MEMORY:", feedbackMemory)
+        console.log("FEEDBACK MEMORY (SUCCESS):", addFeedbackMemory)
 
         console.log("QUERY AUDIT", {
             query,
@@ -143,13 +141,14 @@ export const runQuery = async (
     } catch (err) {
         const errorMsg = String(err)
 
-        feedbackMemory.push({
+        addFeedbackMemory({
             query,
-            generatedSQL: finalQuery,
+            generatedSQL: baseQuery,
             outcome: "failure",
             error: errorMsg,
             timestamp: Date.now(),
         })
+        console.log("FEEDBACK MEMORY (FAILURE):", addFeedbackMemory)
 
         setQueryResult([])
         console.error(err)

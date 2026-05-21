@@ -13,11 +13,6 @@ export const validateSQL = async ({
     }
     const lowerSQL = sql.toLowerCase()
 
-    // Only allow SELECT/WITH:
-    if (!lowerSQL.startsWith("select") && !lowerSQL.startsWith("with")) {
-        return "Only SELECT queries are allowed."
-    }
-
     // Block dangerous keywords:
     const blockKeywords = [
         "drop",
@@ -33,6 +28,12 @@ export const validateSQL = async ({
             return `Dangerous SQL detected: ${keyword.toUpperCase()}`
         }
     }
+
+    // To remove ```:
+    sql = sql
+        .replace(/```sql/g, "")
+        .replace(/```/g, "")
+        .trim()
 
     // DuckDB parser validation:
     const db = await getDuckDB()
