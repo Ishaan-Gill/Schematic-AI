@@ -17,7 +17,6 @@ export type ColumnMetadata = {
     semanticRole: SemanticRole
     nullable?: boolean
     uniqueRatio?: number
-    sampleValues?: any[]
     detectedFormat?: string
 }
 

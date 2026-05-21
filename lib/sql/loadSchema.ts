@@ -26,7 +26,7 @@ export const loadSchema = async ({
     const conn = await db.connect()
 
     try {
-        const result = await conn.query(`DESCRIBE ${table}`)
+        const result = await conn.query(`DESCRIBE "${table}"`)
         const schemaData = result.toArray().map((row: any) => ({ ...row }))
         if (!isActive(guard, signal)) return []
 
