@@ -49,14 +49,7 @@ export const ingestParsedTable = async ({
 
     const tableName = parsedTable.tableName
 
-    if (
-        !parsedTable.csvText &&
-        (!parsedTable.rows || !parsedTable.rows.length)
-    ) {
-        throw new Error(`"${tableName}" is empty.`)
-    }
-
-    const csvText = parsedTable.csvText ?? ""
+    const csvText = parsedTable.csvText 
 
     const tempName = `${tableName}.csv`
 

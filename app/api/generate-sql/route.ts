@@ -24,13 +24,11 @@ export async function POST(req: Request) {
         datasetContext,
     } = body
 
-    const feedbackMemory =(body.feedbackMemory ?? []) as FeedbackItem[]
-    
+    const feedbackMemory = (body.feedbackMemory ?? []) as FeedbackItem[]
+
     const safeDatasetContext = datasetContext ?? {
         metadata: [],
         metrics: [],
-        categories: {},
-        BUSINESS_METRICS: [],
     }
     console.log("BODY:", body)
 
@@ -60,305 +58,82 @@ export async function POST(req: Request) {
         .slice(-5)
 
     const prompt = `
-You are a STRICT SQL generator for DuckDB.
-
-YOUR TASK:
-Convert the user request into EXACTLY ONE valid DuckDB SQL query using ONLY the provided schema.
-You are generating SQL ONLY for DuckDB.
-
-DuckDB RULES:
-- Use TRY_STRPTIME instead of STRPTIME when parsing unknown timestamps
-- DuckDB does NOT support REGEXP operator
-- Use regexp_matches(column, pattern)
-- DuckDB does NOT support UNPIVOT
-- Never use LOWER() on timestamps
-- Always cast explicitly when needed
-- Use CAST(column AS VARCHAR)
-
-━━━━━━━━━━━━━━━━━━━━
-CORE RULES
-━━━━━━━━━━━━━━━━━━━━
-
-* Output ONLY SQL
-
-* No markdown
-
-* No explanations
-
-* No comments
-
-* Query MUST begin with:
-  SELECT
-  or
-  WITH
-
-* NEVER generate:
-  INSERT
-  UPDATE
-  DELETE
-  DROP
-  ALTER
-  CREATE
-  TRUNCATE
-
-* NEVER generate multiple statements
-
-* NEVER use semicolons inside the query
-
-* If the request cannot be answered using the schema:
-  return EXACTLY:
-  INVALID_QUERY
-
-━━━━━━━━━━━━━━━━━━━━
-SCHEMA ENFORCEMENT
-━━━━━━━━━━━━━━━━━━━━
-
-Semantic Metadata:
-${JSON.stringify(safeDatasetContext.metadata, null, 2)}
-
-Known Categories:
-${JSON.stringify(safeDatasetContext.categories, null, 2)}
-
-Business Concepts:
-${JSON.stringify(safeDatasetContext.BUSINESS_METRICS, null, 2)}
-
-* Use ONLY tables and columns present in the schema
-* NEVER invent columns
-* NEVER invent tables
-* NEVER invent aliases referencing nonexistent columns
-* Before returning SQL:
-  verify every referenced column exists
-
-If a required column does not exist:
-return INVALID_QUERY
-
-━━━━━━━━━━━━━━━━━━━━
-DUCKDB SQL RULES
-━━━━━━━━━━━━━━━━━━━━
-
-This query MUST be valid DuckDB SQL.
-
-NEVER use:
-
-* TO_DATE()
-* DATEADD()
-* DATE_SUB()
-* MONTH()
-* GETDATE()
-* NVL()
-
-ALWAYS prefer:
-
-* TRY_STRPTIME()
-* EXTRACT()
-* DATE_TRUNC()
-* CURRENT_DATE
-* INTERVAL
-
-Examples:
-
-Correct:
-TRY_STRPTIME(invoicedate, '%m/%d/%Y %H:%M')
-
-Correct:
-EXTRACT(MONTH FROM order_date)
-
-Correct:
-CURRENT_DATE - INTERVAL '1 month'
-
-━━━━━━━━━━━━━━━━━━━━
-DATE/TIME HANDLING
-━━━━━━━━━━━━━━━━━━━━
-
-Some CSV datasets store dates as VARCHAR.
-
-If a date column is VARCHAR:
-
-* parse it using TRY_STRPTIME()
-
-Example:
-TRY_STRPTIME(invoicedate, '%m/%d/%Y %H:%M')
-
-If format is unclear:
-infer format from sample data.
-
-For relative date queries:
-DO NOT assume CURRENT_DATE matches dataset dates.
-
-Instead use dataset-relative filtering:
-
-Example:
-WHERE order_date >= (
-SELECT MAX(order_date) - INTERVAL '1 month'
-FROM table_name
-)
-
-━━━━━━━━━━━━━━━━━━━━
-STRING FILTERING
-━━━━━━━━━━━━━━━━━━━━
-
-ALL string comparisons MUST be case-insensitive.
-
-ALWAYS use:
-LOWER(column)
-
-Examples:
-
-Correct:
-WHERE LOWER(country) = 'france'
-
-Correct:
-WHERE LOWER(category) LIKE '%electronics%'
-
-NEVER use:
-WHERE country = 'France'
-
-━━━━━━━━━━━━━━━━━━━━
-AGGREGATION RULES
-━━━━━━━━━━━━━━━━━━━━
-
-Keywords:
-
-* top
-* best
-* highest
-* most
-* lowest
-
-usually require aggregation.
-
-Rules:
-
-* GROUP BY all non-aggregated columns
-* ORDER BY aggregate DESC
-* LIMIT 10 by default
-
-Use:
-
-* COUNT(*) for counts/frequency
-* COUNT(DISTINCT column) for unique counts
-* SUM(...) for totals
-* AVG(...) for averages
-
-━━━━━━━━━━━━━━━━━━━━
-DERIVED METRICS
-━━━━━━━━━━━━━━━━━━━━
-
-Use ONLY metrics derivable from existing columns.
-
-Derived Metrics:
-${JSON.stringify(safeDatasetContext.metrics, null, 2)}
-
-NEVER invent business metrics.
-
-If revenue/spending requires unavailable columns:
-return INVALID_QUERY
-
-━━━━━━━━━━━━━━━━━━━━
-PREVIOUS QUERY FEEDBACK
-━━━━━━━━━━━━━━━━━━━━
-
-Recent Successful Queries:
-${JSON.stringify(recentSuccesses, null, 2)}
-
-Recent Failed Queries:
-${JSON.stringify(recentFailures, null, 2)}
-
-Learn from previous failures.
-
-Avoid generating SQL patterns that previously failed.
-
-If a previous query failed because of a missing column/table:
-DO NOT repeat the same mistake.
-
-━━━━━━━━━━━━━━━━━━━━
-JOINS & RELATIONSHIPS
-━━━━━━━━━━━━━━━━━━━━
-
-Use provided relationships when joining tables.
-
-Prefer:
-INNER JOIN
+You are a DuckDB SQL generator.
+
+Return ONLY one valid DuckDB SQL query.
+
+Allowed statements:
+SELECT
+WITH
+DESCRIBE
+
+Never generate:
+INSERT
+UPDATE
+DELETE
+DROP
+ALTER
+CREATE
+TRUNCATE
+
+Use ONLY tables and columns from the provided schema.
+Do not use information_schema unless the user explicitly asks for system metadata.
+
+Never invent tables such as:
+- Metadata
+- Semantic_Metadata
+- Data_Dictionary
+- Analytics
+- Relationships
+
+Before returning SQL:
+verify every referenced column exists in the exact referenced table.
+
+If the request cannot be answered from schema:
+return exactly:
+INVALID_QUERY
+
+DuckDB rules:
+- Use TRY_STRPTIME instead of STRPTIME
+- Use regexp_matches()
+- Prefer DATE_TRUNC and EXTRACT
+- Use LOWER() for string comparisons
+
+If user asks for:
+schema, columns, structure, fields, table design
+
+prefer:
+DESCRIBE "table_name"
+
+Schema:
+${schemaText}
 
 Relationships:
 ${relationships.join("\n")}
 
-━━━━━━━━━━━━━━━━━━━━
-ADVANCED ANALYTICS
-━━━━━━━━━━━━━━━━━━━━
+SEMANTIC HINTS:
+${safeDatasetContext.metadata.map((item: any) => {
+    const format = item.detectedFormat
+        ? ` (${item.detectedFormat})`
+        : ""
 
-For:
+    return `- ${item.column} → ${item.semanticRole}${format}`
+}).join("\n")}
 
-* top product per country
-* top N per group
-* ranking problems
-
-Use:
-ROW_NUMBER() OVER (
-PARTITION BY ...
-ORDER BY ...
-)
-
-Do NOT use LIMIT for grouped ranking problems.
-
-━━━━━━━━━━━━━━━━━━━━
-FILTERING RULES
-━━━━━━━━━━━━━━━━━━━━
-
-* Apply WHERE before aggregation
-* Use HAVING only for aggregated filters
-
-━━━━━━━━━━━━━━━━━━━━
-NULL HANDLING
-━━━━━━━━━━━━━━━━━━━━
-
-When appropriate:
-
-* exclude NULL values
-* use IS NOT NULL
-* avoid aggregating malformed values
-
-━━━━━━━━━━━━━━━━━━━━
-PERFORMANCE RULES
-━━━━━━━━━━━━━━━━━━━━
-
-* Avoid SELECT *
-* Select only required columns
-* Prefer aggregation over raw row expansion
-* Avoid unnecessary nested queries
-
-━━━━━━━━━━━━━━━━━━━━
-DATA CONTEXT
-━━━━━━━━━━━━━━━━━━━━
-
-Tables:
-${schemaText}
+DERIVED METRICS:
+${safeDatasetContext.metrics.map((metric: any) =>
+    `- ${metric.name} = ${metric.expression}`
+).join("\n")}
 
 Sample Data:
 ${sampleText}
 
-━━━━━━━━━━━━━━━━━━━━
-USER REQUEST
-━━━━━━━━━━━━━━━━━━━━
+Recent Failed Queries:
+${JSON.stringify(recentFailures)}
 
+User Request:
 "${query}"
 
-━━━━━━━━━━━━━━━━━━━━
-FINAL VALIDATION
-━━━━━━━━━━━━━━━━━━━━
-
-Before returning SQL verify:
-
-* all columns exist
-* all tables exist
-* DuckDB syntax is valid
-* no hallucinated metrics exist
-* no forbidden SQL exists
-* string filters use LOWER()
-* query starts with SELECT or WITH
-
-If ANY rule fails:
-return INVALID_QUERY
 
 `
     try {
@@ -383,7 +158,8 @@ return INVALID_QUERY
         if (
             sql !== "INVALID_QUERY" &&
             !sql.toLowerCase().startsWith("select") &&
-            !sql.toLowerCase().startsWith("with")
+            !sql.toLowerCase().startsWith("with") &&
+            !sql.toLowerCase().startsWith("describe")
         ) {
             return NextResponse.json({
                 error: "Invalid SQL generated"

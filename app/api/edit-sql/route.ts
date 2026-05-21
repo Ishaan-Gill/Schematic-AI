@@ -82,7 +82,7 @@ Return SQL:
 
         const sql = cleanedSQL.trim()
 
-        if (!sql.toLowerCase().startsWith("select") && !sql.toLowerCase().startsWith("with")) {
+        if (!sql.toLowerCase().startsWith("select") && !sql.toLowerCase().startsWith("with") && !sql.toLowerCase().startsWith("describe")) {
             return NextResponse.json({
                 error: "Invalid SQL generated"
             })

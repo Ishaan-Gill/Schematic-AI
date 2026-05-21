@@ -3,8 +3,7 @@ import * as XLSX from "xlsx"
 export type ParsedTable = {
     tableName: string
     headers?: string[]
-    rows?: any[]
-    csvText?: string
+    csvText: string
 }
 
 export const parseExcel = async (
@@ -16,19 +15,24 @@ export const parseExcel = async (
     })
     const tables: ParsedTable[] = []
 
+    // Converts .xlsx to .csv for duckdb ingestion.
     for (const sheetName of workbook.SheetNames) {
         const sheet = workbook.Sheets[sheetName]
-        const rows = XLSX.utils.sheet_to_json(sheet, {
-            defval: null
-        })
-        if (!rows.length) continue
 
-        const headers = Object.keys(rows[0] as object)
+        const csvText = XLSX.utils.sheet_to_csv(sheet)
+
+        if (!csvText.trim()) continue
+
+        const [headerLine] = csvText.split(/\r?\n/)
+
+        const headers = headerLine
+            .split(",")
+            .map((header) => header.trim())
 
         tables.push({
             tableName: sheetName,
             headers,
-            rows
+            csvText
         })
     }
     return tables
