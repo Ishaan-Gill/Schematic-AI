@@ -11,7 +11,6 @@ export const validateSQL = async ({
     if (!sql || typeof sql !== "string") {
         return "AI failed to generate valid SQL."
     }
-    const lowerSQL = sql.toLowerCase()
 
     // Block dangerous keywords:
     const blockKeywords = [
@@ -24,9 +23,15 @@ export const validateSQL = async ({
         "create"
     ]
     for (const keyword of blockKeywords) {
-        if (lowerSQL.includes(keyword)) {
+        const pattern = new RegExp(`\\b${keyword}\\b`, "i")
+        if (pattern.test(sql)) {
             return `Dangerous SQL detected: ${keyword.toUpperCase()}`
         }
+    }
+
+    const trimmed = sql.trim().toLowerCase()
+    if (!trimmed.startsWith("select") && !trimmed.startsWith("with") && !trimmed.startsWith("describe")) {
+        return "Only SELECT queries are allowed."
     }
 
     // DuckDB parser validation:
@@ -37,7 +42,11 @@ export const validateSQL = async ({
         await conn.query(`EXPLAIN ${sql}`)
         return null
     } catch (err) {
-        return String(err)
+        const raw = String(err)
+        if (raw.includes("Parser Error")) return "SQL syntax error — the AI generated an invalid query. Try rephrasing."
+        if (raw.includes("Table") && raw.includes("not found")) return "Query references a table that isn't loaded."
+        if (raw.includes("Column") && raw.includes("not found")) return "Query references a column that doesn't exist."
+        return "Query validation failed — please try again."
     } finally {
         await conn.close()
     }
