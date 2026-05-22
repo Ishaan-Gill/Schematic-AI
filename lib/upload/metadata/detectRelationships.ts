@@ -1,15 +1,11 @@
-import { detectRelationships } from "@/lib/ai/relationships"
+import { detectRelationships, formatRelationship } from "@/lib/ai/relationships"
+import type { TableSchemas } from "@/lib/ai/relationships"
 import { relationshipsMemory } from "@/lib/ai/relationshipsMap"
 
-export const updateDetectedRelationships = (updatedSchemas: Record<string, any[]>) => {
+export const updateDetectedRelationships = (updatedSchemas: TableSchemas) => {
     const detected = detectRelationships(updatedSchemas)
-
-    const validRelationships = detected.filter(
-        (item): item is Exclude<typeof item, string> =>
-            typeof item !== "string"
-    )
     relationshipsMemory.length = 0
-    relationshipsMemory.push(...validRelationships)
+    relationshipsMemory.push(...detected)
 
-    return validRelationships
+    return detected.map(formatRelationship)
 }
