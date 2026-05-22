@@ -1,5 +1,3 @@
-import React from "react"
-
 import { getDuckDB } from "@/lib/duckdb"
 import { isFollowUpQuery, isTimeQuery } from "@/lib/ai/followUp"
 import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelationships"
@@ -53,23 +51,28 @@ export const generateSQL = async ({
     try {
         if (!isActive(guard, signal)) return
 
-        const sampleRows = await conn.query(`SELECT * FROM "${selectedTable}" LIMIT 5`)
-        const sampleText = sampleRows
-            .toArray()
-            .map((row: any) => Object.values(row).join(", "))
-            .join("\n")
-        if (!isActive(guard, signal)) return
-
-        const datasetContext = buildDatasetContext(
-            schemas[selectedTable],
-            sampleRows.toArray()
+        const datasetContext = await Promise.all(
+            Object.keys(schemas).map(async (tableName) => {
+                const sampleRows = await conn.query(
+                    `SELECT * FROM "${tableName}" LIMIT 3`
+                )
+                return `
+                    TABLE: ${tableName}
+                    ${buildDatasetContext(
+                    schemas[tableName],
+                    sampleRows.toArray()
+                )}
+                `
+            })
         )
+
+        const finalDatasetContext = datasetContext.join("\n\n")
 
         const endpoint = isFollowUp && lastSQL ? "/api/edit-sql" : "/api/generate-sql"
         const body =
             endpoint === "/api/edit-sql"
                 ? { query, lastSQL: generatedSQL, schemas, relationships, isFollowUp }
-                : { query, schemas, sampleText, selectedTable, relationships, datasetContext, feedbackMemory }
+                : { query, schemas, selectedTable, relationships, finalDatasetContext, feedbackMemory }
 
         const res = await fetch(endpoint, {
             method: "POST",
@@ -96,10 +99,6 @@ export const generateSQL = async ({
             setError("AI failed to generate SQL")
             return
         }
-
-        console.log("RELATIONSHIPS:", relationships)
-        console.log("AI RESPONSE:", data)
-        console.log("AI SQL:", data.sql)
 
         // validateSQL:
         const validationError = await validateSQL({
