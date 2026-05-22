@@ -20,7 +20,7 @@ export const validateSQL = async ({
         "update",
         "truncate",
         "insert",
-        "alrter",
+        "alter",
         "create"
     ]
     for (const keyword of blockKeywords) {
@@ -28,12 +28,6 @@ export const validateSQL = async ({
             return `Dangerous SQL detected: ${keyword.toUpperCase()}`
         }
     }
-
-    // To remove ```:
-    sql = sql
-        .replace(/```sql/g, "")
-        .replace(/```/g, "")
-        .trim()
 
     // DuckDB parser validation:
     const db = await getDuckDB()
