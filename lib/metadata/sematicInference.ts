@@ -1,5 +1,3 @@
-import { schemaMemory } from "@/lib/upload/metadata/schemaMemory"
-
 type SemanticContext = {
     revenueColumns: string[]
     quantityColumns: string[]
@@ -22,14 +20,11 @@ const includesAny = (
 
 export const semanticMemory: Record<string, SemanticContext> = {}
 
-export const inferSemanticContext = (tableName: string) => {
-
-    const schema = schemaMemory[tableName]
-
-    if (!schema) {
-        return null
-    }
-
+export const inferSemanticContext = (
+    tableName: string,
+    schema: any[],
+    profile?: any
+) => {
     const context: SemanticContext = {
         revenueColumns: [],
         quantityColumns: [],
