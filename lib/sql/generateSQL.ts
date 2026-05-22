@@ -20,6 +20,7 @@ type GenerateSQLArgs = {
     setLastSQL: React.Dispatch<React.SetStateAction<string>>
     signal?: AbortSignal
     guard?: () => boolean
+    expectedTable: string | null
 }
 
 const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
@@ -36,7 +37,8 @@ export const generateSQL = async ({
     setGeneratedSQL,
     setLastSQL,
     signal,
-    guard
+    guard,
+    expectedTable
 }: GenerateSQLArgs) => {
     if (!selectedTable) return
 
@@ -81,6 +83,8 @@ export const generateSQL = async ({
         })
         const data = await res.json()
         if (!isActive(guard, signal)) return
+
+        if (expectedTable !== selectedTable) return
 
         if (isTimeQuery(query) && query.toLowerCase().includes("select")) {
             console.log("Time-oriented query detected")

@@ -60,9 +60,12 @@ export default function FileUpload({
         ref.current = controller
         return controller
     }
+    const fixAttemptsRef = useRef(0)
 
     const executeQuery = async (overrideQuery?: string) => {
         const controller = startController(queryControllerRef)
+        const expectedTable = selectedTable
+        fixAttemptsRef.current = 0
 
         await runQuery({
             selectedTable,
@@ -78,7 +81,9 @@ export default function FileUpload({
             PAGE_SIZE,
             signal: controller.signal,
             guard: () => isControllerActive(controller),
-            setHasMore
+            setHasMore,
+            fixAttemptsRef,
+            expectedTable
         }, overrideQuery)
     }
 
@@ -124,10 +129,12 @@ export default function FileUpload({
     }, [generatedSQL, page])
 
     useEffect(() => {
-        setLastSQL("")
         setQueryResult([])
         setPage(0)
         setHasMore(false)
+        generateControllerRef.current?.abort()
+        queryControllerRef.current?.abort()
+        setLastSQL("")
     }, [selectedTable])
 
     // Function for uploading file:
@@ -231,6 +238,7 @@ export default function FileUpload({
                                     type="button"
                                     onClick={() => {
                                         const controller = startController(generateControllerRef)
+                                        const expectedTable = selectedTable
                                         setPage(0)
                                         return void generateSQL({
                                             selectedTable,
@@ -243,7 +251,8 @@ export default function FileUpload({
                                             setGeneratedSQL,
                                             setLastSQL,
                                             signal: controller.signal,
-                                            guard: () => isControllerActive(controller)
+                                            guard: () => isControllerActive(controller),
+                                            expectedTable
                                         })
                                     }}
                                     disabled={!selectedTable || loading}

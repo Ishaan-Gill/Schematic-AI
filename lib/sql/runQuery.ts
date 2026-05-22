@@ -14,13 +14,14 @@ type RunQueryArgs = {
     setError: (val: string | null) => void
     setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
     setQueryResult: React.Dispatch<React.SetStateAction<any[]>>
-    retryCount?: number
     relationships: string[]
     page: number
     PAGE_SIZE: number
     signal?: AbortSignal
     guard?: () => boolean
     setHasMore: React.Dispatch<React.SetStateAction<boolean>>
+    fixAttemptsRef: React.MutableRefObject<number>
+    expectedTable: string | null
 }
 
 const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
@@ -36,13 +37,14 @@ export const runQuery = async (
         setError,
         setGeneratedSQL,
         setQueryResult,
-        retryCount = 0,
         relationships,
         page,
         PAGE_SIZE = 100,
         signal,
         guard,
-        setHasMore
+        setHasMore,
+        fixAttemptsRef,
+        expectedTable
     }: RunQueryArgs,
     overrideQuery?: string
 ) => {
@@ -59,6 +61,13 @@ export const runQuery = async (
         overrideQuery?.trim()
         || generatedSQL?.trim()
         || `SELECT * FROM "${selectedTable}" LIMIT 10`
+
+    // To remove ```, ; from sql
+    baseQuery = baseQuery
+        .trim()
+        .replace(/;+$/, "")
+        .replace(/```sql/g, "")
+        .replace(/```/g, "")
 
     // Pagination
     let finalQuery = `
@@ -92,6 +101,7 @@ export const runQuery = async (
 
         setHasMore(hasMore)
 
+        setError(null)
         if (formatted.length === 0) {
             await suggestFix({
                 userQuery: query,
@@ -151,8 +161,9 @@ export const runQuery = async (
         console.log("FEEDBACK MEMORY (FAILURE):", addFeedbackMemory)
 
         setQueryResult([])
+        setHasMore(false)
+        setGeneratedSQL("")
         console.error(err)
-        setError(errorMsg)
 
         console.log("QUERY FAILURE", {
             query,
@@ -160,10 +171,23 @@ export const runQuery = async (
             error: errorMsg
         })
 
-        if (retryCount >= 2) {
+        await suggestFix({
+            userQuery: query,
+            schemas,
+            selectedTable,
+            setError,
+            relationships,
+            signal,
+            guard,
+            error: errorMsg
+        })
+        if (expectedTable !== selectedTable) return
+
+        if (fixAttemptsRef.current >= 2) {
             setError("AI could not fix this query.")
             return
         }
+        fixAttemptsRef.current += 1
 
         await fixQueryWithAI({
             badQuery: baseQuery,
@@ -175,6 +199,8 @@ export const runQuery = async (
             signal,
             guard,
         })
+        if (expectedTable !== selectedTable) return
+
     } finally {
         if (timeoutId) {
             clearTimeout(timeoutId)
