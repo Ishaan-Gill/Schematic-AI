@@ -39,8 +39,16 @@ export async function POST(req: Request) {
         )
     }
 
-    // convert schema to readable text
-    const schemaText = Object.entries(schemas)
+    // Prioritizes the selected table first for schema:
+    const orderedSchemas = Object.entries(schemas).sort(
+        ([tableA], [tableB]) => {
+            if (tableA === selectedTable) return -1
+            if (tableB === selectedTable) return 1
+            return 0
+        }
+    )
+    // convert schema to readable text:
+    const schemaText = orderedSchemas
         .map(([tableName, cols]) => {
             const colText = (cols as any[])
                 .map((col: any) => `${col.column_name} (${col.column_type})`)
@@ -111,19 +119,26 @@ ${schemaText}
 Relationships:
 ${relationships.join("\n")}
 
+Only join tables if an explicit relationship is provided.
+
+If no relationship exists between tables:
+do NOT invent joins.
+
+Never assume columns with similar meanings are joinable unless explicitly related.
+
 SEMANTIC HINTS:
 ${safeDatasetContext.metadata.map((item: any) => {
-    const format = item.detectedFormat
-        ? ` (${item.detectedFormat})`
-        : ""
+        const format = item.detectedFormat
+            ? ` (${item.detectedFormat})`
+            : ""
 
-    return `- ${item.column} → ${item.semanticRole}${format}`
-}).join("\n")}
+        return `- ${item.column} → ${item.semanticRole}${format}`
+    }).join("\n")}
 
 DERIVED METRICS:
 ${safeDatasetContext.metrics.map((metric: any) =>
-    `- ${metric.name} = ${metric.expression}`
-).join("\n")}
+        `- ${metric.name} = ${metric.expression}`
+    ).join("\n")}
 
 Sample Data:
 ${sampleText}

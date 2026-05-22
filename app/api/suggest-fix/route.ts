@@ -6,7 +6,7 @@ const groq = new Groq({
 })
 
 export async function POST(req: Request) {
-    const { query, schemas, selectedTable, relationships } = await req.json()
+    const { query, schemas, selectedTable, relationships, error } = await req.json()
 
     const schemaText = Object.entries(schemas)
         .map(([tableName, cols]) => {
@@ -18,7 +18,14 @@ export async function POST(req: Request) {
         .join("\n")
 
     const prompt = `
-You are an AI assistant helping users understand why a SQL query returned NO ROWS.
+You are an AI assistant helping users understand SQL query failures and empty results.
+
+Your job:
+- explain errors in simple human language
+- explain why no rows may have matched
+- suggest concise fixes
+- NEVER generate SQL
+- NEVER expose raw SQL engine internals
 
 IMPORTANT:
 - The SQL query executed successfully.
@@ -46,30 +53,27 @@ ${schemaText}
 USER REQUEST:
 "${query}"
 
+SQL ERROR:
+${error ?? "NONE"}
+
 Your task:
-- Suggest possible reasons why zero rows were returned
 - Suggest likely fixes based ONLY on existing columns and sample values
 - Be concise
-- Mention casing mismatches if relevant
-- Mention possible missing values if relevant
+- Keep responses under 2 short sentences.
+- Do not repeat the same idea multiple times.
+- Do not mention multiple speculative causes unless strongly relevant.
 - Mention if the requested value may not exist in dataset
+- Explain the issue in user-friendly language
+- Suggest likely fixes
+- Keep response concise
+- Never generate SQL
 
-GOOD EXAMPLES:
+EXAMPLES:
+"No matching rows were found for the requested values."
 
-Example 1:
-"No rows matched. Try using 'Chicago' instead of 'chicago'."
+"The requested value may not exist in the uploaded dataset."
 
-Example 2:
-"No rows matched. The dataset may not contain customers from Chicago."
-
-Example 3:
-"No rows matched. Check whether the Category value exists in the uploaded data."
-
-BAD EXAMPLES:
-- SQL queries
-- Invented columns
-- Invented tables
-- Technical SQL explanations
+"Some filters may be too restrictive."
 
 Return ONLY the suggestion text.
     `
