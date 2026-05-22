@@ -10,6 +10,7 @@ import { datasetMemory } from "../metadata/datasetMemory"
 import { inferSemanticContext } from "@/lib/metadata/sematicInference"
 
 import type { ParsedTable } from "../parsers/parseExcel"
+import { buildRelationshipsMemory } from "@/lib/ai/relationshipsMap"
 
 type QueryRow = Record<string, unknown>
 
@@ -49,8 +50,12 @@ export const ingestParsedTable = async ({
 
     const tableName = parsedTable.tableName
 
-    const csvText = parsedTable.csvText 
+    const csvText = parsedTable.csvText
 
+    if (!parsedTable.csvText) {
+        throw new Error(`Missing csvText for table: ${tableName}`)
+    }
+    
     const tempName = `${tableName}.csv`
 
     await conn.query(`
@@ -72,8 +77,7 @@ export const ingestParsedTable = async ({
         DESCRIBE "${tableName}"
     `)
 
-    const parsedColumns =
-        parsedColumnsResult.toArray() as ColumnInfo[]
+    const parsedColumns = parsedColumnsResult.toArray() as ColumnInfo[]
 
     // clean headers after duckdb parsing:
     for (const column of parsedColumns) {
@@ -134,7 +138,13 @@ export const ingestParsedTable = async ({
     })
 
     // semantic inference
-    const semantic = inferSemanticContext(tableName)
+    const semantic = inferSemanticContext(tableName, refreshedColumns, profile)
+
+    // validation
+    validateTable({
+        rowCount,
+        columns: refreshedColumns,
+    })
 
     // Memory injection
     datasetMemory[tableName] = {
@@ -150,12 +160,25 @@ export const ingestParsedTable = async ({
             failedQueries: []
         }
     }
+    // Rebuilds relationship:
+    const allSchemas = Object.fromEntries(
+        Object.entries(datasetMemory).map(([t, d]) => [t, d.schema])
+    )
 
-    // validation
-    validateTable({
-        rowCount,
-        columns: refreshedColumns,
-    })
+    const relationships = buildRelationshipsMemory(allSchemas)
+
+    // Clears old relationships:
+    for (const table of Object.keys(datasetMemory)) {
+        datasetMemory[table].relationships = []
+    }
+
+    // Injects fresh relationships:
+    for (const rel of relationships) {
+        const fromEntry = datasetMemory[rel.fromTable]
+        if (!fromEntry) continue
+        fromEntry.relationships = fromEntry.relationships ?? []
+        fromEntry.relationships.push(rel)
+    }
 
     return {
         tableName,
