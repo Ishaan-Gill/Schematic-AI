@@ -37,6 +37,9 @@ export const fixQueryWithAI = async ({
         const data = await res.json()
         if (signal?.aborted || !(guard?.() ?? true)) return
 
+        if (!data?.sql) {
+            throw new Error("AI could not generate a fixed query.")
+        }
         let fixedSQL = data.sql
         fixedSQL = fixedSQL
             .replace(/```sql/g, "")
