@@ -1,3 +1,5 @@
+import { error } from "console"
+
 type SuggestFixArgs = {
     userQuery: string
     schemas: Record<string, any[]>
@@ -6,6 +8,7 @@ type SuggestFixArgs = {
     relationships: string[]
     signal?: AbortSignal
     guard?: () => boolean
+    error?: string
 }
 
 export const suggestFix = async ({
@@ -15,7 +18,8 @@ export const suggestFix = async ({
     setError,
     relationships,
     signal,
-    guard
+    guard,
+    error
 }: SuggestFixArgs) => {
     try {
         if (signal?.aborted || !(guard?.() ?? true)) return
@@ -28,14 +32,16 @@ export const suggestFix = async ({
                 query: userQuery,
                 schemas,
                 selectedTable,
-                relationships
+                relationships,
+                error
             })
         })
         const data = await res.json()
         if (signal?.aborted || !(guard?.() ?? true)) return
 
         console.log("Suggestion:", data.suggestion)
-        setError(`No results found. ${data.suggestion}`)
+        setError(data.suggestion)
+
     } catch (err) {
         if (signal?.aborted) return
         console.error("Suggestion failed:", err)
