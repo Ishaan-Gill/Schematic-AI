@@ -55,7 +55,6 @@ export async function POST(req: Request) {
         .slice(-5)
 
     let completion
-    let lastError
 
     for (let attempt = 1; attempt <= 2; attempt++) {
         try {
