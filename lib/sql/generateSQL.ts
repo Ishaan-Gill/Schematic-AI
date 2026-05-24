@@ -44,35 +44,43 @@ export const generateSQL = async ({
     setLoading(true)
 
     const relationships = updateDetectedRelationships(schemas)
-    const isFollowUp = isFollowUpQuery(query)
+    const isFollowUp = isFollowUpQuery(query, lastSQL)
     const db = await getDuckDB()
     const conn = await db.connect()
 
     try {
         if (!isActive(guard, signal)) return
 
-        const datasetContext = await Promise.all(
-            Object.keys(schemas).map(async (tableName) => {
-                const sampleRows = await conn.query(
-                    `SELECT * FROM "${tableName}" LIMIT 3`
-                )
-                return `
-                    TABLE: ${tableName}
-                    ${buildDatasetContext(
-                    schemas[tableName],
-                    sampleRows.toArray()
-                )}
-                `
-            })
-        )
+        // Database Context:
+        const sampleRowsByTable: Record<string, any[]> = {}
 
-        const finalDatasetContext = datasetContext.join("\n\n")
+        for (const tableName of Object.keys(schemas)) {
+            const sampleRows = await conn.query(
+                `SELECT * FROM "${tableName}" LIMIT 3`
+            )
+            sampleRowsByTable[tableName] =
+                sampleRows.toArray()
+        }
+        const finalDatasetContext =
+            buildDatasetContext(
+                schemas,
+                sampleRowsByTable
+            )
+
+        // Time hint
+        const timeHint = isTimeQuery(query)
+            ? `
+                Time-based analytics query.
+                Prefer DATE_TRUNC, EXTRACT, proper date filtering,
+                and relative date logic where appropriate.
+            `
+            : ""
 
         const endpoint = isFollowUp && lastSQL ? "/api/edit-sql" : "/api/generate-sql"
         const body =
             endpoint === "/api/edit-sql"
                 ? { query, lastSQL: generatedSQL, schemas, relationships, isFollowUp }
-                : { query, schemas, selectedTable, relationships, finalDatasetContext, feedbackMemory }
+                : { query, schemas, selectedTable, relationships, finalDatasetContext, feedbackMemory, timeHint }
 
         const res = await fetch(endpoint, {
             method: "POST",
@@ -84,14 +92,12 @@ export const generateSQL = async ({
                     : value
             )
         })
+
+
         const data = await res.json()
         if (!isActive(guard, signal)) return
 
         if (expectedTable !== selectedTable) return
-
-        if (isTimeQuery(query) && query.toLowerCase().includes("select")) {
-            console.log("Time-oriented query detected")
-        }
 
         if (!isFollowUp) setLastSQL("")
 
