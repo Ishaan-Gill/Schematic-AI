@@ -1,9 +1,8 @@
 export type ColumnProfile = {
-    totalRows: number
-    nonNullRows: number
-    uniqueValues: number
-
-    nullPercentage?: number
+    rowCount: number
+    uniqueCount: number
+    nullCount: number
+    nullPercentage: number
 
     min?: number | string
     max?: number | string

@@ -26,38 +26,52 @@ export const profileTable = async ({
 
     const profile: Record<string, ColumnProfile> = {}
 
-    for (const col of columns) {
-        const columnName = col.column_name
+    try {
+        const selectClauses = columns.map(col => `
+        COUNT("${col.column_name}") AS "${col.column_name}_non_null",
+        COUNT(DISTINCT "${col.column_name}") AS "${col.column_name}_unique"
+        `).join(",")
 
-        try {
-            const stats = await conn.query(`
-                SELECT
-                    COUNT(*) AS total_rows,
-                    COUNT("${columnName}") AS non_null_rows,
-                    COUNT(DISTINCT "${columnName}") AS unique_values
-                FROM "${tableName}"
-            `)
+        const stats = await conn.query(`
+        SELECT
+            COUNT(*) AS total_rows,
+            ${selectClauses}
+        FROM "${tableName}"
+        `)
 
-            const row = stats.toArray()[0]
+        const row = stats.toArray()[0]
+        const totalRows = Number(row.total_rows)
 
-            const totalRows = Number(row?.total_rows ?? 0)
-            const nonNullRows = Number(row?.non_null_rows ?? 0)
-
-            profile[columnName] = {
-                totalRows,
-                nonNullRows,
-                uniqueValues: Number(row?.unique_values ?? 0),
-
+        for (const col of columns) {
+            const nonNullRows = Number(
+                row[`${col.column_name}_non_null`] ?? 0
+            )
+            profile[col.column_name] = {
+                rowCount: totalRows,
+                uniqueCount: Number(row[`${col.column_name}_unique`] ?? 0),
+                nullCount: totalRows - nonNullRows,
                 nullPercentage:
                     totalRows === 0
                         ? 0
-                        : ((totalRows - nonNullRows) / totalRows) * 100,
+                        : ((totalRows - nonNullRows) / totalRows) * 100
             }
-
-        } catch {
-            console.error("Profiling failed:", columnName)
         }
-    }
+        return profile
+    } catch (err) {
+        console.error(
+            "Profiling failed:",
+            tableName,
+            err
+        )
 
-    return profile
+        for (const col of columns) {
+            profile[col.column_name] = {
+                rowCount: 0,
+                uniqueCount: 0,
+                nullCount: 0,
+                nullPercentage: 0
+            }
+        }
+        return profile
+    }
 }
