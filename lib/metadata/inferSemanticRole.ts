@@ -1,4 +1,16 @@
+import {
+    QUANTITY_KEYWORDS,
+    CUSTOMER_KEYWORDS,
+    DATE_KEYWORDS,
+    PRODUCT_KEYWORDS,
+    CATEGORY_KEYWORDS,
+    REVENUE_KEYWORDS
+} from "./semanticKeywords"
+
 import { SemanticRole } from "./types";
+
+const includesAny = (value: string, keywords: string[]) =>
+    keywords.some((keyword) => value.includes(keyword))
 
 export const inferSemanticRole = (
     column: string,
@@ -20,26 +32,10 @@ export const inferSemanticRole = (
     ) return "id"
 
     // Temporal
-    if (
-        name.includes("date") || name.includes("time") ||
-        name.includes("year") || name.includes("month") ||
-        name.includes("quarter") || name.includes("week") ||
-        name.includes("period") || name.includes("fiscal") ||
-        name.includes("day")
-    ) return type === "VARCHAR" ? "datetime" : "date"
+    if (includesAny(name, DATE_KEYWORDS)) return type === "VARCHAR" ? "datetime" : "date"
 
     // Currency / Financial metric
-    if (
-        name.includes("price") || name.includes("amount") ||
-        name.includes("revenue") || name.includes("sales") ||
-        name.includes("cost") || name.includes("profit") ||
-        name.includes("margin") || name.includes("discount") ||
-        name.includes("tax") || name.includes("fee") ||
-        name.includes("balance") || name.includes("total") ||
-        name.includes("subtotal") || name.includes("payment") ||
-        name.includes("budget") || name.includes("actual") ||
-        name.includes("invoice")
-    ) return "currency"
+    if (includesAny(name, REVENUE_KEYWORDS) ) return "currency"
 
     // Percentage
     if (
@@ -49,13 +45,7 @@ export const inferSemanticRole = (
     ) return "percentage"
 
     // Quantity / Operational
-    if (
-        name.includes("qty") || name.includes("quantity") ||
-        name.includes("units") || name.includes("count") ||
-        name.includes("volume") || name.includes("stock") ||
-        name.includes("inventory") || name.includes("num_of") ||
-        name.includes("no_of")
-    ) return "quantity"
+    if (includesAny(name, QUANTITY_KEYWORDS) ) return "quantity"
 
     // Geographic
     if (
@@ -66,18 +56,10 @@ export const inferSemanticRole = (
     ) return "country"
 
     // Entity / Person
-    if (
-        name.includes("customer") || name.includes("client") ||
-        name.includes("vendor") || name.includes("supplier") ||
-        name.includes("employee") || name.includes("user")
-    ) return "name"
+    if (includesAny(name, CUSTOMER_KEYWORDS) ) return "name"
 
     // Category
-    if (
-        name.includes("category") || name.includes("type") ||
-        name.includes("segment") || name.includes("class") ||
-        name.includes("group") || name.includes("tier")
-    ) return "category"
+    if (includesAny(name, CATEGORY_KEYWORDS) ) return "category"
 
     // Name / Label
     if (name.includes("name") || name.includes("title") ||

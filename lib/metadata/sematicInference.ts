@@ -1,3 +1,12 @@
+import {
+    REVENUE_KEYWORDS,
+    QUANTITY_KEYWORDS,
+    CUSTOMER_KEYWORDS,
+    DATE_KEYWORDS,
+    PRODUCT_KEYWORDS,
+    CATEGORY_KEYWORDS
+} from "./semanticKeywords"
+
 type SemanticContext = {
     revenueColumns: string[]
     quantityColumns: string[]
@@ -5,6 +14,7 @@ type SemanticContext = {
     dateColumns: string[]
     productColumns: string[]
     categoryColumns: string[]
+    identifierColumns: string[]
 }
 
 const includesAny = (
@@ -32,7 +42,34 @@ export const inferSemanticContext = (
         dateColumns: [],
         productColumns: [],
         categoryColumns: [],
+        identifierColumns: []
     }
+
+
+    // Use profile if available
+    if (profile?.columnProfiles) {
+        for (const [colName, stats] of Object.entries(profile.columnProfiles as any)) {
+            const s = stats as any
+
+            // Low cardinality = categorical
+            if (s.uniqueCount <= 10 && !context.categoryColumns.includes(colName)) {
+                context.categoryColumns.push(colName)
+            }
+
+            // All unique = likely identifier (fixed: If indetifierColumn contains NULL)
+            const nullCount = s.nullCount ?? 0
+            const nonNullRows = s.rowCount - nullCount
+            if (
+                s.uniqueCount === s.rowCount ||
+                (nonNullRows > 0 && s.uniqueCount >= nonNullRows * 0.98)
+            ) {
+                if (!context.identifierColumns.includes(colName)) {
+                    context.identifierColumns.push(colName)
+                }
+            }
+        }
+    }
+
 
     for (const column of schema) {
 
@@ -41,38 +78,21 @@ export const inferSemanticContext = (
 
         // revenue
         if (
-            includesAny(name, [
-                "revenue",
-                "sales",
-                "amount",
-                "total",
-                "price",
-                "income"
-            ])
+            includesAny(name, REVENUE_KEYWORDS)
         ) {
             context.revenueColumns.push(name)
         }
 
         // quantity
         if (
-            includesAny(name, [
-                "qty",
-                "quantity",
-                "units",
-                "count"
-            ])
+            includesAny(name, QUANTITY_KEYWORDS)
         ) {
             context.quantityColumns.push(name)
         }
 
         // customer
         if (
-            includesAny(name, [
-                "customer",
-                "client",
-                "buyer",
-                "user"
-            ])
+            includesAny(name, CUSTOMER_KEYWORDS)
         ) {
             context.customerColumns.push(name)
         }
@@ -81,33 +101,30 @@ export const inferSemanticContext = (
         if (
             type.includes("date") ||
             type.includes("time") ||
-            includesAny(name, [
-                "date",
-                "created",
-                "invoice",
-                "timestamp"
-            ])
+            includesAny(name, DATE_KEYWORDS)
         ) {
             context.dateColumns.push(name)
         }
 
         // product
         if (
-            includesAny(name, [
-                "product",
-                "item",
-                "sku",
-                "stock",
-                "description"
-            ])
+            includesAny(name, PRODUCT_KEYWORDS)
         ) {
             context.productColumns.push(name)
         }
 
         // categorical
+        const alreadyClassified = [
+            ...context.revenueColumns,
+            ...context.quantityColumns,
+            ...context.customerColumns,
+            ...context.dateColumns,
+            ...context.productColumns,
+        ]
         if (
-            type.includes("varchar") ||
-            type.includes("text")
+            (type.includes("varchar") || type.includes("text")) &&
+            !alreadyClassified.includes(name) &&
+            includesAny(name, ["category", "type", "segment", "class", "group", "tier", "status"])
         ) {
             context.categoryColumns.push(name)
         }
