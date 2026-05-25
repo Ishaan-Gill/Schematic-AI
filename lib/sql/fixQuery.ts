@@ -55,7 +55,7 @@ export const fixQueryWithAI = async ({
 
         fixedSQL = fixedSQL.replace(/\bSTRPTIME\s*\(/gi, "TRY_STRPTIME(")
 
-        console.log("FIXED SQL:", fixedSQL)
+        if (process.env.NEXT_PUBLIC_DEBUG === "true") console.log("FIXED SQL:", fixedSQL)
         setGeneratedSQL(fixedSQL)
     } catch (err) {
         if (signal?.aborted) return

@@ -9,9 +9,9 @@ export const getSQLValidationError = ({
     sql,
     error
 }: ValidationArgs) => {
-    if (!data.sql) return "AI failed to generate SQL"
+    if (!data.sql) return "Something went wrong. Please try again."
     if (data.sql === "INVALID_QUERY" || sql === "INVALID_QUERY") {
-        return "Cannot answer with available data."
+        return "I couldn't find an answer to this in your uploaded data. Try rephrasing, or check if the relevant dataset is uploaded."
     }
     if (data.error === "INVALID_TABLE_USED") {
         return "AI used a table that doesn't exist. Try again."
@@ -21,9 +21,9 @@ export const getSQLValidationError = ({
     }
     if (!sql.startsWith("select") && !sql.startsWith("with") && !sql.startsWith("describe")
     ) {
-        return "Invalid SQL generated."
+        return "Something went wrong generating your query. Please try again."
     }
-    if (!sql.toLowerCase().includes("select")) return "Invalid SQL generated"
+    if (!sql.toLowerCase().includes("select")) return "Something went wrong generating your query. Please try again."
 
     return null
 }

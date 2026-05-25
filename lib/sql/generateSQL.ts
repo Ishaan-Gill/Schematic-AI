@@ -102,7 +102,7 @@ export const generateSQL = async ({
         if (!isFollowUp) setLastSQL("")
 
         if (!data.sql) {
-            setError("AI failed to generate SQL")
+            setError("Something went wrong. Please try again.")
             return
         }
 

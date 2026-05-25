@@ -39,9 +39,9 @@ export const suggestFix = async ({
         const data = await res.json()
         if (signal?.aborted || !(guard?.() ?? true)) return
 
-        console.log("Suggestion:", data.suggestion)
-        setError(data.suggestion)
+        if (process.env.NEXT_PUBLIC_DEBUG === "true") console.log("Suggestion:", data.suggestion)
 
+        setError(data.suggestion)
     } catch (err) {
         if (signal?.aborted) return
         console.error("Suggestion failed:", err)

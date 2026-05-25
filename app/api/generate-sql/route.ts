@@ -193,7 +193,7 @@ export async function POST(req: Request) {
         !sql.toLowerCase().startsWith("describe")
     ) {
         return NextResponse.json({
-            error: "Invalid SQL generated"
+            error: "Something went wrong generating your query. Please try again."
         })
     }
     return NextResponse.json({ sql: cleanedSQL })

@@ -84,7 +84,7 @@ Return SQL:
 
         if (!sql.toLowerCase().startsWith("select") && !sql.toLowerCase().startsWith("with") && !sql.toLowerCase().startsWith("describe")) {
             return NextResponse.json({
-                error: "Invalid SQL generated"
+                error: "Something went wrong generating your query. Please try again."
             })
         }
 
@@ -105,7 +105,7 @@ Return SQL:
     } catch (err) {
         console.error("Groq Error:", err)
         return NextResponse.json(
-            { error: String(err) },
+            { error: "Something went wrong. Please try again." },
             { status: 500 }
         )
     }
