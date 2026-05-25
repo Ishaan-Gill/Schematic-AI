@@ -9,7 +9,7 @@ export const validateSQL = async ({
 }: ValidateSQLArgs): Promise<string | null> => {
 
     if (!sql || typeof sql !== "string") {
-        return "AI failed to generate valid SQL."
+        return "Something went wrong. Please try again."
     }
 
     // Block dangerous keywords:
@@ -43,6 +43,8 @@ export const validateSQL = async ({
         return null
     } catch (err) {
         const raw = String(err)
+        console.error("SQL validation failed:", err)
+
         if (raw.includes("Parser Error")) return "SQL syntax error — the AI generated an invalid query. Try rephrasing."
         if (raw.includes("Table") && raw.includes("not found")) return "Query references a table that isn't loaded."
         if (raw.includes("Column") && raw.includes("not found")) return "Query references a column that doesn't exist."

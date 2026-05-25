@@ -60,7 +60,6 @@ export const runQuery = async (
     let baseQuery =
         overrideQuery?.trim()
         || generatedSQL?.trim()
-        || `SELECT * FROM "${selectedTable}" LIMIT 10`
 
     // To remove ```, ; from sql
     baseQuery = baseQuery
@@ -138,14 +137,18 @@ export const runQuery = async (
             outcome: "success",
             timestamp: Date.now(),
         })
-        console.log("FEEDBACK MEMORY (SUCCESS):", addFeedbackMemory)
 
-        console.log("QUERY AUDIT", {
-            query,
-            sql: finalQuery,
-            rows: formatted.length,
-            executionTime
-        })
+        if (process.env.NEXT_PUBLIC_DEBUG === "true") {
+            console.log("FEEDBACK MEMORY (SUCCESS):", addFeedbackMemory)
+        }
+        if (process.env.NEXT_PUBLIC_DEBUG === "true") {
+            console.log("QUERY AUDIT", {
+                query,
+                sql: finalQuery,
+                rows: formatted.length,
+                executionTime
+            })
+        }
 
         setQueryResult(formatted)
     } catch (err) {
@@ -158,19 +161,23 @@ export const runQuery = async (
             error: errorMsg,
             timestamp: Date.now(),
         })
-        console.log("FEEDBACK MEMORY (FAILURE):", addFeedbackMemory)
 
+        if (process.env.NEXT_PUBLIC_DEBUG === "true") {
+            console.log("FEEDBACK MEMORY (FAILURE):", addFeedbackMemory)
+        }
         setQueryResult([])
         setHasMore(false)
         setGeneratedSQL("")
         console.error(err)
 
-        console.log("QUERY FAILURE", {
-            query,
-            sql: finalQuery,
-            error: errorMsg
-        })
-
+        if (process.env.NEXT_PUBLIC_DEBUG === "true") {
+            console.log("QUERY FAILURE", {
+                query,
+                sql: finalQuery,
+                error: errorMsg
+            })
+        }
+        
         await suggestFix({
             userQuery: query,
             schemas,
