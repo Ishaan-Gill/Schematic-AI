@@ -17,6 +17,10 @@ export async function POST(req: Request) {
         })
         .join("\n")
 
+    const relationshipText = relationships
+        .map((r: any) => `${r.fromTable}.${r.fromColumn} = ${r.toTable}.${r.toColumn}`)
+        .join("\n")
+
     const prompt = `
 You are an expert SQL editor.
 
@@ -53,7 +57,7 @@ Schema:
 ${schemaText}
 
 Relationships:
-${relationships}
+${relationshipText}
 
 Previous SQL:
 ${lastSQL}
@@ -83,9 +87,10 @@ Return SQL:
         const sql = cleanedSQL.trim()
 
         if (!sql.toLowerCase().startsWith("select") && !sql.toLowerCase().startsWith("with") && !sql.toLowerCase().startsWith("describe")) {
-            return NextResponse.json({
-                error: "Something went wrong generating your query. Please try again."
-            })
+            return NextResponse.json(
+                { error: "Something went wrong generating your query. Please try again." },
+                { status: 502 }
+            )
         }
 
         // to block invalid SQL before it enters fix-sql (which breaks the sql more)
