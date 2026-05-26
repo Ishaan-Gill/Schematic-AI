@@ -115,7 +115,6 @@ export const detectTableRelevance = (
     // Return all tables with score > 0
     const relevant = sorted.filter(t => t.score > 0).map(t => t.tableName)
 
-    // Fallback: if nothing matched, return all tables
-    // AI will figure it out from full context
+    // Fallback: if nothing matched, return all tables. AI will figure it out from full context
     return relevant.length > 0 ? relevant : tableNames
 }

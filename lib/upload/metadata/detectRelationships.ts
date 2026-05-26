@@ -1,4 +1,4 @@
-import { detectRelationships, formatRelationship } from "@/lib/ai/relationships"
+import { detectRelationships } from "@/lib/ai/relationships"
 import type { TableSchemas } from "@/lib/ai/relationships"
 import { relationshipsMemory } from "@/lib/ai/relationshipsMap"
 
@@ -7,5 +7,5 @@ export const updateDetectedRelationships = (updatedSchemas: TableSchemas) => {
     relationshipsMemory.length = 0
     relationshipsMemory.push(...detected)
 
-    return detected.map(formatRelationship)
+    return detected
 }
