@@ -4,24 +4,25 @@ import { getDuckDB } from "@/lib/duckdb"
 import { fixQueryWithAI } from "@/lib/sql/fixQuery"
 import { suggestFix } from "@/lib/sql/suggestFix"
 import { addFeedbackMemory } from "../upload/metadata/feedbackMemory"
+import type { Relationship } from "../ai/relationships"
+import { getRelationshipsMemory } from "../ai/relationshipsMap"
+
 
 type RunQueryArgs = {
-    selectedTable: string | null
+    relevantTables?: string[]
     generatedSQL: string
     query: string
-    schema: any[]
     schemas: Record<string, any[]>
     setError: (val: string | null) => void
     setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
     setQueryResult: React.Dispatch<React.SetStateAction<any[]>>
-    relationships: string[]
+    relationships: Relationship[]
     page: number
     PAGE_SIZE: number
     signal?: AbortSignal
     guard?: () => boolean
     setHasMore: React.Dispatch<React.SetStateAction<boolean>>
     fixAttemptsRef: React.MutableRefObject<number>
-    expectedTable: string | null
 }
 
 const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
@@ -29,10 +30,9 @@ const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
 
 export const runQuery = async (
     {
-        selectedTable,
+        relevantTables,
         generatedSQL,
         query,
-        schema,
         schemas,
         setError,
         setGeneratedSQL,
@@ -44,13 +44,12 @@ export const runQuery = async (
         guard,
         setHasMore,
         fixAttemptsRef,
-        expectedTable
     }: RunQueryArgs,
     overrideQuery?: string
 ) => {
     const startTime = performance.now()
 
-    if (!selectedTable || !isActive(guard, signal)) return
+    if (!isActive(guard, signal)) return
 
     setError(null)
 
@@ -68,15 +67,20 @@ export const runQuery = async (
         .replace(/```sql/g, "")
         .replace(/```/g, "")
 
+    // Queries that should NOT be paginated (describe, show)
+    const isNonPaginated = /^(describe|show)\b/i.test(baseQuery.trim())
+
     // Pagination
-    let finalQuery = `
-    SELECT *
-    FROM (
-        ${baseQuery}
-    ) AS paginated_query
-    LIMIT ${PAGE_SIZE + 1}
-    OFFSET ${page * PAGE_SIZE}
-`
+    let finalQuery = isNonPaginated
+        ? baseQuery
+        : `
+        SELECT *
+        FROM (
+            ${baseQuery}
+        ) AS paginated_query
+        LIMIT ${PAGE_SIZE + 1}
+        OFFSET ${page * PAGE_SIZE}
+    `
 
     // Timeout protection:
     let timeoutId: ReturnType<typeof setTimeout> | null = null
@@ -105,9 +109,9 @@ export const runQuery = async (
             await suggestFix({
                 userQuery: query,
                 schemas,
-                selectedTable,
+                relevantTables,
                 setError,
-                relationships,
+                relationships: getRelationshipsMemory(),
                 signal,
                 guard
             })
@@ -177,18 +181,17 @@ export const runQuery = async (
                 error: errorMsg
             })
         }
-        
+
         await suggestFix({
             userQuery: query,
             schemas,
-            selectedTable,
+            relevantTables,
             setError,
             relationships,
             signal,
             guard,
             error: errorMsg
         })
-        if (expectedTable !== selectedTable) return
 
         if (fixAttemptsRef.current >= 2) {
             setError("AI could not fix this query.")
@@ -200,13 +203,11 @@ export const runQuery = async (
             badQuery: baseQuery,
             errorMsg,
             schemas,
-            selectedTable,
             setGeneratedSQL,
-            relationships,
+            relationships: getRelationshipsMemory(),
             signal,
             guard,
         })
-        if (expectedTable !== selectedTable) return
 
     } finally {
         if (timeoutId) {
