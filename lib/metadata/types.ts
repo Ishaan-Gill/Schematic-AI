@@ -5,9 +5,10 @@ export type SemanticRole =
     | "currency"
     | "percentage"
     | "quantity"
-    | "country"
+    | "location"
     | "name"
     | "category"
+    | "product"
     | "text"
     | "unknown"
 

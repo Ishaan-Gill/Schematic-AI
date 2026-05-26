@@ -4,7 +4,6 @@ import {
     CUSTOMER_KEYWORDS,
     DATE_KEYWORDS,
     PRODUCT_KEYWORDS,
-    CATEGORY_KEYWORDS
 } from "./semanticKeywords"
 
 type SemanticContext = {
@@ -47,8 +46,8 @@ export const inferSemanticContext = (
 
 
     // Use profile if available
-    if (profile?.columnProfiles) {
-        for (const [colName, stats] of Object.entries(profile.columnProfiles as any)) {
+    if (profile) {
+        for (const [colName, stats] of Object.entries(profile as any)) {
             const s = stats as any
 
             // Low cardinality = categorical
@@ -70,9 +69,7 @@ export const inferSemanticContext = (
         }
     }
 
-
     for (const column of schema) {
-
         const name = column.column_name.toLowerCase()
         const type = column.column_type.toLowerCase()
 

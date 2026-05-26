@@ -17,6 +17,7 @@ export const inferSemanticRole = (
     type: string
 ): SemanticRole => {
     const name = column.toLowerCase()
+    const normalizedType = String(type).toLowerCase()
 
     // Identifier — strict boundary check
     if (
@@ -32,10 +33,10 @@ export const inferSemanticRole = (
     ) return "id"
 
     // Temporal
-    if (includesAny(name, DATE_KEYWORDS)) return type === "VARCHAR" ? "datetime" : "date"
+    if (includesAny(name, DATE_KEYWORDS)) return normalizedType === "varchar" ? "datetime" : "date"
 
     // Currency / Financial metric
-    if (includesAny(name, REVENUE_KEYWORDS) ) return "currency"
+    if (includesAny(name, REVENUE_KEYWORDS)) return "currency"
 
     // Percentage
     if (
@@ -45,7 +46,7 @@ export const inferSemanticRole = (
     ) return "percentage"
 
     // Quantity / Operational
-    if (includesAny(name, QUANTITY_KEYWORDS) ) return "quantity"
+    if (includesAny(name, QUANTITY_KEYWORDS)) return "quantity"
 
     // Geographic
     if (
@@ -53,21 +54,28 @@ export const inferSemanticRole = (
         name.includes("state") || name.includes("region") ||
         name.includes("zone") || name.includes("territory") ||
         name.includes("location") || name.includes("address")
-    ) return "country"
+    ) return "location"
 
     // Entity / Person
-    if (includesAny(name, CUSTOMER_KEYWORDS) ) return "name"
+    if (includesAny(name, CUSTOMER_KEYWORDS)) return "name"
 
     // Category
-    if (includesAny(name, CATEGORY_KEYWORDS) ) return "category"
+    if (includesAny(name, CATEGORY_KEYWORDS)) return "category"
 
     // Name / Label
     if (name.includes("name") || name.includes("title") ||
         name.includes("label") || name.includes("description")
     ) return "name"
 
-    // Fallback by type
-    if (type === "VARCHAR") return "text"
+    // Product / SKU / Item
+    if (includesAny(name, PRODUCT_KEYWORDS)) return "product"
 
+    // Fallback by type
+    if (
+        normalizedType.includes("varchar") ||
+        normalizedType.includes("text") ||
+        normalizedType.includes("char")
+    ) return "text"
+    
     return "unknown"
 }
