@@ -18,18 +18,16 @@ export async function POST(req: Request) {
     const {
         query,
         schemas,
-        sampleText,
+        relevantTables,
+        sampleRowsByTable,
         relationships,
-        datasetContext,
+        finalDatasetContext,
         timeHint
     } = body
 
     const feedbackMemory = (body.feedbackMemory ?? []) as FeedbackItem[]
 
-    const safeDatasetContext = datasetContext ?? {
-        metadata: [],
-        metrics: [],
-    }
+    const safeDatasetContext: Record<string, any> = finalDatasetContext ?? {}
 
     if (!query || !schemas) {
         return NextResponse.json(
@@ -38,16 +36,43 @@ export async function POST(req: Request) {
         )
     }
 
-    // convert schema to readable text:
-    const schemaText = Object.entries(schemas)
+    const finalRelevantTables =
+        relevantTables?.length > 0
+            ? relevantTables
+            : Object.keys(schemas)
+
+    // text from filtered tables:
+    const filteredSampleText = Object.entries(sampleRowsByTable)
+        .filter(([tableName]) =>
+            finalRelevantTables?.includes(tableName)
+        )
+        .map(([tableName, rows]) =>
+            `${tableName}:\n${JSON.stringify(rows, null, 2)}`
+        )
+        .join("\n\n")
+
+    // Schemas of filtered Tables:
+    const filteredSchemas = Object.fromEntries(
+        Object.entries(schemas).filter(([tableName]) =>
+            finalRelevantTables?.includes(tableName)
+        )
+    )
+
+    // convert schema to readable text for AI:
+    const schemaText = Object.entries(filteredSchemas).slice(0, 8)
         .map(([tableName, cols]) => {
-            const colText = (cols as any[])
+            const colText = (cols as any[]).slice(0, 30)
                 .map((col: any) => `${col.column_name} (${col.column_type})`)
                 .join(", ")
             return `${tableName}: ${colText}`
         })
         .join("\n\n")
 
+    const filteredRelationships = relationships.filter(
+        (r: any) =>
+            finalRelevantTables?.includes(r.fromTable) &&
+            finalRelevantTables?.includes(r.toTable)
+    )
 
     // Feedback:
     const recentFailures = feedbackMemory
@@ -108,62 +133,73 @@ export async function POST(req: Request) {
                             
                             If user asks for:
                             schema, columns, structure, fields, table design
-                            
                             prefer:
                             DESCRIBE "table_name"
                             
-                            Schema:
-                            ${schemaText}
-                                
-                            Relationships:
-                            ${relationships.length > 0
-                                ? relationships.map((r: any) =>
-                                    `JOIN ${r.toTable} ON ${r.fromTable}.${r.fromColumn} = ${r.toTable}.${r.toColumn}`
-                                ).join("\n")
-                                : "No relationships detected. Do not join tables."}  
-                                  
                             Only join tables if an explicit relationship is provided.
-                                
+                            
                             If no relationship exists between tables:
                             do NOT invent joins.
-                                
+                            
                             Never assume columns with similar meanings are joinable unless explicitly related.
-                                
+                            `
+                    },
+                    {
+                        role: "user",
+                        content: `
+                            Schema:
+                            ${schemaText}
+                            
+                            Relationships:
+                            ${filteredRelationships.length > 0
+                                ? filteredRelationships
+                                    .map((r: any) =>
+                                        `${r.fromTable}.${r.fromColumn} = ${r.toTable}.${r.toColumn}`
+                                    )
+                                    .join("\n")
+                                : "No relationships detected. Do not join tables."}  
                             TIME HINTS:
                             ${timeHint ?? ""}
-
+                            
                             SEMANTIC HINTS:
                             ${Object.entries(safeDatasetContext).map(([tableName, ctx]: [string, any]) => {
-                                    const hints = ctx.metadata.map((item: any) =>
+                                    const hints = (ctx.metadata ?? []).slice(0, 30).map((item: any) =>
                                         `  - ${item.column} → ${item.semanticRole}${item.detectedFormat ? ` (${item.detectedFormat})` : ""}`
                                     ).join("\n")
                                     return `${tableName}:\n${hints}`
                                 }).join("\n\n")}
-                                
+                        
                             DERIVED METRICS:
                             ${Object.entries(safeDatasetContext).map(([tableName, ctx]: [string, any]) =>
-                                    ctx.metrics?.map((metric: any) =>
+                                    (ctx.metrics ?? []).slice(0, 20).map((metric: any) =>
                                         `- [${tableName}] ${metric.name} = ${metric.expression}`
                                     ).join("\n") ?? ""
                                 ).join("\n")}
-                        
+                
                             Sample Data:
-                            ${sampleText}
-                        
+                            ${filteredSampleText}
+                            
                             Recent Failed Queries:
                             ${JSON.stringify(recentFailures)}
-                        
+                            
                             User Request:
                             "${query}"
                         `
                     }
                 ]
             })
+            break
+
         } catch (err) {
-            console.error(`Groq attempt ${attempt} failed:`, err)
+            const DEBUG = process.env.NODE_ENV === "development"
+            if (DEBUG) {
+                console.error(`Groq attempt ${attempt} failed:`, err)
+            }
 
             // Small delay before retry:
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            if (attempt < 2) {
+                await new Promise(resolve => setTimeout(resolve, 1000))
+            }
         }
     }
     if (!completion) {
@@ -192,9 +228,16 @@ export async function POST(req: Request) {
         !sql.toLowerCase().startsWith("with") &&
         !sql.toLowerCase().startsWith("describe")
     ) {
-        return NextResponse.json({
-            error: "Something went wrong generating your query. Please try again."
-        })
+        return NextResponse.json(
+            {error: "Something went wrong generating your query. Please try again."},
+            {status: 502}
+        )
+    }
+    if (sql === "INVALID_QUERY") {
+        return NextResponse.json(
+            { error: "I couldn't answer this from your uploaded datasets. Try rephrasing your question." },
+            { status: 400 }
+        )
     }
     return NextResponse.json({ sql: cleanedSQL })
 }
