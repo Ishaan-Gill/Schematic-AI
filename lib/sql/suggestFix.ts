@@ -1,11 +1,11 @@
-import { error } from "console"
+import type { Relationship } from "../ai/relationships"
 
 type SuggestFixArgs = {
     userQuery: string
     schemas: Record<string, any[]>
-    selectedTable: string | null
+    relevantTables?: string[]
     setError: (val: string | null) => void
-    relationships: string[]
+    relationships: Relationship[]
     signal?: AbortSignal
     guard?: () => boolean
     error?: string
@@ -14,7 +14,7 @@ type SuggestFixArgs = {
 export const suggestFix = async ({
     userQuery,
     schemas,
-    selectedTable,
+    relevantTables,
     setError,
     relationships,
     signal,
@@ -31,7 +31,7 @@ export const suggestFix = async ({
             body: JSON.stringify({
                 query: userQuery,
                 schemas,
-                selectedTable,
+                relevantTables,
                 relationships,
                 error
             })

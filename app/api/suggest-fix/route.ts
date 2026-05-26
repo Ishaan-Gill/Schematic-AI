@@ -6,7 +6,7 @@ const groq = new Groq({
 })
 
 export async function POST(req: Request) {
-    const { query, schemas, selectedTable, relationships, error } = await req.json()
+    const { query, schemas, relationships, error } = await req.json()
 
     const schemaText = Object.entries(schemas)
         .map(([tableName, cols]) => {
@@ -15,6 +15,10 @@ export async function POST(req: Request) {
                 .join(", ")
             return `${tableName} (${colText})`
         })
+        .join("\n")
+
+    const relationshipText = relationships
+        .map((r: any) => `${r.fromTable}.${r.fromColumn} = ${r.toTable}.${r.toColumn}`)
         .join("\n")
 
     const prompt = `
@@ -45,7 +49,7 @@ AVAILABLE TABLES AND COLUMNS:
 ${schemaText}
 
 RELATIONSHIPS:
-${relationships.join("\n")}
+${relationshipText}
 
 SAMPLE DATA:
 ${schemaText}

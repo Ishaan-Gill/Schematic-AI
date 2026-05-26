@@ -1,10 +1,11 @@
+import type { Relationship } from "../ai/relationships"
+
 type FixQueryArgs = {
     badQuery: string
     errorMsg: string
     schemas: Record<string, any[]>
-    selectedTable: string | null
     setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
-    relationships: string[]
+    relationships: Relationship[]
     signal?: AbortSignal
     guard?: () => boolean
 }
@@ -13,7 +14,6 @@ export const fixQueryWithAI = async ({
     badQuery,
     errorMsg,
     schemas,
-    selectedTable,
     setGeneratedSQL,
     relationships,
     signal,
@@ -30,7 +30,6 @@ export const fixQueryWithAI = async ({
                 query: badQuery,
                 error: errorMsg,
                 schemas,
-                selectedTable,
                 relationships
             })
         })

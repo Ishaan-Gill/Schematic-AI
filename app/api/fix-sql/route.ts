@@ -18,9 +18,9 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { query, error, schemas, selectedTable, relationships } = await req.json()
+        const { query, error, schemas, relationships } = await req.json()
 
-        if (!query || !error || !schemas || !selectedTable) {
+        if (!query || !error || !schemas) {
             return NextResponse.json(
                 { error: "Missing required fields" },
                 { status: 400 }
@@ -39,6 +39,10 @@ export async function POST(req: Request) {
             })
             .join("\n\n")
 
+        const relationshipText = relationships
+            .map((r: any) => `${r.fromTable}.${r.fromColumn} = ${r.toTable}.${r.toColumn}`)
+            .join("\n")
+
         const prompt = `
 You are a SQL repair engine.
 
@@ -51,7 +55,7 @@ Your ONLY job:
 - Return ONLY executable SQL
 
 Relationships:
-${relationships.join("\n")}
+${relationshipText}
 
 Tables:
 ${schemaText}
@@ -72,7 +76,7 @@ ${error}
         const raw = completion.choices[0]?.message?.content || ""
         const cleanedSQL = raw.replace(/```sql|```/g, "").trim()
         return NextResponse.json({ sql: cleanedSQL })
-    } catch (err) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to fix SQL" },
             { status: 500 }
