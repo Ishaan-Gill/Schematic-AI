@@ -6,7 +6,6 @@ import ChatMessage from "@/components/ui/ChatMessages"
 
 type ChatPanelProps = {
   query: string
-  selectedTable: string | null
   generatedSQL: string
   loading: boolean
   hasResults: boolean
@@ -14,19 +13,16 @@ type ChatPanelProps = {
 
 export default function ChatPanel({
   query,
-  selectedTable,
   generatedSQL,
   loading,
   hasResults
 }: ChatPanelProps) {
   const assistantCopy = loading
-    ? "I am reading the selected dataset, checking schema context, and preparing a SQL query."
+    ? "I am reading the uploaded datasets, checking schema context, and preparing a SQL query."
     : generatedSQL
       ? "I generated SQL and ran it against your uploaded data. The result table is shown below."
-      : selectedTable
-        ? "Ask a question about the selected dataset. I will translate it into SQL and return the answer here."
-        : "Upload a dataset to begin. Once a table is selected, ask a business question in the prompt bar."
-
+      : "Upload datasets and ask a business question. I will automatically determine which tables are relevant and generate the SQL."
+      
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10">
       <motion.div
@@ -57,9 +53,6 @@ export default function ChatPanel({
             <div className="mb-1 flex items-center gap-2 text-cyan-200">
               <LineChart className="size-3.5" aria-hidden="true" />
               Active context
-            </div>
-            <div className="max-w-44 truncate font-mono text-zinc-300">
-              {selectedTable || "No active table"}
             </div>
           </motion.div>
         </div>

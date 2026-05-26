@@ -4,18 +4,15 @@ import React, { useEffect, useEffectEvent, useRef, useState } from "react"
 
 import { runQuery } from "@/lib/sql/runQuery"
 import { generateSQL } from "@/lib/sql/generateSQL"
-import { loadSchema } from "@/lib/sql/loadSchema"
 import { handleFile } from "@/lib/upload/uploadDataset"
-import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelationships"
+import { getRelationshipsMemory } from "@/lib/ai/relationshipsMap"
 import ResultTable from "@/components/ui/resultTable"
 import ThinkPanel from "@/components/ui/ThinkPanel"
 import { motion } from "framer-motion"
-import { ArrowUp, Eye, Paperclip, Sparkles } from "lucide-react"
+import { ArrowUp, Paperclip, Sparkles } from "lucide-react"
 
 export default function FileUpload({
     setTables,
-    selectedTable,
-    setSelectedTable,
     query,
     setQuery,
     error,
@@ -26,8 +23,6 @@ export default function FileUpload({
     setLoading
 }: {
     setTables: React.Dispatch<React.SetStateAction<string[]>>
-    selectedTable: string | null
-    setSelectedTable: React.Dispatch<React.SetStateAction<string | null>>
     query: string
     setQuery: React.Dispatch<React.SetStateAction<string>>
     error: string | null
@@ -38,7 +33,6 @@ export default function FileUpload({
     setLoading: React.Dispatch<React.SetStateAction<boolean>>
 }) {
     const [queryResult, setQueryResult] = useState<Record<string, unknown>[]>([])
-    const [schema, setSchema] = useState<Record<string, unknown>[]>([])
     const [schemas, setSchemas] = useState<Record<string, Record<string, unknown>[]>>({})
     const [lastSQL, setLastSQL] = useState("")
     const [page, setPage] = useState(0)
@@ -49,7 +43,6 @@ export default function FileUpload({
     const queryControllerRef = useRef<AbortController | null>(null)
     const uploadControllerRef = useRef<AbortController | null>(null)
     const generateControllerRef = useRef<AbortController | null>(null)
-    const relationships = updateDetectedRelationships(schemas)
 
     const isControllerActive = (controller: AbortController) =>
         isMountedRef.current && !controller.signal.aborted
@@ -64,26 +57,22 @@ export default function FileUpload({
 
     const executeQuery = async (overrideQuery?: string) => {
         const controller = startController(queryControllerRef)
-        const expectedTable = selectedTable
         fixAttemptsRef.current = 0
 
         await runQuery({
-            selectedTable,
             generatedSQL: generatedSQL?.trim() || "",
             query,
-            schema,
             schemas,
             setError,
             setGeneratedSQL,
             setQueryResult,
-            relationships,
+            relationships: getRelationshipsMemory(),
             page,
             PAGE_SIZE,
             signal: controller.signal,
             guard: () => isControllerActive(controller),
             setHasMore,
-            fixAttemptsRef,
-            expectedTable
+            fixAttemptsRef
         }, overrideQuery)
     }
 
@@ -108,40 +97,12 @@ export default function FileUpload({
     }, [])
 
     useEffect(() => {
-        if (selectedTable) {
-            const controller = startController(schemaControllerRef)
-            void loadSchema({
-                table: selectedTable,
-                setSchemas,
-                setSchema,
-                signal: controller.signal,
-                guard: () => isControllerActive(controller)
-            })
-            return () => {
-                controller.abort()
-            }
-        }
-    }, [selectedTable])
-
-    useEffect(() => {
         if (!generatedSQL) return
         void runQueryForPagination(generatedSQL)
     }, [generatedSQL, page])
 
-    useEffect(() => {
-        setQueryResult([])
-        setPage(0)
-        setHasMore(false)
-        generateControllerRef.current?.abort()
-        queryControllerRef.current?.abort()
-        setLastSQL("")
-    }, [selectedTable])
-
     // Function for uploading file:
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-
-        console.log("FILE CHANGE TRIGGERED")
-
         const controller = startController(uploadControllerRef)
 
         setGeneratedSQL("")
@@ -151,12 +112,10 @@ export default function FileUpload({
 
         await handleFile(e, {
             setTables,
-            setSelectedTable,
             setError,
             setQuery,
             setGeneratedSQL,
             setSchemas,
-            setSchema,
             signal: controller.signal,
             guard: () => isControllerActive(controller)
         })
@@ -222,26 +181,10 @@ export default function FileUpload({
                             <div className="flex items-center gap-2">
                                 <motion.button
                                     type="button"
-                                    onClick={() =>
-                                        void executeQuery(`SELECT * FROM "${selectedTable}" LIMIT 10`)
-                                    }
-                                    disabled={!selectedTable || loading}
-                                    whileHover={{ y: -1 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="inline-flex items-center gap-2 border border-white/[0.09] bg-white/[0.035] px-3.5 py-2.5 text-sm font-medium text-zinc-300 transition duration-300 hover:border-cyan-200/25 hover:bg-cyan-300/[0.06] disabled:cursor-not-allowed disabled:opacity-35"
-                                >
-                                    <Eye className="size-4" aria-hidden="true" />
-                                    Preview
-                                </motion.button>
-
-                                <motion.button
-                                    type="button"
                                     onClick={() => {
                                         const controller = startController(generateControllerRef)
-                                        const expectedTable = selectedTable
                                         setPage(0)
                                         return void generateSQL({
-                                            selectedTable,
                                             query,
                                             schemas,
                                             generatedSQL,
@@ -251,11 +194,10 @@ export default function FileUpload({
                                             setGeneratedSQL,
                                             setLastSQL,
                                             signal: controller.signal,
-                                            guard: () => isControllerActive(controller),
-                                            expectedTable
+                                            guard: () => isControllerActive(controller)
                                         })
                                     }}
-                                    disabled={!selectedTable || loading}
+                                    disabled={loading}
                                     whileHover={{ y: -1, boxShadow: "0 0 34px rgba(34,211,238,0.28)" }}
                                     whileTap={{ scale: 0.98 }}
                                     className="inline-flex items-center gap-2 bg-cyan-300 px-4 py-2.5 text-sm font-semibold text-zinc-950 transition duration-300 hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-35"
@@ -267,9 +209,6 @@ export default function FileUpload({
                             </div>
                         </div>
                     </motion.div>
-                    <p className="mt-3 text-center font-mono text-[0.68rem] uppercase tracking-[0.18em] text-zinc-600">
-                        {selectedTable ? `Using ${selectedTable}` : "Upload a dataset to start"}
-                    </p>
                 </div>
             </div>
         </>

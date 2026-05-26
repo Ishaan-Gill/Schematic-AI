@@ -1,19 +1,14 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Activity, Database, FileSpreadsheet, PanelLeft } from "lucide-react"
-import type React from "react"
+import { Database, FileSpreadsheet, PanelLeft } from "lucide-react"
 
 type SidebarProps = {
   tables: string[]
-  selectedTable: string | null
-  setSelectedTable: React.Dispatch<React.SetStateAction<string | null>>
 }
 
 export default function Sidebar({
-  tables,
-  selectedTable,
-  setSelectedTable
+  tables
 }: SidebarProps) {
   return (
     <aside className="relative flex h-full w-full flex-col overflow-hidden border-b border-white/[0.08] bg-[#050607]/95 md:w-[292px] md:border-b-0 md:border-r">
@@ -59,38 +54,30 @@ export default function Sidebar({
         ) : (
           <div className="space-y-2.5">
             {tables.map((table) => {
-              const active = selectedTable === table
-
               return (
-                <motion.button
+                <motion.div
                   key={table}
-                  type="button"
-                  onClick={() => setSelectedTable(table)}
                   whileHover={{ x: 4, scale: 1.012 }}
-                  whileTap={{ scale: 0.99 }}
                   transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                  className={`group relative flex w-full items-center gap-3 overflow-hidden border px-3 py-3 text-left text-sm transition ${
-                    active
-                      ? "border-cyan-300/45 bg-cyan-300/[0.08] text-cyan-50 shadow-[0_0_34px_rgba(34,211,238,0.16)]"
-                      : "border-white/[0.07] bg-white/[0.025] text-zinc-300 hover:border-white/15 hover:bg-white/[0.045]"
-                  }`}
+                  className="
+                    group relative flex w-full items-center gap-3 overflow-hidden
+                    border border-white/[0.07]
+                    bg-white/[0.025]
+                    px-3 py-3 text-left text-sm text-zinc-300
+                    hover:border-white/15 hover:bg-white/[0.045]
+                  "
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-cyan-300/[0.10] via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
                   <FileSpreadsheet
-                    className={`relative size-4 shrink-0 ${active ? "text-cyan-200" : "text-zinc-500"}`}
+                    className="relative size-4 shrink-0 text-zinc-500"
                     aria-hidden="true"
                   />
-                  <span className="relative min-w-0 flex-1 truncate">{table}</span>
-                  {active && (
-                    <motion.span
-                      layoutId="active-dataset-pulse"
-                      className="relative flex items-center gap-1 font-mono text-[0.64rem] uppercase tracking-[0.18em] text-cyan-200"
-                    >
-                      <Activity className="size-3" aria-hidden="true" />
-                      Live
-                    </motion.span>
-                  )}
-                </motion.button>
+
+                  <span className="relative min-w-0 flex-1 truncate">
+                    {table}
+                  </span>
+                </motion.div>
               )
             })}
           </div>

@@ -4,10 +4,9 @@ import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelatio
 import { validateSQL } from "./validateSQL"
 import { buildDatasetContext } from "../metadata/buildDatasetContext"
 import { feedbackMemory } from "@/lib/upload/metadata/feedbackMemory"
-
+import { detectTableRelevance, expandRelevantTables } from "../ai/detectTableRelevance"
 
 type GenerateSQLArgs = {
-    selectedTable: string | null
     query: string
     schemas: Record<string, any[]>
     generatedSQL: string
@@ -18,17 +17,14 @@ type GenerateSQLArgs = {
     setLastSQL: React.Dispatch<React.SetStateAction<string>>
     signal?: AbortSignal
     guard?: () => boolean
-    expectedTable: string | null
 }
 
 const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
     !signal?.aborted && (guard?.() ?? true)
 
 export const generateSQL = async ({
-    selectedTable,
     query,
     schemas,
-    generatedSQL,
     lastSQL,
     setError,
     setLoading,
@@ -36,15 +32,23 @@ export const generateSQL = async ({
     setLastSQL,
     signal,
     guard,
-    expectedTable
 }: GenerateSQLArgs) => {
-    if (!selectedTable) return
 
     setError(null)
-    setLoading(true)
 
     const relationships = updateDetectedRelationships(schemas)
     const isFollowUp = isFollowUpQuery(query, lastSQL)
+    const relevantTables = detectTableRelevance(query, schemas)
+    const finalRelevantTables = expandRelevantTables(
+        relevantTables,
+        relationships
+    )
+    if (finalRelevantTables.length === 0) {
+        setError("No datasets loaded. Please upload a file first.")
+        return
+    }
+
+    setLoading(true)
     const db = await getDuckDB()
     const conn = await db.connect()
 
@@ -54,18 +58,14 @@ export const generateSQL = async ({
         // Database Context:
         const sampleRowsByTable: Record<string, any[]> = {}
 
-        for (const tableName of Object.keys(schemas)) {
-            const sampleRows = await conn.query(
-                `SELECT * FROM "${tableName}" LIMIT 3`
-            )
-            sampleRowsByTable[tableName] =
-                sampleRows.toArray()
+        for (const tableName of finalRelevantTables) {
+            const sampleRows = await conn.query(`SELECT * FROM "${tableName}" LIMIT 3`)
+            sampleRowsByTable[tableName] = sampleRows.toArray()
         }
-        const finalDatasetContext =
-            buildDatasetContext(
-                schemas,
-                sampleRowsByTable
-            )
+        const relevantSchemas = Object.fromEntries(
+            finalRelevantTables.map((table) => [table, schemas[table]]).filter(([, schema]) => schema)
+        )
+        const finalDatasetContext = buildDatasetContext(relevantSchemas, sampleRowsByTable)
 
         // Time hint
         const timeHint = isTimeQuery(query)
@@ -79,8 +79,8 @@ export const generateSQL = async ({
         const endpoint = isFollowUp && lastSQL ? "/api/edit-sql" : "/api/generate-sql"
         const body =
             endpoint === "/api/edit-sql"
-                ? { query, lastSQL: generatedSQL, schemas, relationships, isFollowUp }
-                : { query, schemas, selectedTable, relationships, finalDatasetContext, feedbackMemory, timeHint }
+                ? { query, lastSQL, schemas, relationships, isFollowUp }
+                : { query, schemas, relevantTables: finalRelevantTables, relationships, sampleRowsByTable, finalDatasetContext, feedbackMemory, timeHint }
 
         const res = await fetch(endpoint, {
             method: "POST",
@@ -93,11 +93,13 @@ export const generateSQL = async ({
             )
         })
 
-
         const data = await res.json()
-        if (!isActive(guard, signal)) return
+        if (!res.ok) {
+            setError(data.error || "Something went wrong. Please try again.")
+            return
+        }
 
-        if (expectedTable !== selectedTable) return
+        if (!isActive(guard, signal)) return
 
         if (!isFollowUp) setLastSQL("")
 

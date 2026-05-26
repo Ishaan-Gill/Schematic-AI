@@ -1,7 +1,6 @@
 import React from "react"
 
 import { getDuckDB } from "@/lib/duckdb"
-import { loadSchema } from "@/lib/sql/loadSchema"
 import { ingestParsedTable } from "@/lib/upload/ingestion/ingestParsedTable"
 import { updateDetectedRelationships } from "./metadata/detectRelationships"
 import { processFile } from "./handlers/processFile"
@@ -9,9 +8,7 @@ import { processFile } from "./handlers/processFile"
 type UploadCSVArgs = {
     files: FileList | File[]
     setTables: React.Dispatch<React.SetStateAction<string[]>>
-    setSelectedTable: React.Dispatch<React.SetStateAction<string | null>>
     setSchemas: React.Dispatch<React.SetStateAction<Record<string, any[]>>>
-    setSchema?: React.Dispatch<React.SetStateAction<any[]>>
     setError?: (val: string | null) => void
     setQuery?: React.Dispatch<React.SetStateAction<string>>
     setGeneratedSQL?: React.Dispatch<React.SetStateAction<string>>
@@ -22,9 +19,7 @@ type UploadCSVArgs = {
 export const uploadDataset = async ({
     files,
     setTables,
-    setSelectedTable,
     setSchemas,
-    setSchema,
     setError,
     setQuery,
     setGeneratedSQL,
@@ -46,6 +41,9 @@ export const uploadDataset = async ({
         try {
             const parsedTables = await processFile(file)
 
+            // Local accumulator
+            const nextSchemas: Record<string, any[]> = {}
+
             for (const parsedTable of parsedTables) {
                 const ingested = await ingestParsedTable({
                     parsedTable,
@@ -53,31 +51,41 @@ export const uploadDataset = async ({
                     conn,
                     isActive,
                 })
+
                 if (!ingested || !isActive()) return
 
                 const { tableName } = ingested
-    
-                setTables((prev) => (prev.includes(tableName) ? prev : [...prev, tableName]))
-                setSelectedTable((prev) => prev ?? tableName)
-                
 
-                await loadSchema({
-                    table: tableName,
-                    setSchemas,
-                    setSchema,
-                    signal,
-                    guard,
-                })
+                setTables((prev) =>
+                    prev.includes(tableName)
+                        ? prev
+                        : [...prev, tableName]
+                )
+
+                const schemaResult = await conn.query(`
+                    DESCRIBE "${tableName}"
+                `)
+                nextSchemas[tableName] = schemaResult.toArray()
             }
-
+            // Single atomic schema update
             setSchemas((prev) => {
-                updateDetectedRelationships(prev)
-                return prev
+                const merged = {
+                    ...prev,
+                    ...nextSchemas
+                }
+                updateDetectedRelationships(merged)
+                return merged
             })
         } catch (error) {
             if (signal?.aborted) return
+
             console.error("Upload failed:", error)
-            setError?.(error instanceof Error ? error.message : `Failed to upload ${file.name}`)
+
+            setError?.(
+                error instanceof Error
+                    ? error.message
+                    : `Failed to upload ${file.name}`
+            )
         } finally {
             await conn.close()
         }

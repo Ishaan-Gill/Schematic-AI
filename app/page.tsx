@@ -3,22 +3,13 @@ import React, { useState } from "react"
 import FileUpload from "@/components/ui/FileUpload"
 import Sidebar from "@/components/ui/Sidebar"
 import ChatPanel from "@/components/ui/ChatPanel"
-import { table } from "console"
 
 export default function Home() {
   const [tables, setTables] = useState<string[]>([])
-  const [selectedTable, setSelectedTable] = useState<string | null>(null)
   const [query, setQuery] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [generatedSQL, setGeneratedSQL] = useState("")
   const [loading, setLoading] = useState(false)
-
-  const handleTableSelect: React.Dispatch<React.SetStateAction<string | null>> = (table) => {
-    setSelectedTable(table)
-    setGeneratedSQL("")
-    setQuery("")
-    setError(null)
-  }
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#030405] text-zinc-100 md:h-screen md:flex-row">
@@ -27,15 +18,12 @@ export default function Home() {
       <div className="h-56 shrink-0 md:h-full">
         <Sidebar
           tables={tables}
-          selectedTable={selectedTable}
-          setSelectedTable={handleTableSelect}
         />
       </div>
 
       <div className="relative flex min-h-0 flex-1 flex-col md:overflow-y-auto">
         <ChatPanel
           query={query}
-          selectedTable={selectedTable}
           generatedSQL={generatedSQL}
           loading={loading}
           hasResults={Boolean(generatedSQL)}
@@ -43,8 +31,6 @@ export default function Home() {
 
         <FileUpload
           setTables={setTables}
-          selectedTable={selectedTable}
-          setSelectedTable={handleTableSelect}
           query={query}
           setQuery={setQuery}
           error={error}
