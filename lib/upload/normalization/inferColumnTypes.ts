@@ -1,3 +1,5 @@
+import { quoteIdentifier } from "@/lib/utils/quoteIdentifier"
+
 type ColumnInfo = {
     column_name: string
     column_type: string
@@ -13,7 +15,7 @@ export const inferColumnTypes = async (
     conn: DuckConnection,
     tableName: string
 ) => {
-    const schemaResult = await conn.query(`DESCRIBE "${tableName}"`)
+    const schemaResult = await conn.query(`DESCRIBE ${quoteIdentifier(tableName)}`)
     const columns = schemaResult.toArray() as ColumnInfo[]
 
     for (const col of columns) {
@@ -24,13 +26,13 @@ export const inferColumnTypes = async (
         const columnName = col.column_name
         const numericCheck = await conn.query(`
             SELECT
-                COUNT(CASE WHEN "${columnName}" IS NOT NULL THEN 1 END) AS total_rows,
+                COUNT(CASE WHEN ${quoteIdentifier(columnName)}) IS NOT NULL THEN 1 END) AS total_rows,
                 COUNT(
                     TRY_CAST(
-                        REPLACE(REPLACE(REPLACE("${columnName}", '$', ''), ',', ''), '%', '') AS DOUBLE
+                        REPLACE(REPLACE(REPLACE(${quoteIdentifier(columnName)}), '$', ''), ',', ''), '%', '') AS DOUBLE
                     )
                 ) AS numeric_rows
-            FROM "${tableName}"
+            FROM ${quoteIdentifier(tableName)}
         `)
 
         const stats = numericCheck.toArray()[0] ?? {}
@@ -40,17 +42,17 @@ export const inferColumnTypes = async (
 
         if (ratio > 0.8) {
             await conn.query(`
-                ALTER TABLE "${tableName}"
-                ALTER COLUMN "${columnName}"
+                ALTER TABLE ${quoteIdentifier(tableName)}
+                ALTER COLUMN ${quoteIdentifier(columnName)})
                 TYPE DOUBLE
                 USING TRY_CAST(
-                    REPLACE(REPLACE(REPLACE("${columnName}", '$', ''), ',', ''), '%', '') AS DOUBLE
+                    REPLACE(REPLACE(REPLACE(${quoteIdentifier(columnName)}), '$', ''), ',', ''), '%', '') AS DOUBLE
                 )
             `)
         }
     }
 
-    const updatedSchemaResult = await conn.query(`DESCRIBE "${tableName}"`)
+    const updatedSchemaResult = await conn.query(`DESCRIBE ${quoteIdentifier(tableName)}`)
     const updatedSchemaColumns = updatedSchemaResult.toArray() as ColumnInfo[]
 
     for (const col of updatedSchemaColumns) {
@@ -64,13 +66,13 @@ export const inferColumnTypes = async (
                 COUNT(*) AS total_rows,
                 COUNT(
                     COALESCE(
-                        TRY_STRPTIME("${columnName}", '%Y-%m-%d'),
-                        TRY_STRPTIME("${columnName}", '%m/%d/%Y'),
-                        TRY_STRPTIME("${columnName}", '%B %d %Y'),
-                        TRY_CAST("${columnName}" AS DATE)
+                        TRY_STRPTIME(${quoteIdentifier(columnName)}), '%Y-%m-%d'),
+                        TRY_STRPTIME(${quoteIdentifier(columnName)}), '%m/%d/%Y'),
+                        TRY_STRPTIME(${quoteIdentifier(columnName)}), '%B %d %Y'),
+                        TRY_CAST(${quoteIdentifier(columnName)}) AS DATE)
                     )
                 ) AS date_rows
-            FROM "${tableName}"
+            FROM ${quoteIdentifier(tableName)}
         `)
 
         const dateStats = dateCheck.toArray()[0] ?? {}
@@ -80,14 +82,14 @@ export const inferColumnTypes = async (
 
         if (dateRatio > 0.8) {
             await conn.query(`
-                ALTER TABLE "${tableName}"
-                ALTER COLUMN "${columnName}"
+                ALTER TABLE ${quoteIdentifier(tableName)}
+                ALTER COLUMN ${quoteIdentifier(columnName)})
                 TYPE DATE
                 USING COALESCE(
-                    TRY_STRPTIME("${columnName}", '%Y-%m-%d'),
-                    TRY_STRPTIME("${columnName}", '%m/%d/%Y'),
-                    TRY_STRPTIME("${columnName}", '%B %d %Y'),
-                    TRY_CAST("${columnName}" AS DATE)
+                    TRY_STRPTIME(${quoteIdentifier(columnName)}), '%Y-%m-%d'),
+                    TRY_STRPTIME(${quoteIdentifier(columnName)}), '%m/%d/%Y'),
+                    TRY_STRPTIME(${quoteIdentifier(columnName)}), '%B %d %Y'),
+                    TRY_CAST(${quoteIdentifier(columnName)}) AS DATE)
                 )
             `)
         }

@@ -1,3 +1,5 @@
+import { quoteIdentifier } from "@/lib/utils/quoteIdentifier"
+
 type DuckConnection = {
     query: (sql: string) => Promise<unknown>
 }
@@ -23,7 +25,7 @@ export const createDuckTable = async ({
 }: CreateDuckTableArgs) => {
     await db.registerFileText(tempName, csvText)
     await conn.query(`
-        CREATE TABLE "${tableName}" AS
+        CREATE TABLE ${quoteIdentifier(tableName)} AS
         SELECT * FROM read_csv_auto(
             '${tempName}',
             strict_mode = false,

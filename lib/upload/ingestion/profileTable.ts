@@ -1,3 +1,4 @@
+import { quoteIdentifier } from "@/lib/utils/quoteIdentifier"
 import type { ColumnProfile } from "../metadata/profileMemory"
 
 type ColumnInfo = {
@@ -28,15 +29,15 @@ export const profileTable = async ({
 
     try {
         const selectClauses = columns.map(col => `
-        COUNT("${col.column_name}") AS "${col.column_name}_non_null",
-        COUNT(DISTINCT "${col.column_name}") AS "${col.column_name}_unique"
+        COUNT(${quoteIdentifier(col.column_name)}) AS ${quoteIdentifier(col.column_name)}_non_null,
+        COUNT(DISTINCT ${quoteIdentifier(col.column_name)}) AS ${quoteIdentifier(col.column_name)}_unique
         `).join(",")
 
         const stats = await conn.query(`
         SELECT
             COUNT(*) AS total_rows,
             ${selectClauses}
-        FROM "${tableName}"
+        FROM ${quoteIdentifier(tableName)}
         `)
 
         const row = stats.toArray()[0]

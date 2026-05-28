@@ -1,4 +1,5 @@
 import { inferSemanticRole } from "@/lib/metadata/inferSemanticRole"
+import { quoteIdentifier } from "../utils/quoteIdentifier"
 
 type ColumnInfo = {
     column_name: string
@@ -100,7 +101,7 @@ export const detectTableRelevance = (
             for (const signal of signals) {
                 if (q.includes(signal)) {
                     score += 1
-                    matchedOn.push(`semantic: ${col.column_name} (${role}) matched "${signal}"`)
+                    matchedOn.push(`semantic: ${col.column_name} (${role}) matched ${quoteIdentifier(signal)}`)
                     break // one match per column
                 }
             }

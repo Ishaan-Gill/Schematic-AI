@@ -1,3 +1,5 @@
+import { quoteIdentifier } from "@/lib/utils/quoteIdentifier"
+
 type ColumnInfo = {
     column_name: string
 }
@@ -21,9 +23,9 @@ export const cleanValues = async ({
         const columnName = col.column_name
 
         await conn.query(`
-            UPDATE "${tableName}"
-            SET "${columnName}" = NULL
-            WHERE TRIM(LOWER(CAST("${columnName}" AS VARCHAR))) IN (
+            UPDATE ${quoteIdentifier(tableName)}
+            SET ${quoteIdentifier(columnName)} = NULL
+            WHERE TRIM(LOWER(CAST(${quoteIdentifier(columnName)} AS VARCHAR))) IN (
                 'n/a',
                 'na',
                 'null',
