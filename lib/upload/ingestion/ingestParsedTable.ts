@@ -11,6 +11,7 @@ import { inferSemanticContext } from "@/lib/metadata/sematicInference"
 
 import type { ParsedTable } from "../parsers/parseExcel"
 import { buildRelationshipsMemory } from "@/lib/ai/relationshipsMap"
+import { quoteIdentifier } from "@/lib/utils/quoteIdentifier"
 
 type QueryRow = Record<string, unknown>
 
@@ -38,9 +39,6 @@ type IngestParsedTableArgs = {
     isActive?: () => boolean
 }
 
-const escapeIdentifier = (value: string) =>
-    value.replace(/"/g, "\"\"")
-
 export const ingestParsedTable = async ({
     parsedTable,
     db,
@@ -48,7 +46,15 @@ export const ingestParsedTable = async ({
     isActive = () => true,
 }: IngestParsedTableArgs) => {
 
-    const tableName = parsedTable.tableName
+    const originalTableName = parsedTable.tableName
+
+    // Adds suffix to same table name:
+    let tableName = originalTableName
+    let counter = 2
+    while (datasetMemory[tableName]) {
+        tableName = `${originalTableName}_${counter}`
+        counter ++
+    }
 
     const csvText = parsedTable.csvText
 
@@ -59,7 +65,7 @@ export const ingestParsedTable = async ({
     const tempName = `${tableName}.csv`
 
     await conn.query(`
-        DROP TABLE IF EXISTS "${tableName}"
+        DROP TABLE IF EXISTS ${quoteIdentifier(tableName)}
     `)
 
     await createDuckTable({
@@ -74,7 +80,7 @@ export const ingestParsedTable = async ({
 
     // get parsed schema
     const parsedColumnsResult = await conn.query(`
-        DESCRIBE "${tableName}"
+        DESCRIBE ${quoteIdentifier(tableName)}
     `)
 
     const parsedColumns = parsedColumnsResult.toArray() as ColumnInfo[]
@@ -86,25 +92,25 @@ export const ingestParsedTable = async ({
             continue
         }
         await conn.query(`
-        ALTER TABLE "${tableName}"
+        ALTER TABLE ${quoteIdentifier(tableName)}
         RENAME COLUMN
-        "${escapeIdentifier(column.column_name)}"
+        ${quoteIdentifier(column.column_name)}
         TO
-        "${escapeIdentifier(cleanedHeader)}"
+        ${quoteIdentifier(cleanedHeader)}
     `)
     }
 
     // row count
     const rowCountResult = await conn.query(`
         SELECT COUNT(*) AS count
-        FROM "${tableName}"
+        FROM ${quoteIdentifier(tableName)}
     `)
 
     const rowCount = Number(rowCountResult.toArray()[0]?.count ?? 0)
 
     // schema
     const columnsResult = await conn.query(`
-        DESCRIBE "${tableName}"
+        DESCRIBE ${quoteIdentifier(tableName)}
     `)
 
     const columns = columnsResult.toArray() as ColumnInfo[]
@@ -125,7 +131,7 @@ export const ingestParsedTable = async ({
     // refreshed schema
     const refreshedColumnsResult =
         await conn.query(`
-            DESCRIBE "${tableName}"
+            DESCRIBE ${quoteIdentifier(tableName)}
         `)
 
     const refreshedColumns = refreshedColumnsResult.toArray() as ColumnInfo[]
