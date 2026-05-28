@@ -4,6 +4,7 @@ import { getDuckDB } from "@/lib/duckdb"
 import { ingestParsedTable } from "@/lib/upload/ingestion/ingestParsedTable"
 import { updateDetectedRelationships } from "./metadata/detectRelationships"
 import { processFile } from "./handlers/processFile"
+import { quoteIdentifier } from "../utils/quoteIdentifier"
 
 type UploadCSVArgs = {
     files: FileList | File[]
@@ -63,7 +64,7 @@ export const uploadDataset = async ({
                 )
 
                 const schemaResult = await conn.query(`
-                    DESCRIBE "${tableName}"
+                    DESCRIBE ${quoteIdentifier(tableName)}
                 `)
                 nextSchemas[tableName] = schemaResult.toArray()
             }
