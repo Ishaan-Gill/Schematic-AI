@@ -34,12 +34,14 @@ export const validateSQL = async ({
         return "Only SELECT queries are allowed."
     }
 
-    // DuckDB parser validation:
-    const db = await getDuckDB()
-    const conn = await db.connect()
-
+    let conn: any = null
     try {
+        // DuckDB parser validation:
+        const db = await getDuckDB()
+        conn = await db.connect()
+
         await conn.query(`EXPLAIN ${sql}`)
+
         return null
     } catch (err) {
         const raw = String(err)
@@ -50,6 +52,6 @@ export const validateSQL = async ({
         if (raw.includes("Column") && raw.includes("not found")) return "Query references a column that doesn't exist."
         return "Query validation failed — please try again."
     } finally {
-        await conn.close()
+        if (conn) await conn.close()
     }
 }

@@ -50,10 +50,12 @@ export const generateSQL = async ({
     }
 
     setLoading(true)
-    const db = await getDuckDB()
-    const conn = await db.connect()
-
+    
+    let conn: any = null
     try {
+        const db = await getDuckDB()
+        conn = await db.connect()
+        
         if (!isActive(guard, signal)) return
 
         // Database Context:
@@ -129,6 +131,6 @@ export const generateSQL = async ({
         if (isActive(guard, signal)) {
             setLoading(false)
         }
-        await conn.close()
+        if (conn) await conn.close()
     }
 }

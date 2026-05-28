@@ -54,9 +54,6 @@ export const runQuery = async (
 
     setError(null)
 
-    const db = await getDuckDB()
-    const conn = await db.connect()
-
     let baseQuery =
         overrideQuery?.trim()
         || generatedSQL?.trim()
@@ -75,13 +72,13 @@ export const runQuery = async (
     let finalQuery = isNonPaginated
         ? baseQuery
         : `
-        SELECT *
-        FROM (
-            ${baseQuery}
+    SELECT *
+    FROM (
+        ${baseQuery}
         ) AS paginated_query
         LIMIT ${PAGE_SIZE + 1}
         OFFSET ${page * PAGE_SIZE}
-    `
+        `
 
     // Timeout protection:
     let timeoutId: ReturnType<typeof setTimeout> | null = null
@@ -89,8 +86,12 @@ export const runQuery = async (
         timeoutId = setTimeout(() => reject(new Error("Query timeout")), 8000)
     )
 
+    let conn: any = null
     try {
         setError(null)
+
+        const db = await getDuckDB()
+        conn = await db.connect()
 
         const result = await Promise.race([
             conn.query(finalQuery),
@@ -222,6 +223,6 @@ export const runQuery = async (
         if (timeoutId) {
             clearTimeout(timeoutId)
         }
-        await conn.close()
+        if (conn) await conn.close()
     }
 }

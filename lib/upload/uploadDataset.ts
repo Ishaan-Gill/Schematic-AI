@@ -36,10 +36,11 @@ export const uploadDataset = async ({
     for (const file of Array.from(files)) {
         if (!isActive()) return
 
-        const db = await getDuckDB()
-        const conn = await db.connect()
-
+        let conn: any = null
         try {
+            const db = await getDuckDB()
+            conn = await db.connect()
+
             const parsedTables = await processFile(file)
 
             // Local accumulator
@@ -88,7 +89,7 @@ export const uploadDataset = async ({
                     : `Failed to upload ${file.name}`
             )
         } finally {
-            await conn.close()
+            if (conn) await conn.close()
         }
     }
 }
