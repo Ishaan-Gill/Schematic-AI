@@ -6,6 +6,7 @@ import { suggestFix } from "@/lib/sql/suggestFix"
 import { addFeedbackMemory } from "../upload/metadata/feedbackMemory"
 import type { Relationship } from "../ai/relationships"
 import { getRelationshipsMemory } from "../ai/relationshipsMap"
+import { validateSQL } from "./validateSQL"
 
 
 type RunQueryArgs = {
@@ -89,6 +90,8 @@ export const runQuery = async (
     )
 
     try {
+        setError(null)
+
         const result = await Promise.race([
             conn.query(finalQuery),
             timeoutPromise
@@ -104,7 +107,12 @@ export const runQuery = async (
 
         setHasMore(hasMore)
 
-        setError(null)
+        const validationError = await validateSQL({ sql: finalQuery })
+        if (validationError) {
+            setError(validationError)
+            return
+        }
+
         if (formatted.length === 0) {
             await suggestFix({
                 userQuery: query,
@@ -205,6 +213,7 @@ export const runQuery = async (
             schemas,
             setGeneratedSQL,
             relationships: getRelationshipsMemory(),
+            setError,
             signal,
             guard,
         })

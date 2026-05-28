@@ -5,6 +5,7 @@ import { validateSQL } from "./validateSQL"
 import { buildDatasetContext } from "../metadata/buildDatasetContext"
 import { feedbackMemory } from "@/lib/upload/metadata/feedbackMemory"
 import { detectTableRelevance, expandRelevantTables } from "../ai/detectTableRelevance"
+import { quoteIdentifier } from "../utils/quoteIdentifier"
 
 type GenerateSQLArgs = {
     query: string
@@ -59,7 +60,7 @@ export const generateSQL = async ({
         const sampleRowsByTable: Record<string, any[]> = {}
 
         for (const tableName of finalRelevantTables) {
-            const sampleRows = await conn.query(`SELECT * FROM "${tableName}" LIMIT 3`)
+            const sampleRows = await conn.query(`SELECT * FROM ${quoteIdentifier(tableName)} LIMIT 3`)
             sampleRowsByTable[tableName] = sampleRows.toArray()
         }
         const relevantSchemas = Object.fromEntries(

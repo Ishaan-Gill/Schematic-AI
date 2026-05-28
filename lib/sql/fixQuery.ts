@@ -1,4 +1,5 @@
 import type { Relationship } from "../ai/relationships"
+import { validateSQL } from "./validateSQL"
 
 type FixQueryArgs = {
     badQuery: string
@@ -6,6 +7,7 @@ type FixQueryArgs = {
     schemas: Record<string, any[]>
     setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
     relationships: Relationship[]
+    setError: (val: string | null) => void
     signal?: AbortSignal
     guard?: () => boolean
 }
@@ -16,10 +18,13 @@ export const fixQueryWithAI = async ({
     schemas,
     setGeneratedSQL,
     relationships,
+    setError,
     signal,
     guard
 }: FixQueryArgs) => {
     try {
+        setError(null)
+
         if (signal?.aborted || !(guard?.() ?? true)) return
 
         const res = await fetch("/api/fix-sql", {
@@ -53,6 +58,12 @@ export const fixQueryWithAI = async ({
         }
 
         fixedSQL = fixedSQL.replace(/\bSTRPTIME\s*\(/gi, "TRY_STRPTIME(")
+
+        const validateError = await validateSQL({ sql: fixedSQL })
+        if (validateError) {
+            setError(validateError)
+            return
+        }
 
         if (process.env.NEXT_PUBLIC_DEBUG === "true") console.log("FIXED SQL:", fixedSQL)
         setGeneratedSQL(fixedSQL)
