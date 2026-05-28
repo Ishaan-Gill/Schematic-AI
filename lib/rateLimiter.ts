@@ -1,4 +1,5 @@
 const requests = new Map<string, { count: number; lastReset: number }>()
+
 const MAX_TRACKED_IPS = 1000
 
 function pruneExpiredEntries(now: number, windowMs: number) {
@@ -9,32 +10,41 @@ function pruneExpiredEntries(now: number, windowMs: number) {
     }
 }
 
-export function rateLimit(ip: string, limit = 5, windowMs = 60000) {
+export function rateLimit(
+    ip: string,
+    limit = 5,
+    windowMs = 60000
+) {
     const now = Date.now()
+
     pruneExpiredEntries(now, windowMs)
 
     if (!requests.has(ip)) {
+
         if (requests.size >= MAX_TRACKED_IPS) {
-            const oldestEntry = requests.entries().next().value
+            const oldestEntry = requests.keys().next().value
+
             if (oldestEntry) {
-                requests.delete(oldestEntry[0])
+                requests.delete(oldestEntry)
             }
         }
-
-        requests.set(ip, { count: 1, lastReset: now })
+        requests.set(ip, {
+            count: 1,
+            lastReset: now
+        })
         return true
     }
-
     const data = requests.get(ip)!
 
     if (now - data.lastReset > windowMs) {
-        requests.set(ip, { count: 1, lastReset: now })
+        requests.set(ip, {
+            count: 1,
+            lastReset: now
+        })
         return true
     }
 
-    if (data.count >= limit) {
-        return false
-    }
+    if (data.count >= limit) return false
 
     data.count++
     return true
