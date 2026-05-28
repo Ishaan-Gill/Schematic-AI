@@ -1,3 +1,4 @@
+import { checkRateLimit } from "@/lib/security/checkRateLimit"
 import Groq from "groq-sdk"
 import { NextResponse } from "next/server"
 
@@ -6,7 +7,19 @@ const groq = new Groq({
 })
 
 export async function POST(req: Request) {
-    const body = await req.json()
+
+    const limited = checkRateLimit(req, 5, 60000, "Too many AI fix attempts.")
+    if (limited) return limited
+
+    let body
+    try {
+        body = await req.json()
+    } catch {
+        return NextResponse.json(
+            { error: "invalid request body" },
+            { status: 400 }
+        )
+    }
 
     type FeedbackItem = {
         query: string
@@ -80,7 +93,6 @@ export async function POST(req: Request) {
         .slice(-5)
 
     let completion
-
     for (let attempt = 1; attempt <= 2; attempt++) {
         try {
             completion = await groq.chat.completions.create({
@@ -193,7 +205,7 @@ export async function POST(req: Request) {
         } catch (err) {
             const DEBUG = process.env.NODE_ENV === "development"
             if (DEBUG) {
-                console.error(`Groq attempt ${attempt} failed:`, err)
+                console.error(`Groq attempt (generate-sql) ${attempt} failed:`, err)
             }
 
             // Small delay before retry:
@@ -229,8 +241,8 @@ export async function POST(req: Request) {
         !sql.toLowerCase().startsWith("describe")
     ) {
         return NextResponse.json(
-            {error: "Something went wrong generating your query. Please try again."},
-            {status: 502}
+            { error: "Something went wrong generating your query. Please try again." },
+            { status: 502 }
         )
     }
     if (sql === "INVALID_QUERY") {
