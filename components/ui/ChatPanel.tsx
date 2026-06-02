@@ -1,21 +1,33 @@
 "use client"
 
 import { AnimatePresence, motion } from "framer-motion"
-import { BrainCircuit, LineChart, Sparkles } from "lucide-react"
 import ChatMessage from "@/components/ui/ChatMessages"
+import ResultTable from "@/components/ui/resultTable"
+import ThinkPanel from "@/components/ui/ThinkPanel"
+import type React from "react"
 
 type ChatPanelProps = {
   query: string
   generatedSQL: string
   loading: boolean
   hasResults: boolean
+  error: string | null
+  rows: Record<string, unknown>[]
+  page: number
+  hasMore: boolean
+  setPage: React.Dispatch<React.SetStateAction<number>>
 }
 
 export default function ChatPanel({
   query,
   generatedSQL,
   loading,
-  hasResults
+  hasResults,
+  error,
+  rows,
+  page,
+  hasMore,
+  setPage
 }: ChatPanelProps) {
   const assistantCopy = loading
     ? "I am reading the uploaded datasets, checking schema context, and preparing a SQL query."
@@ -24,41 +36,8 @@ export default function ChatPanel({
       : "Upload datasets and ask a business question. I will automatically determine which tables are relevant and generate the SQL."
       
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10">
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 150, damping: 24 }}
-        className="relative overflow-hidden border border-white/[0.08] bg-white/[0.035] p-6 shadow-[0_34px_100px_rgba(0,0,0,0.38)] backdrop-blur-xl"
-      >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(34,211,238,0.14),transparent_30rem)]" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/50 to-transparent" />
-        <div className="flex items-start justify-between gap-4">
-          <div className="relative">
-            <p className="flex items-center gap-2 text-[0.68rem] font-medium uppercase tracking-[0.24em] text-cyan-200/90">
-              <Sparkles className="size-3.5" aria-hidden="true" />
-              AI Native Financial Analyst
-            </p>
-            <h2 className="mt-3 max-w-3xl text-2xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
-              Inspect, reason, and model uploaded business data.
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-              Built for fast questions, traceable SQL reasoning, and analyst-grade result review.
-            </p>
-          </div>
-          <motion.div
-            whileHover={{ y: -2 }}
-            className="relative hidden border border-white/[0.08] bg-black/30 px-4 py-3 text-xs text-zinc-400 shadow-2xl shadow-black/20 backdrop-blur sm:block"
-          >
-            <div className="mb-1 flex items-center gap-2 text-cyan-200">
-              <LineChart className="size-3.5" aria-hidden="true" />
-              Active context
-            </div>
-          </motion.div>
-        </div>
-      </motion.div>
-
-      <div className="flex flex-1 flex-col gap-4 pb-2">
+    <section className="flex w-full flex-1 flex-col bg-[#0a0b0e]">
+      <div className="mx-auto flex w-full max-w-[1300px] flex-1 flex-col gap-6 px-6 py-6 pb-40">
         <AnimatePresence mode="wait">
           <motion.div
             key={assistantCopy || "assistant-message"}
@@ -86,13 +65,35 @@ export default function ChatPanel({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-500"
+              className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#6b7280]"
             >
-              <BrainCircuit className="size-4 text-cyan-300" aria-hidden="true" />
-              Results synthesized below
             </motion.div>
           )}
         </AnimatePresence>
+
+        <div className="mx-auto w-full max-w-[860px] space-y-6">
+          <ThinkPanel
+            loading={loading}
+            generatedSQL={generatedSQL}
+          />
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-[8px] border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] p-4 font-sans text-[13px] leading-6 text-[#fecaca]"
+            >
+              {error}
+            </motion.div>
+          )}
+
+          <ResultTable
+            rows={rows}
+            page={page}
+            hasMore={hasMore}
+            setPage={setPage}
+          />
+        </div>
       </div>
     </section>
   )

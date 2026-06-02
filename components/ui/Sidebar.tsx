@@ -1,88 +1,158 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Database, FileSpreadsheet, PanelLeft } from "lucide-react"
+import {
+  FileSpreadsheet,
+  Plus,
+} from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+import { datasetMemory } from "@/lib/upload/metadata/datasetMemory"
+import { Relationship } from "@/lib/ai/relationships"
 
 type SidebarProps = {
   tables: string[]
+  relationships: Relationship[]
 }
 
 export default function Sidebar({
-  tables
+  tables,
+  relationships
 }: SidebarProps) {
+
+  const warningsCount = Object.values(datasetMemory).reduce(
+    (total, dataset) =>
+      total +
+      Object.values(dataset.profile).filter(
+        col => col.nullPercentage >= 25
+      ).length,
+    0
+  )
+
   return (
-    <aside className="relative flex h-full w-full flex-col overflow-hidden border-b border-white/[0.08] bg-[#050607]/95 md:w-[292px] md:border-b-0 md:border-r">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(34,211,238,0.12),transparent_28rem)]" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-cyan-300/30 to-transparent" />
+    <aside className="fixed left-0 top-0 z-50 flex h-screen w-[220px] flex-col border-r border-[#1c1e24] bg-[#0a0b0e]">
 
-      <div className="relative flex items-center gap-3 border-b border-white/[0.08] px-5 py-5">
-        <motion.div
-          whileHover={{ scale: 1.04, rotate: -2 }}
-          className="flex size-10 items-center justify-center border border-white/10 bg-white/[0.04] shadow-[0_0_30px_rgba(34,211,238,0.08)] backdrop-blur"
-        >
-          <PanelLeft className="size-4 text-zinc-300" aria-hidden="true" />
-        </motion.div>
-        <div>
-          <h1 className="text-sm font-semibold tracking-tight text-zinc-50">
-            Multi-Table Analyst
-          </h1>
-          <p className="mt-0.5 text-xs text-zinc-500">
-            Financial intelligence layer
-          </p>
+      {/* Logo */}
+      <motion.div
+        className="flex items-center gap-2.5 px-5 py-5"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+      >
+        <div className="grid h-7 w-7 grid-cols-2 grid-rows-2 gap-1 rounded-[6px] border-[1.5px] border-[#4fffb0] p-1">
+          <div className="rounded-[2px] bg-[#4fffb0]" />
+          <div className="rounded-[2px] bg-[#4fffb0]/60" />
+          <div className="rounded-[2px] bg-[#4fffb0]/40" />
+          <div className="rounded-[2px] bg-[#4fffb0]/20" />
         </div>
-      </div>
 
-      <div className="relative flex-1 overflow-y-auto p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[0.68rem] font-medium uppercase tracking-[0.22em] text-zinc-500">
-            <Database className="size-3.5" aria-hidden="true" />
-            Datasets
-          </div>
-          <span className="border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono text-xs text-cyan-200/80">
-            {tables.length}
-          </span>
-        </div>
+        <span className="font-sans text-[15px] font-medium text-[#e8eaf0]">
+          Schematic<span className="text-[#4fffb0]">.ai</span>
+        </span>
+      </motion.div>
+
+      {/* Section Label */}
+      <motion.div
+        className="px-5 pt-4"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+      >
+        <span className="section-label">Datasets</span>
+      </motion.div>
+
+      {/* Dataset List */}
+      <div className="mt-2 flex-1 space-y-0.5 overflow-y-auto px-2">
 
         {tables.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="border border-dashed border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-zinc-500 backdrop-blur"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mx-3 rounded-[6px] border border-dashed border-[#2a2d35] bg-transparent p-4 font-sans text-[12px] leading-5 text-[#6b7280]"
           >
-            Uploaded market, revenue, and operating datasets will appear here.
+            Uploaded datasets will appear here.
           </motion.div>
         ) : (
-          <div className="space-y-2.5">
-            {tables.map((table) => {
-              return (
-                <motion.div
-                  key={table}
-                  whileHover={{ x: 4, scale: 1.012 }}
-                  transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                  className="
-                    group relative flex w-full items-center gap-3 overflow-hidden
-                    border border-white/[0.07]
-                    bg-white/[0.025]
-                    px-3 py-3 text-left text-sm text-zinc-300
-                    hover:border-white/15 hover:bg-white/[0.045]
-                  "
-                >
-                  <span className="absolute inset-0 bg-gradient-to-r from-cyan-300/[0.10] via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+          tables.map((table, i) => (
+            <motion.div
+              key={table}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.35,
+                delay: i * 0.03
+              }}
+            >
+              <button
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-[6px] px-3 py-2",
+                  "font-mono text-[11px] text-[#e8eaf0]",
+                  "transition-colors duration-150",
+                  "hover:bg-[#111215]"
+                )}
+              >
+                <FileSpreadsheet className="h-4 w-4 shrink-0 text-[#6b7280]" />
 
-                  <FileSpreadsheet
-                    className="relative size-4 shrink-0 text-zinc-500"
-                    aria-hidden="true"
-                  />
-
-                  <span className="relative min-w-0 flex-1 truncate">
-                    {table}
-                  </span>
-                </motion.div>
-              )
-            })}
-          </div>
+                <span className="min-w-0 flex-1 truncate text-left">
+                  {table}
+                </span>
+              </button>
+            </motion.div>
+          ))
         )}
+
+        {/* Add dataset placeholder */}
+        <motion.button
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            delay: Math.min(tables.length * 0.03, 0.2)
+          }}
+          className={cn(
+            "mt-3 flex w-full items-center gap-2 rounded-[6px] px-3 py-2",
+            "border border-dashed border-[#2a2d35]",
+            "font-mono text-[10px] text-[#6b7280]",
+            "transition-all duration-200",
+            "hover:border-[#4fffb0] hover:bg-[rgba(79,255,176,0.02)] hover:text-[#4fffb0]"
+          )}
+        >
+          <Plus className="h-3.5 w-3.5" />
+
+          <span>
+            Add dataset
+          </span>
+        </motion.button>
       </div>
+
+      {/* Footer */}
+      <motion.div
+        className="border-t border-[#1c1e24]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="flex flex-col gap-1 px-3 py-2 font-mono text-[9px] text-[#374151]">
+          <span className="flex items-center gap-1">
+            <span className="h-[5px] w-[5px] rounded-full bg-[#4fffb0]" />
+            {tables.length} datasets
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-[5px] w-[5px] rounded-full bg-[#38bdf8]" />
+            {relationships.length} joins
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-[5px] w-[5px] rounded-full bg-[#f59e0b]" />
+            {warningsCount} warnings
+          </span>
+        </div>
+
+        <div className="border-t border-[#1c1e24] px-3 py-3">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[rgba(79,255,176,0.2)] bg-[rgba(79,255,176,0.1)] font-sans text-[12px] font-medium text-[#4fffb0]">
+            A
+          </div>
+        </div>
+      </motion.div>
     </aside>
   )
 }

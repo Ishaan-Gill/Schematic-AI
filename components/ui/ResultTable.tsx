@@ -1,7 +1,8 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ArrowLeft, ArrowRight, BarChart3, Rows3 } from "lucide-react"
+import { ArrowLeft, ArrowRight } from "lucide-react"
+import { cn } from "@/lib/utils"
 import type React from "react"
 
 type ResultTableProps = {
@@ -23,108 +24,141 @@ export default function ResultTable({
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden border border-dashed border-white/[0.09] bg-white/[0.025] p-8 text-sm text-zinc-500 backdrop-blur"
+                className="border border-[#1c1e24] bg-[#0a0b0d] p-6 text-sm text-[#6b7280]"
             >
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.08),transparent_24rem)]" />
-                <div className="relative flex items-center gap-3">
-                    <BarChart3 className="size-5 text-cyan-300/70" aria-hidden="true" />
-                    Results will render here as an analyst terminal after a query runs.
-                </div>
+                Results will appear here after running a query.
             </motion.div>
         )
     }
 
+    const headers = Object.keys(rows[0] ?? {})
+
+    const formatValue = (value: unknown) => {
+        if (typeof value === "number") {
+            return value.toLocaleString()
+        }
+
+        if (typeof value === "bigint") {
+            return value.toString()
+        }
+
+        if (value === null || value === undefined) {
+            return "-"
+        }
+
+        return String(value)
+    }
+
+    const isNumeric = (value: unknown) => {
+        return (
+            typeof value === "number" ||
+            typeof value === "bigint"
+        )
+    }
+
+    const isFinancialColumn = (header: string) => {
+        return /(revenue|sales|amount|price|cost|profit|margin|value|total|spend|budget|income|expense|aov|arpu)/i.test(header)
+    }
+
     return (
         <motion.div
-            initial={{ opacity: 0, y: 18, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            whileHover={{ y: -2 }}
-            transition={{ type: "spring", stiffness: 150, damping: 24 }}
-            className="relative overflow-hidden border border-white/[0.09] bg-[#050607]/90 shadow-[0_34px_120px_rgba(0,0,0,0.48)] backdrop-blur-xl"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+                duration: 0.35,
+                ease: [0.16, 1, 0.3, 1]
+            }}
+            className="w-full"
         >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(34,211,238,0.10),transparent_28rem)]" />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/45 to-transparent" />
 
-            <div className="relative flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] px-5 py-4">
+            {/* Header */}
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <p className="mb-1 flex items-center gap-2 font-mono text-[0.66rem] uppercase tracking-[0.22em] text-cyan-200/75">
-                        <Rows3 className="size-3.5" aria-hidden="true" />
-                        Analyst Terminal
-                    </p>
-                    <h3 className="text-lg font-semibold tracking-tight text-zinc-50">
-                        Query results
-                    </h3>
-                    <p className="mt-1 font-mono text-xs text-zinc-500">
+                    <p className="font-mono text-[11px] text-[#6b7280]">
                         {rows.length} rows returned
                     </p>
                 </div>
+
+                {/* Pagination */}
                 <div className="flex items-center gap-2">
                     <motion.button
                         type="button"
-                        onClick={() => setPage((value) => Math.max(0, value - 1))}
                         disabled={page === 0}
-                        whileHover={{ x: page === 0 ? 0 : -2 }}
-                        whileTap={{ scale: 0.97 }}
-                        className="inline-flex items-center gap-2 border border-white/[0.09] bg-white/[0.04] px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-cyan-200/25 hover:bg-cyan-300/[0.06] disabled:cursor-not-allowed disabled:opacity-35"
+                        onClick={() =>
+                            setPage((prev) => Math.max(0, prev - 1))
+                        }
+                        whileTap={{ scale: 0.96 }}
+                        className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 font-mono text-[10px] text-[#6b7280] transition hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                        <ArrowLeft className="size-3.5" aria-hidden="true" />
+                        <ArrowLeft className="size-3.5" />
                         Prev
                     </motion.button>
-                    <span className="border border-white/[0.07] bg-black/30 px-3 py-2 font-mono text-xs text-cyan-100/80">
+
+                    <span className="font-mono text-[10px] text-[#6b7280]">
                         Page {page + 1}
                     </span>
+
                     <motion.button
                         type="button"
                         disabled={!hasMore}
                         onClick={() => {
                             if (hasMore) {
-                                setPage((value) => value + 1)
+                                setPage((prev) => prev + 1)
                             }
                         }}
-                        whileHover={{ x: 2 }}
-                        whileTap={{ scale: 0.97 }}
-                        className="inline-flex items-center gap-2 border border-white/[0.09] bg-white/[0.04] px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-cyan-200/25 hover:bg-cyan-300/[0.06]"
+                        whileTap={{ scale: 0.96 }}
+                        className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 font-mono text-[10px] text-[#6b7280] transition hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         Next
-                        <ArrowRight className="size-3.5" aria-hidden="true" />
+                        <ArrowRight className="size-3.5" />
                     </motion.button>
                 </div>
             </div>
 
-            <div className="relative max-h-[460px] overflow-auto [scrollbar-color:rgba(34,211,238,0.35)_rgba(255,255,255,0.04)] [scrollbar-width:thin]">
-                <table className="w-full border-collapse text-sm">
-                    <thead className="sticky top-0 z-10 bg-[#080b0d]/95 backdrop-blur">
+            {/* Table */}
+            <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                    <thead>
                         <tr>
-                            {Object.keys(rows[0]).map((header, index) => (
+                            {headers.map((header, i) => (
                                 <th
-                                    key={`${header || "column"}-${index}`}
-                                    className="border-b border-white/[0.08] px-4 py-3 text-left font-mono text-[0.66rem] font-semibold uppercase tracking-[0.18em] text-zinc-400"
+                                    key={i}
+                                    className="border-b border-[#2a2d35] px-4 pb-2 text-left font-mono text-[9px] font-normal uppercase tracking-[0.1em] text-[#6b7280]"
                                 >
                                     {header}
                                 </th>
                             ))}
                         </tr>
                     </thead>
+
                     <tbody>
                         {rows.map((row, rowIndex) => (
                             <motion.tr
                                 key={rowIndex}
-                                initial={{ opacity: 0, y: 6 }}
+                                initial={{ opacity: 0, y: 4 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: Math.min(rowIndex * 0.012, 0.16) }}
-                                className="group border-b border-white/[0.045] transition duration-300 hover:bg-cyan-300/[0.045] hover:shadow-[inset_2px_0_0_rgba(34,211,238,0.55)]"
+                                transition={{
+                                    delay: Math.min(rowIndex * 0.04, 0.24),
+                                    duration: 0.25,
+                                    ease: [0.16, 1, 0.3, 1]
+                                }}
+                                className={cn(
+                                    "border-b border-white/[0.03] transition-colors duration-150 hover:bg-[#111215]"
+                                )}
                             >
-                                {Object.values(row).map((value, colIndex) => (
+                                {Object.entries(row).map(([header, cell], cellIndex) => (
                                     <td
-                                        key={colIndex}
-                                        className={`whitespace-nowrap px-4 py-3 text-zinc-300 transition group-hover:text-zinc-50 ${typeof value === "number" || typeof value === "bigint"
-                                                ? "font-mono tabular-nums text-cyan-50/90"
-                                                : "text-zinc-300"
-                                            }`}
+                                        key={cellIndex}
+                                        className={cn(
+                                            "px-4 py-2.5 text-[13px]",
+                                            isNumeric(cell) && isFinancialColumn(header)
+                                                ? "font-mono text-[#4fffb0]"
+                                                : isNumeric(cell)
+                                                    ? "font-mono text-[#e8eaf0]"
+                                                : "font-sans text-[#e5e7eb]"
+                                        )}
                                     >
-                                        {typeof value === "bigint"
-                                            ? value.toString()
-                                            : String(value)}
+                                        {formatValue(cell)}
                                     </td>
                                 ))}
                             </motion.tr>

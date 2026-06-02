@@ -15,21 +15,26 @@ export default function ChatMessage({
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 12, filter: "blur(6px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ type: "spring", stiffness: 210, damping: 24 }}
-            className={`w-full flex ${isUser ? "justify-end" : "justify-start"}`}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className={`mx-auto w-full max-w-[860px] flex ${isUser ? "justify-end" : "justify-start"}`}
         >
-            <motion.div
-                whileHover={{ y: -1 }}
-                className={`max-w-3xl border px-4 py-3 text-sm leading-6 shadow-2xl backdrop-blur whitespace-pre-wrap ${
-                    isUser
-                        ? "border-cyan-300/40 bg-cyan-300/90 text-zinc-950 shadow-cyan-950/20"
-                        : "border-white/[0.08] bg-white/[0.04] text-zinc-100 shadow-black/30"
-                }`}
-            >
-                {content}
-            </motion.div>
+            {isUser ? (
+                <div className="max-w-[80%] whitespace-pre-wrap rounded-[16px_16px_4px_16px] border border-[#2a2d35] bg-[#1a1d24] px-4 py-3 font-sans text-[14px] leading-[1.7] text-[#e8eaf0]">
+                    {content}
+                </div>
+            ) : (
+                <div className="flex w-full items-start gap-3">
+                    <div className="mt-1 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[5px] border border-[rgba(79,255,176,0.25)] bg-[rgba(79,255,176,0.1)] font-mono text-[10px] text-[rgba(79,255,176,0.8)]">
+                        S
+                    </div>
+
+                    <div className="min-w-0 flex-1 whitespace-pre-wrap font-sans text-[14px] leading-[1.8] text-[#e8eaf0]">
+                        {content}
+                    </div>
+                </div>
+            )}
         </motion.div>
     )
 }

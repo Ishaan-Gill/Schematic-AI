@@ -29,8 +29,8 @@ export const profileTable = async ({
 
     try {
         const selectClauses = columns.map(col => `
-        COUNT(${quoteIdentifier(col.column_name)}) AS ${quoteIdentifier(col.column_name)}_non_null,
-        COUNT(DISTINCT ${quoteIdentifier(col.column_name)}) AS ${quoteIdentifier(col.column_name)}_unique
+        COUNT(${quoteIdentifier(col.column_name)}) AS ${quoteIdentifier(`${col.column_name}_non_null`)},
+        COUNT(DISTINCT ${quoteIdentifier(col.column_name)}) AS ${quoteIdentifier(`${col.column_name}_unique`)}
         `).join(",")
 
         const stats = await conn.query(`

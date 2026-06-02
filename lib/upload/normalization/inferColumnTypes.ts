@@ -26,10 +26,10 @@ export const inferColumnTypes = async (
         const columnName = col.column_name
         const numericCheck = await conn.query(`
             SELECT
-                COUNT(CASE WHEN ${quoteIdentifier(columnName)}) IS NOT NULL THEN 1 END) AS total_rows,
+                COUNT(CASE WHEN ${quoteIdentifier(columnName)} IS NOT NULL THEN 1 END) AS total_rows,
                 COUNT(
                     TRY_CAST(
-                        REPLACE(REPLACE(REPLACE(${quoteIdentifier(columnName)}), '$', ''), ',', ''), '%', '') AS DOUBLE
+                        REPLACE(REPLACE(REPLACE(${quoteIdentifier(columnName)}, '$', ''), ',', ''), '%', '') AS DOUBLE
                     )
                 ) AS numeric_rows
             FROM ${quoteIdentifier(tableName)}
@@ -43,10 +43,10 @@ export const inferColumnTypes = async (
         if (ratio > 0.8) {
             await conn.query(`
                 ALTER TABLE ${quoteIdentifier(tableName)}
-                ALTER COLUMN ${quoteIdentifier(columnName)})
+                ALTER COLUMN ${quoteIdentifier(columnName)}
                 TYPE DOUBLE
                 USING TRY_CAST(
-                    REPLACE(REPLACE(REPLACE(${quoteIdentifier(columnName)}), '$', ''), ',', ''), '%', '') AS DOUBLE
+                    REPLACE(REPLACE(REPLACE(${quoteIdentifier(columnName)}, '$', ''), ',', ''), '%', '') AS DOUBLE
                 )
             `)
         }
@@ -66,10 +66,10 @@ export const inferColumnTypes = async (
                 COUNT(*) AS total_rows,
                 COUNT(
                     COALESCE(
-                        TRY_STRPTIME(${quoteIdentifier(columnName)}), '%Y-%m-%d'),
-                        TRY_STRPTIME(${quoteIdentifier(columnName)}), '%m/%d/%Y'),
-                        TRY_STRPTIME(${quoteIdentifier(columnName)}), '%B %d %Y'),
-                        TRY_CAST(${quoteIdentifier(columnName)}) AS DATE)
+                        TRY_STRPTIME(${quoteIdentifier(columnName)}, '%Y-%m-%d'),
+                        TRY_STRPTIME(${quoteIdentifier(columnName)}, '%m/%d/%Y'),
+                        TRY_STRPTIME(${quoteIdentifier(columnName)}, '%B %d %Y'),
+                        TRY_CAST(${quoteIdentifier(columnName)} AS DATE)
                     )
                 ) AS date_rows
             FROM ${quoteIdentifier(tableName)}
@@ -83,13 +83,13 @@ export const inferColumnTypes = async (
         if (dateRatio > 0.8) {
             await conn.query(`
                 ALTER TABLE ${quoteIdentifier(tableName)}
-                ALTER COLUMN ${quoteIdentifier(columnName)})
+                ALTER COLUMN ${quoteIdentifier(columnName)}
                 TYPE DATE
                 USING COALESCE(
-                    TRY_STRPTIME(${quoteIdentifier(columnName)}), '%Y-%m-%d'),
-                    TRY_STRPTIME(${quoteIdentifier(columnName)}), '%m/%d/%Y'),
-                    TRY_STRPTIME(${quoteIdentifier(columnName)}), '%B %d %Y'),
-                    TRY_CAST(${quoteIdentifier(columnName)}) AS DATE)
+                    TRY_STRPTIME(${quoteIdentifier(columnName)}, '%Y-%m-%d'),
+                    TRY_STRPTIME(${quoteIdentifier(columnName)}, '%m/%d/%Y'),
+                    TRY_STRPTIME(${quoteIdentifier(columnName)}, '%B %d %Y'),
+                    TRY_CAST(${quoteIdentifier(columnName)} AS DATE)
                 )
             `)
         }
