@@ -143,10 +143,25 @@ export async function POST(req: Request) {
                             - Prefer DATE_TRUNC and EXTRACT
                             - Use LOWER() for string comparisons
                             
-                            If user asks for:
-                            schema, columns, structure, fields, table design
-                            prefer:
-                            DESCRIBE "table_name"
+                            IMPORTANT:
+
+                            Only generate DESCRIBE queries when the user explicitly asks:
+                            - describe table X
+                            - show schema of X
+                            - list columns of X
+                            - inspect structure of X
+
+                            If the user asks:
+                            - show X
+                            - print X
+                            - display X
+                            - view X
+
+                            then generate:
+
+                            SELECT * FROM X
+
+                            Do NOT generate DESCRIBE for data viewing requests.
                             
                             Only join tables if an explicit relationship is provided.
                             
