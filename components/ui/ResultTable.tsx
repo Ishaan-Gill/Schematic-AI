@@ -4,19 +4,22 @@ import { motion } from "framer-motion"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type React from "react"
+import ActionRow from "./ActionRow"
 
 type ResultTableProps = {
     rows: Record<string, unknown>[]
     page: number
     setPage: React.Dispatch<React.SetStateAction<number>>
     hasMore: boolean
+    onExport: () => void
 }
 
 export default function ResultTable({
     rows,
     page,
     setPage,
-    hasMore
+    hasMore,
+    onExport
 }: ResultTableProps) {
 
     if (!rows.length) {
@@ -37,29 +40,24 @@ export default function ResultTable({
         if (typeof value === "number") {
             return value.toLocaleString()
         }
-
         if (typeof value === "bigint") {
             return value.toString()
         }
-
         if (value === null || value === undefined) {
             return "-"
         }
-
         return String(value)
     }
-
     const isNumeric = (value: unknown) => {
         return (
             typeof value === "number" ||
             typeof value === "bigint"
         )
     }
-
     const isFinancialColumn = (header: string) => {
         return /(revenue|sales|amount|price|cost|profit|margin|value|total|spend|budget|income|expense|aov|arpu)/i.test(header)
     }
-
+    
     return (
         <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -72,7 +70,9 @@ export default function ResultTable({
         >
 
             {/* Header */}
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="mb-3 grid grid-cols-3 items-center">
+
+                {/* Rows returned */}
                 <div>
                     <p className="font-mono text-[11px] text-[#6b7280]">
                         {rows.length} rows returned
@@ -80,7 +80,7 @@ export default function ResultTable({
                 </div>
 
                 {/* Pagination */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-3">
                     <motion.button
                         type="button"
                         disabled={page === 0}
@@ -88,13 +88,13 @@ export default function ResultTable({
                             setPage((prev) => Math.max(0, prev - 1))
                         }
                         whileTap={{ scale: 0.96 }}
-                        className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 font-mono text-[10px] text-[#6b7280] transition hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex h-7 items-center gap-1.5 rounded-[6px] px-2 font-mono text-[10px] text-[#6b7280] transition hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                        <ArrowLeft className="size-3.5" />
+                        <ArrowLeft className="size-3.5 shrink-0"/>
                         Prev
                     </motion.button>
 
-                    <span className="font-mono text-[10px] text-[#6b7280]">
+                    <span className="flex h-7 items-center rounded-[6px] border border-[#1c1e24] bg-[#111215] px-3 font-mono text-[10px] text-[#6b7280]">
                         Page {page + 1}
                     </span>
 
@@ -107,11 +107,16 @@ export default function ResultTable({
                             }
                         }}
                         whileTap={{ scale: 0.96 }}
-                        className="inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 font-mono text-[10px] text-[#6b7280] transition hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex h-7 items-center gap-1.5 rounded-[6px] px-2 font-mono text-[10px] text-[#6b7280] transition hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         Next
-                        <ArrowRight className="size-3.5" />
+                        <ArrowRight className="size-3.5 shrink-0"/>
                     </motion.button>
+                </div>
+
+                {/* Action Row */}
+                <div className="flex justify-end">
+                    <ActionRow onExport={onExport} />
                 </div>
             </div>
 

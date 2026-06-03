@@ -5,6 +5,7 @@ import ChatMessage from "@/components/ui/ChatMessages"
 import ResultTable from "@/components/ui/resultTable"
 import ThinkPanel from "@/components/ui/ThinkPanel"
 import type React from "react"
+import { exportCsv } from "@/lib/export/exportCsv"
 
 type ChatPanelProps = {
   query: string
@@ -16,6 +17,7 @@ type ChatPanelProps = {
   page: number
   hasMore: boolean
   setPage: React.Dispatch<React.SetStateAction<number>>
+  queryResult: Record<string, unknown>[]
 }
 
 export default function ChatPanel({
@@ -27,7 +29,8 @@ export default function ChatPanel({
   rows,
   page,
   hasMore,
-  setPage
+  setPage,
+  queryResult
 }: ChatPanelProps) {
   const assistantCopy = loading
     ? "I am reading the uploaded datasets, checking schema context, and preparing a SQL query."
@@ -92,6 +95,7 @@ export default function ChatPanel({
             page={page}
             hasMore={hasMore}
             setPage={setPage}
+            onExport={() => exportCsv(queryResult, "schematic_export")}
           />
         </div>
       </div>

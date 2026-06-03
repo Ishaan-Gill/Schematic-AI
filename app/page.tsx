@@ -36,6 +36,7 @@ export default function Home() {
           page={page}
           hasMore={hasMore}
           setPage={setPage}
+          queryResult={queryResult}
         />
 
         <FileUpload
