@@ -1,128 +1,41 @@
 "use client"
 
-import React, { useEffect, useEffectEvent, useRef, useState } from "react"
+import React, { useEffect, useRef } from "react"
 
-import { runQuery } from "@/lib/sql/runQuery"
-import { generateSQL } from "@/lib/sql/generateSQL"
-import { handleFile } from "@/lib/upload/uploadDataset"
-import { getRelationshipsMemory } from "@/lib/ai/relationshipsMap"
 import { motion } from "framer-motion"
 import { ArrowUp, Paperclip, Sparkles } from "lucide-react"
 
 export default function FileUpload({
-    setTables,
     query,
     setQuery,
     error,
     setError,
-    generatedSQL,
-    setGeneratedSQL,
     loading,
-    setLoading,
-    setQueryResult,
-    page,
-    setPage,
-    setHasMore
+    onSend,
+    onFileChange,
 }: {
-    setTables: React.Dispatch<React.SetStateAction<string[]>>
     query: string
     setQuery: React.Dispatch<React.SetStateAction<string>>
     error: string | null
     setError: (val: string | null) => void
-    generatedSQL: string
-    setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
     loading: boolean
-    setLoading: React.Dispatch<React.SetStateAction<boolean>>
-    setQueryResult: React.Dispatch<React.SetStateAction<Record<string, unknown>[]>>
-    page: number
-    setPage: React.Dispatch<React.SetStateAction<number>>
-    setHasMore: React.Dispatch<React.SetStateAction<boolean>>
+    onSend: (query: string) => Promise<void>
+    onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
 }) {
-    const [schemas, setSchemas] = useState<Record<string, Record<string, unknown>[]>>({})
-    const [lastSQL, setLastSQL] = useState("")
-    const PAGE_SIZE = 100
-    const isMountedRef = useRef(true)
-    const schemaControllerRef = useRef<AbortController | null>(null)
-    const queryControllerRef = useRef<AbortController | null>(null)
-    const uploadControllerRef = useRef<AbortController | null>(null)
-    const generateControllerRef = useRef<AbortController | null>(null)
-
-    const isControllerActive = (controller: AbortController) =>
-        isMountedRef.current && !controller.signal.aborted
-
-    const startController = (ref: React.MutableRefObject<AbortController | null>) => {
-        ref.current?.abort()
-        const controller = new AbortController()
-        ref.current = controller
-        return controller
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const MAX_HEIGHT = 120
+    const resize = () => {
+        const el = textareaRef.current
+        if (!el) return
+        el.style.height = "0px"
+        const newHeight = Math.min(el.scrollHeight, MAX_HEIGHT)
+        el.style.height = `${newHeight}px`
+        el.style.overflowY =
+            el.scrollHeight > MAX_HEIGHT ? "auto" : "hidden"
     }
-    const fixAttemptsRef = useRef(0)
-
-    const executeQuery = async (overrideQuery?: string) => {
-        const controller = startController(queryControllerRef)
-        fixAttemptsRef.current = 0
-
-        await runQuery({
-            generatedSQL: generatedSQL?.trim() || "",
-            query,
-            schemas,
-            setError,
-            setGeneratedSQL,
-            setQueryResult,
-            relationships: getRelationshipsMemory(),
-            page,
-            PAGE_SIZE,
-            signal: controller.signal,
-            guard: () => isControllerActive(controller),
-            setHasMore,
-            fixAttemptsRef
-        }, overrideQuery)
-    }
-
-    const runQueryForPagination = useEffectEvent(async (overrideQuery?: string) => {
-        await executeQuery(overrideQuery)
-    })
-
-    // useEffects: 
     useEffect(() => {
-        const schemaControllers = schemaControllerRef
-        const queryControllers = queryControllerRef
-        const uploadControllers = uploadControllerRef
-        const generateControllers = generateControllerRef
-
-        return () => {
-            isMountedRef.current = false
-            schemaControllers.current?.abort()
-            queryControllers.current?.abort()
-            uploadControllers.current?.abort()
-            generateControllers.current?.abort()
-        }
-    }, [])
-
-    useEffect(() => {
-        if (!generatedSQL) return
-        void runQueryForPagination(generatedSQL)
-    }, [generatedSQL, page])
-
-    // Function for uploading file:
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const controller = startController(uploadControllerRef)
-
-        setGeneratedSQL("")
-        setLastSQL("")
-        setQueryResult([])
-        setPage(0)
-
-        await handleFile(e, {
-            setTables,
-            setError,
-            setQuery,
-            setGeneratedSQL,
-            setSchemas,
-            signal: controller.signal,
-            guard: () => isControllerActive(controller)
-        })
-    }
+        resize()
+    }, [query])
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-20 px-6 pb-6 pt-10 md:left-[220px]">
@@ -140,46 +53,67 @@ export default function FileUpload({
                             type="file"
                             multiple
                             accept=".csv,.xlsx"
-                            onChange={handleFileChange}
+                            onChange={onFileChange}
                             className="sr-only"
                         />
                     </label>
-
-                    <textarea
-                        value={query}
-                        onChange={(e) => {
-                            setQuery(e.target.value)
-                            if (error) setError(null)
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault()
+                            void onSend(query)
                         }}
-                        placeholder="Ask anything about your business data..."
-                        className="min-h-6 max-h-[120px] flex-1 resize-none border-0 bg-transparent py-1 font-sans text-[14px] leading-6 text-[#e8eaf0] placeholder:text-[#374151] focus:outline-none"
-                    />
-
-                    <motion.button
-                        type="button"
-                        onClick={() => {
-                            const controller = startController(generateControllerRef)
-                            setPage(0)
-                            return void generateSQL({
-                                query,
-                                schemas,
-                                generatedSQL,
-                                lastSQL,
-                                setError,
-                                setLoading,
-                                setGeneratedSQL,
-                                setLastSQL,
-                                signal: controller.signal,
-                                guard: () => isControllerActive(controller)
-                            })
-                        }}
-                        disabled={loading}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.96 }}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[7px] bg-[#4fffb0] text-[#0a0b0e] transition-all duration-150 hover:bg-[#3de89f] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex w-full flex-col"
                     >
-                        {loading ? <Sparkles className="size-4 animate-pulse" aria-hidden="true" /> : <ArrowUp className="size-4" aria-hidden="true" />}
-                    </motion.button>
+                        <textarea
+                            ref={textareaRef}
+                            value={query}
+                            placeholder="Ask anything about your business data..."
+                            rows={1}
+                            onChange={(e) => {
+                                setQuery(e.target.value)
+                                resize()
+                                if (error) setError(null)
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault()
+
+                                    if (!query.trim() || loading) return
+
+                                    void onSend(query)
+                                }
+                            }}
+                            className="
+                                 w-full
+                                min-h-[24px]
+                                max-h-[120px]
+                                overflow-y-auto
+                                resize-none
+                                border-0
+                                bg-transparent
+                                py-1
+                                text-[14px]
+                                leading-6
+                                text-[#e8eaf0]
+                                placeholder:text-[#6b7280]
+                                focus:outline-none
+                            "
+                        />
+                        <div className="mt-3 flex items-center justify-between">
+                            <motion.button
+                                type="submit"
+                                disabled={loading || !query.trim()}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.96 }}
+                                className="flex h-8 w-8 items-center justify-center rounded-[7px] bg-[#4fffb0] text-[#0a0b0e] disabled:opacity-40"
+                            >
+                                {loading
+                                    ? <Sparkles className="size-4 animate-pulse" />
+                                    : <ArrowUp className="size-4" />
+                                }
+                            </motion.button>
+                        </div>
+                    </form>
                 </motion.div>
             </div>
         </div>

@@ -10,15 +10,24 @@ import { cn } from "@/lib/utils"
 
 import { datasetMemory } from "@/lib/upload/metadata/datasetMemory"
 import { Relationship } from "@/lib/ai/relationships"
+import { Session } from "@/app/page"
 
 type SidebarProps = {
   tables: string[]
   relationships: Relationship[]
+  sessions: Session[]
+  activeSessionId: string | null
+  setActiveSessionId: React.Dispatch<React.SetStateAction<string | null>>
+  handleNewChat: () => void
 }
 
 export default function Sidebar({
   tables,
-  relationships
+  relationships,
+  sessions,
+  activeSessionId,
+  setActiveSessionId,
+  handleNewChat
 }: SidebarProps) {
 
   const warningsCount = Object.values(datasetMemory).reduce(
@@ -52,7 +61,64 @@ export default function Sidebar({
         </span>
       </motion.div>
 
-      {/* Section Label */}
+      {/* New Chat Button */}
+      <motion.div
+        className="px-3 pt-3"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+      >
+        <button
+          onClick={handleNewChat}
+          className={cn(
+            "flex w-full items-center gap-2 rounded-lg",
+            "border border-[#2a2d35]",
+            "bg-[#111215]",
+            "px-3 py-2.5",
+            "font-sans text-[13px] font-medium text-[#e8eaf0]",
+            "transition-all duration-200",
+            "hover:border-[#4fffb0]",
+            "hover:bg-[#15171c]"
+          )}
+        >
+          <Plus className="h-4 w-4 text-[#4fffb0]" />
+          <span>New Chat</span>
+        </button>
+      </motion.div>
+
+      {/* Recents Label */}
+      <motion.div
+        className="px-5 pt-6 pb-2"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08 }}
+      >
+        <span className="section-label">Recent</span>
+      </motion.div>
+
+      {/* Recents List */}
+      <div className="space-y-1 px-2">
+        {sessions.map(session => (
+          <button
+            key={session.id}
+            onClick={() => setActiveSessionId(session.id)}
+            className={cn(
+              "flex w-full rounded-lg px-3 py-2",
+              "text-left text-[13px]",
+              "transition-colors",
+              activeSessionId === session.id
+                ? "bg-[#1b1d22] text-white"
+                : "text-[#b6bcc8] hover:bg-[#111215]"
+            )}
+          >
+            <span className="truncate">
+              {session.title}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Datasets Label */}
       <motion.div
         className="px-5 pt-4"
         initial={{ opacity: 0, y: 8 }}
