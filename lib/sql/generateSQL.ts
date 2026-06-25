@@ -10,7 +10,6 @@ import { quoteIdentifier } from "../utils/quoteIdentifier"
 type GenerateSQLArgs = {
     query: string
     schemas: Record<string, any[]>
-    generatedSQL: string
     lastSQL: string
     setError: (val: string | null) => void
     setLoading: React.Dispatch<React.SetStateAction<boolean>>
@@ -33,7 +32,7 @@ export const generateSQL = async ({
     setLastSQL,
     signal,
     guard,
-}: GenerateSQLArgs) => {
+}: GenerateSQLArgs): Promise<string | undefined> => {
 
     setError(null)
 
@@ -123,6 +122,8 @@ export const generateSQL = async ({
         const freshSQL = data.sql
         setGeneratedSQL(freshSQL)
         setLastSQL(freshSQL)
+
+        return freshSQL
 
     } catch (err) {
         if (signal?.aborted) return

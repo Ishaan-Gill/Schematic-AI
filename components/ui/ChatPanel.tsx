@@ -6,62 +6,45 @@ import ResultTable from "@/components/ui/resultTable"
 import ThinkPanel from "@/components/ui/ThinkPanel"
 import type React from "react"
 import { exportCsv } from "@/lib/export/exportCsv"
+import type { Message } from "@/app/page"
 
 type ChatPanelProps = {
-  query: string
-  generatedSQL: string
+  messages: Message[]
   loading: boolean
   hasResults: boolean
   error: string | null
-  rows: Record<string, unknown>[]
   page: number
   hasMore: boolean
   setPage: React.Dispatch<React.SetStateAction<number>>
-  queryResult: Record<string, unknown>[]
 }
 
 export default function ChatPanel({
-  query,
-  generatedSQL,
+  messages,
   loading,
   hasResults,
   error,
-  rows,
   page,
   hasMore,
   setPage,
-  queryResult
 }: ChatPanelProps) {
-  const assistantCopy = loading
-    ? "I am reading the uploaded datasets, checking schema context, and preparing a SQL query."
-    : generatedSQL
-      ? "I generated SQL and ran it against your uploaded data. The result table is shown below."
-      : "Upload datasets and ask a business question. I will automatically determine which tables are relevant and generate the SQL."
-      
+
+  const lastAssistant = messages.slice().reverse().find(m => m.role === "assistant")
+
   return (
     <section className="flex w-full flex-1 flex-col bg-[#0a0b0e]">
       <div className="mx-auto flex w-full max-w-[1300px] flex-1 flex-col gap-6 px-6 py-6 pb-40">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={assistantCopy || "assistant-message"}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.22 }}
-          >
-            <ChatMessage role="assistant" content={assistantCopy} />
-          </motion.div>
+
+        <AnimatePresence>
+          {messages.map(message => (
+            <ChatMessage
+              key={message.id}
+              role={message.role}
+              content={message.content}
+            />
+          ))}
         </AnimatePresence>
 
         <AnimatePresence>
-          {query.trim() && (
-            <ChatMessage
-              key="active-user-query"
-              role="user"
-              content={query.trim()}
-            />
-          )}
-
           {hasResults && (
             <motion.div
               key="results-synthesized-indicator"
@@ -77,7 +60,7 @@ export default function ChatPanel({
         <div className="mx-auto w-full max-w-[860px] space-y-6">
           <ThinkPanel
             loading={loading}
-            generatedSQL={generatedSQL}
+            generatedSQL={lastAssistant?.generatedSQL ?? ""}
           />
 
           {error && (
@@ -91,11 +74,11 @@ export default function ChatPanel({
           )}
 
           <ResultTable
-            rows={rows}
+            rows={lastAssistant?.queryResult ?? []}
             page={page}
             hasMore={hasMore}
             setPage={setPage}
-            onExport={() => exportCsv(queryResult, "schematic_export")}
+            onExport={() => exportCsv(lastAssistant?.queryResult ?? [], "schematic_export")}
           />
         </div>
       </div>

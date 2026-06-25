@@ -9,10 +9,10 @@ import { runQuery } from "@/lib/sql/runQuery"
 import { handleFile } from "@/lib/upload/uploadDataset"
 import React from "react"
 
-type Message = {
+export type Message = {
   id: string
   role: "user" | "assistant"
-  query: string
+  content: string
   generatedSQL?: string
   queryResult?: Record<string, unknown>[]
   timestamp: string
@@ -55,12 +55,12 @@ export default function Home() {
   const isControllerActive = (controller: AbortController) =>
     isMountedRef.current && !controller.signal.aborted
 
-  const executeQuery = async (overrideQuery?: string) => {
+  const executeQuery = async (sql?: string) => {
     const controller = startController(queryControllerRef)
     fixAttemptsRef.current = 0
 
     await runQuery({
-      generatedSQL: generatedSQL.trim(),
+      generatedSQL: (sql ?? generatedSQL).trim(),
       query,
       schemas,
       setError,
@@ -73,7 +73,7 @@ export default function Home() {
       guard: () => isControllerActive(controller),
       setHasMore,
       fixAttemptsRef,
-    }, overrideQuery)
+    })
   }
 
   const runQueryForPagination = useEffectEvent(async (overrideQuery?: string) => {
@@ -95,6 +95,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!generatedSQL) return
+    if (page === 0) return
     void runQueryForPagination(generatedSQL)
   }, [generatedSQL, page])
 
@@ -109,11 +110,39 @@ export default function Home() {
     setActiveSessionId(newSession.id)
   }
 
+  const updateMessage = (
+    messageId: string,
+    updates: Partial<Message>
+  ) => {
+    setSessions(prev =>
+      prev.map(session =>
+        session.id !== activeSessionId
+          ? session
+          : {
+            ...session,
+            messages: session.messages.map(message =>
+              message.id === messageId
+                ? { ...message, ...updates }
+                : message
+            ),
+          }
+      )
+    )
+  }
+
   const handleSendMessage = async (query: string) => {
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: "user",
-      query,
+      content: query,
+      timestamp: new Date().toISOString()
+    }
+    const assistantMessage: Message = {
+      id: crypto.randomUUID(),
+      role: "assistant",
+      content: "",
+      generatedSQL: "",
+      queryResult: [],
       timestamp: new Date().toISOString()
     }
     setSessions(prev =>
@@ -121,7 +150,7 @@ export default function Home() {
         session.id === activeSessionId
           ? {
             ...session,
-            messages: [...session.messages, userMessage],
+            messages: [...session.messages, userMessage, assistantMessage],
           }
           : session
       )
@@ -132,10 +161,9 @@ export default function Home() {
     setQueryResult([])
     setHasMore(false)
     setPage(0)
-    await generateSQL({
+    const sql = await generateSQL({
       query,
       schemas,
-      generatedSQL,
       lastSQL,
       setError,
       setLoading,
@@ -144,7 +172,12 @@ export default function Home() {
       signal: controller.signal,
       guard: () => isControllerActive(controller)
     })
+    updateMessage(assistantMessage.id, {generatedSQL: sql, content:"Generated SQL successfully"})
+    setGeneratedSQL(sql ?? "")
+    await executeQuery(sql)
   }
+
+  const activeSession = sessions.find(s => s.id === activeSessionId)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const controller = startController(uploadControllerRef)
@@ -184,16 +217,13 @@ export default function Home() {
 
       <div className="relative flex min-h-0 flex-1 flex-col md:ml-[220px] md:overflow-y-auto">
         <ChatPanel
-          query={query}
-          generatedSQL={generatedSQL}
+          messages={activeSession?.messages ?? []}
           loading={loading}
           hasResults={Boolean(generatedSQL)}
           error={error}
-          rows={queryResult}
           page={page}
           hasMore={hasMore}
           setPage={setPage}
-          queryResult={queryResult}
         />
 
         <FileUpload

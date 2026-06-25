@@ -45,8 +45,7 @@ export const runQuery = async (
         guard,
         setHasMore,
         fixAttemptsRef,
-    }: RunQueryArgs,
-    overrideQuery?: string
+    }: RunQueryArgs
 ) => {
     const startTime = performance.now()
 
@@ -54,9 +53,7 @@ export const runQuery = async (
 
     setError(null)
 
-    let baseQuery =
-        overrideQuery?.trim()
-        || generatedSQL?.trim()
+    let baseQuery = generatedSQL?.trim()
 
     // To remove ```, ; from sql
     baseQuery = baseQuery
