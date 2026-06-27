@@ -7,6 +7,7 @@ import { addFeedbackMemory } from "../upload/metadata/feedbackMemory"
 import type { Relationship } from "../ai/relationships"
 import { getRelationshipsMemory } from "../ai/relationshipsMap"
 import { validateSQL } from "./validateSQL"
+import { Message } from "@/app/page"
 
 
 type RunQueryArgs = {
@@ -15,8 +16,6 @@ type RunQueryArgs = {
     query: string
     schemas: Record<string, any[]>
     setError: (val: string | null) => void
-    setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
-    setQueryResult: React.Dispatch<React.SetStateAction<any[]>>
     relationships: Relationship[]
     page: number
     PAGE_SIZE: number
@@ -24,6 +23,11 @@ type RunQueryArgs = {
     guard?: () => boolean
     setHasMore: React.Dispatch<React.SetStateAction<boolean>>
     fixAttemptsRef: React.MutableRefObject<number>
+    assistantMessageId: string
+    updateMessage: (
+        id: string,
+        updates: Partial<Message>
+    ) => void
 }
 
 const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
@@ -36,8 +40,6 @@ export const runQuery = async (
         query,
         schemas,
         setError,
-        setGeneratedSQL,
-        setQueryResult,
         relationships,
         page,
         PAGE_SIZE = 100,
@@ -45,6 +47,8 @@ export const runQuery = async (
         guard,
         setHasMore,
         fixAttemptsRef,
+        assistantMessageId,
+        updateMessage
     }: RunQueryArgs
 ) => {
     const startTime = performance.now()
@@ -125,7 +129,10 @@ export const runQuery = async (
         }
         if (formatted.length > 1000) {
             setError("Query returned too many rows.")
-            setQueryResult([])
+
+            updateMessage(assistantMessageId, {
+                queryResult: [],
+            })
             return
         }
         const resultSize = JSON.stringify(formatted, (_, value) =>
@@ -135,7 +142,10 @@ export const runQuery = async (
         ).length
         if (resultSize > 2_000_000) {
             setError("Query result too large.")
-            setQueryResult([])
+
+            updateMessage(assistantMessageId, {
+                queryResult: [],
+            })
             return
         }
 
@@ -160,7 +170,10 @@ export const runQuery = async (
             })
         }
 
-        setQueryResult(formatted)
+        updateMessage(assistantMessageId, {
+            queryResult: formatted,
+        })
+
     } catch (err) {
         const errorMsg = String(err)
 
@@ -175,9 +188,7 @@ export const runQuery = async (
         if (process.env.NEXT_PUBLIC_DEBUG === "true") {
             console.log("FEEDBACK MEMORY (FAILURE):", addFeedbackMemory)
         }
-        setQueryResult([])
         setHasMore(false)
-        setGeneratedSQL("")
         console.error(err)
 
         if (process.env.NEXT_PUBLIC_DEBUG === "true") {
@@ -205,16 +216,36 @@ export const runQuery = async (
         }
         fixAttemptsRef.current += 1
 
-        await fixQueryWithAI({
+        const fixedSQL = await fixQueryWithAI({
             badQuery: baseQuery,
             errorMsg,
             schemas,
-            setGeneratedSQL,
             relationships: getRelationshipsMemory(),
             setError,
             signal,
             guard,
         })
+        if (!fixedSQL) {
+            setError("AI could not fix this query.")
+            return
+        }
+        await runQuery({
+            relevantTables,
+            generatedSQL: fixedSQL,
+            query,
+            schemas,
+            setError,
+            relationships,
+            page,
+            PAGE_SIZE,
+            signal,
+            guard,
+            setHasMore,
+            fixAttemptsRef,
+            assistantMessageId,
+            updateMessage,
+        })
+        return
 
     } finally {
         if (timeoutId) {

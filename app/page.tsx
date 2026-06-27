@@ -15,6 +15,8 @@ export type Message = {
   content: string
   generatedSQL?: string
   queryResult?: Record<string, unknown>[]
+  status?: "thinking" | "running" | "success" | "error"
+  error?: string
   timestamp: string
 }
 
@@ -31,9 +33,7 @@ export default function Home() {
   const [tables, setTables] = useState<string[]>([])
   const [query, setQuery] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [generatedSQL, setGeneratedSQL] = useState("")
   const [loading, setLoading] = useState(false)
-  const [queryResult, setQueryResult] = useState<Record<string, unknown>[]>([])
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [sessions, setSessions] = useState<Session[]>([])
@@ -55,17 +55,17 @@ export default function Home() {
   const isControllerActive = (controller: AbortController) =>
     isMountedRef.current && !controller.signal.aborted
 
-  const executeQuery = async (sql?: string) => {
+  const executeQuery = async (sql?: string, assistantMessageId = "") => {
     const controller = startController(queryControllerRef)
     fixAttemptsRef.current = 0
 
+    if (!sql) return
+
     await runQuery({
-      generatedSQL: (sql ?? generatedSQL).trim(),
+      generatedSQL: sql.trim(),
       query,
       schemas,
       setError,
-      setGeneratedSQL,
-      setQueryResult,
       relationships: getRelationshipsMemory(),
       page,
       PAGE_SIZE,
@@ -73,6 +73,8 @@ export default function Home() {
       guard: () => isControllerActive(controller),
       setHasMore,
       fixAttemptsRef,
+      assistantMessageId: assistantMessageId!,
+      updateMessage,
     })
   }
 
@@ -93,11 +95,14 @@ export default function Home() {
     }
   }, [])
 
+  const activeSession = sessions.find(s => s.id === activeSessionId)
+
+  const latestSQL = [...(activeSession?.messages ?? [])].reverse().find((m) => m.generatedSQL)?.generatedSQL
   useEffect(() => {
-    if (!generatedSQL) return
+    if (!latestSQL) return
     if (page === 0) return
-    void runQueryForPagination(generatedSQL)
-  }, [generatedSQL, page])
+    void runQueryForPagination(latestSQL)
+  }, [latestSQL, page])
 
 
   const handleNewChat = () => {
@@ -157,8 +162,6 @@ export default function Home() {
     )
     const controller = startController(generateControllerRef)
     queryControllerRef.current?.abort()
-    setGeneratedSQL("")
-    setQueryResult([])
     setHasMore(false)
     setPage(0)
     const sql = await generateSQL({
@@ -167,26 +170,21 @@ export default function Home() {
       lastSQL,
       setError,
       setLoading,
-      setGeneratedSQL,
       setLastSQL,
       signal: controller.signal,
       guard: () => isControllerActive(controller)
     })
-    updateMessage(assistantMessage.id, {generatedSQL: sql, content:"Generated SQL successfully"})
-    setGeneratedSQL(sql ?? "")
-    await executeQuery(sql)
+    updateMessage(assistantMessage.id, { generatedSQL: sql, content: "Generated SQL successfully" })
+    await executeQuery(sql, assistantMessage.id)
   }
 
-  const activeSession = sessions.find(s => s.id === activeSessionId)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const controller = startController(uploadControllerRef)
     queryControllerRef.current?.abort()
     generateControllerRef.current?.abort()
 
-    setGeneratedSQL("")
     setLastSQL("")
-    setQueryResult([])
     setPage(0)
     setHasMore(false)
 
@@ -194,7 +192,6 @@ export default function Home() {
       setTables,
       setError,
       setQuery,
-      setGeneratedSQL,
       setSchemas,
       signal: controller.signal,
       guard: () => isControllerActive(controller)
@@ -219,7 +216,7 @@ export default function Home() {
         <ChatPanel
           messages={activeSession?.messages ?? []}
           loading={loading}
-          hasResults={Boolean(generatedSQL)}
+          hasResults={Boolean(latestSQL)}
           error={error}
           page={page}
           hasMore={hasMore}

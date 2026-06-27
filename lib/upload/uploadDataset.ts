@@ -12,7 +12,6 @@ type UploadCSVArgs = {
     setSchemas: React.Dispatch<React.SetStateAction<Record<string, any[]>>>
     setError?: (val: string | null) => void
     setQuery?: React.Dispatch<React.SetStateAction<string>>
-    setGeneratedSQL?: React.Dispatch<React.SetStateAction<string>>
     signal?: AbortSignal
     guard?: () => boolean
 }
@@ -23,7 +22,6 @@ export const uploadDataset = async ({
     setSchemas,
     setError,
     setQuery,
-    setGeneratedSQL,
     signal,
     guard,
 }: UploadCSVArgs) => {
@@ -31,7 +29,6 @@ export const uploadDataset = async ({
 
     setError?.(null)
     setQuery?.("")
-    setGeneratedSQL?.("")
 
     for (const file of Array.from(files)) {
         if (!isActive()) return

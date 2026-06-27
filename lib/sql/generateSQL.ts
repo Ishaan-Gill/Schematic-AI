@@ -13,7 +13,6 @@ type GenerateSQLArgs = {
     lastSQL: string
     setError: (val: string | null) => void
     setLoading: React.Dispatch<React.SetStateAction<boolean>>
-    setGeneratedSQL: React.Dispatch<React.SetStateAction<string>>
     setLastSQL: React.Dispatch<React.SetStateAction<string>>
     signal?: AbortSignal
     guard?: () => boolean
@@ -28,7 +27,6 @@ export const generateSQL = async ({
     lastSQL,
     setError,
     setLoading,
-    setGeneratedSQL,
     setLastSQL,
     signal,
     guard,
@@ -120,7 +118,6 @@ export const generateSQL = async ({
         }
 
         const freshSQL = data.sql
-        setGeneratedSQL(freshSQL)
         setLastSQL(freshSQL)
 
         return freshSQL
