@@ -7,6 +7,7 @@ import ThinkPanel from "@/components/ui/ThinkPanel"
 import type React from "react"
 import { exportCsv } from "@/lib/export/exportCsv"
 import type { Message } from "@/app/page"
+import { div } from "framer-motion/client"
 
 type ChatPanelProps = {
   messages: Message[]
@@ -28,19 +29,53 @@ export default function ChatPanel({
   setPage,
 }: ChatPanelProps) {
 
-  const lastAssistant = messages.slice().reverse().find(m => m.role === "assistant")
-
   return (
     <section className="flex w-full flex-1 flex-col bg-[#0a0b0e]">
       <div className="mx-auto flex w-full max-w-[1300px] flex-1 flex-col gap-6 px-6 py-6 pb-40">
 
         <AnimatePresence>
           {messages.map(message => (
-            <ChatMessage
+            <div
               key={message.id}
-              role={message.role}
-              content={message.content}
-            />
+              className="space-y-6"
+            >
+              <ChatMessage
+                role={message.role}
+                content={message.content}
+              />
+              {message.role === "assistant" && (
+                <div className="mx-auto w-full max-w-[860px] space-y-6">
+
+                  <ThinkPanel
+                    loading={loading}
+                    generatedSQL={message.generatedSQL ?? ""}
+                  />
+
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="rounded-[8px] border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] p-4 font-sans text-[13px] leading-6 text-[#fecaca]"
+                    >
+                      {error}
+                    </motion.div>
+                  )}
+
+                  <ResultTable
+                    rows={message.queryResult ?? []}
+                    page={page}
+                    hasMore={hasMore}
+                    setPage={setPage}
+                    onExport={() =>
+                      exportCsv(
+                        message.queryResult ?? [],
+                        "schematic_export"
+                      )
+                    }
+                  />
+                </div>
+              )}
+            </div>
           ))}
         </AnimatePresence>
 
@@ -57,30 +92,7 @@ export default function ChatPanel({
           )}
         </AnimatePresence>
 
-        <div className="mx-auto w-full max-w-[860px] space-y-6">
-          <ThinkPanel
-            loading={loading}
-            generatedSQL={lastAssistant?.generatedSQL ?? ""}
-          />
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-[8px] border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] p-4 font-sans text-[13px] leading-6 text-[#fecaca]"
-            >
-              {error}
-            </motion.div>
-          )}
-
-          <ResultTable
-            rows={lastAssistant?.queryResult ?? []}
-            page={page}
-            hasMore={hasMore}
-            setPage={setPage}
-            onExport={() => exportCsv(lastAssistant?.queryResult ?? [], "schematic_export")}
-          />
-        </div>
       </div>
     </section>
   )
