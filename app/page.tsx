@@ -62,7 +62,7 @@ export default function Home() {
     if (!sql) return
 
     await runQuery({
-      generatedSQL: sql.trim(),
+      sql: sql.trim(),
       query,
       schemas,
       setError,

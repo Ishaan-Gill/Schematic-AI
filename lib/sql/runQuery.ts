@@ -8,11 +8,14 @@ import type { Relationship } from "../ai/relationships"
 import { getRelationshipsMemory } from "../ai/relationshipsMap"
 import { validateSQL } from "./validateSQL"
 import { Message } from "@/app/page"
+import { buildExecutableSQL } from "./buildExecutableSQL"
+import { validateQueryResult } from "./validateQueryResult"
+import { recoverFailedQuery } from "./recoverFailedQuery"
 
 
 type RunQueryArgs = {
     relevantTables?: string[]
-    generatedSQL: string
+    sql: string
     query: string
     schemas: Record<string, any[]>
     setError: (val: string | null) => void
@@ -36,7 +39,7 @@ const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
 export const runQuery = async (
     {
         relevantTables,
-        generatedSQL,
+        sql,
         query,
         schemas,
         setError,
@@ -57,29 +60,11 @@ export const runQuery = async (
 
     setError(null)
 
-    let baseQuery = generatedSQL?.trim()
-
-    // To remove ```, ; from sql
-    baseQuery = baseQuery
-        .trim()
-        .replace(/;+$/, "")
-        .replace(/```sql/g, "")
-        .replace(/```/g, "")
-
-    // Queries that should NOT be paginated (describe, show)
-    const isNonPaginated = /^(describe|show)\b/i.test(baseQuery.trim())
-
-    // Pagination
-    let finalQuery = isNonPaginated
-        ? baseQuery
-        : `
-    SELECT *
-    FROM (
-        ${baseQuery}
-        ) AS paginated_query
-        LIMIT ${PAGE_SIZE + 1}
-        OFFSET ${page * PAGE_SIZE}
-        `
+    const { baseQuery, finalQuery } = buildExecutableSQL({
+        sql,
+        page,
+        PAGE_SIZE: PAGE_SIZE,
+    })
 
     // Timeout protection:
     let timeoutId: ReturnType<typeof setTimeout> | null = null
@@ -127,21 +112,12 @@ export const runQuery = async (
             })
             if (!isActive(guard, signal)) return
         }
-        if (formatted.length > 1000) {
-            setError("Query returned too many rows.")
 
-            updateMessage(assistantMessageId, {
-                queryResult: [],
-            })
-            return
-        }
-        const resultSize = JSON.stringify(formatted, (_, value) =>
-            typeof value === "bigint"
-                ? value.toString()
-                : value
-        ).length
-        if (resultSize > 2_000_000) {
-            setError("Query result too large.")
+        const queryResultValidation = validateQueryResult({
+            rows: formatted,
+        })
+        if (queryResultValidation) {
+            setError(queryResultValidation)
 
             updateMessage(assistantMessageId, {
                 queryResult: [],
@@ -199,39 +175,23 @@ export const runQuery = async (
             })
         }
 
-        await suggestFix({
-            userQuery: query,
-            schemas,
-            relevantTables,
-            setError,
-            relationships,
-            signal,
-            guard,
-            error: errorMsg
-        })
-
-        if (fixAttemptsRef.current >= 2) {
-            setError("AI could not fix this query.")
-            return
-        }
-        fixAttemptsRef.current += 1
-
-        const fixedSQL = await fixQueryWithAI({
-            badQuery: baseQuery,
+        const fixedSQL = await recoverFailedQuery({
+            query,
+            baseQuery,
             errorMsg,
             schemas,
-            relationships: getRelationshipsMemory(),
+            relevantTables,
+            relationships,
             setError,
             signal,
             guard,
+            fixAttemptsRef,
         })
-        if (!fixedSQL) {
-            setError("AI could not fix this query.")
-            return
-        }
+        if (!fixedSQL) return
+
         await runQuery({
             relevantTables,
-            generatedSQL: fixedSQL,
+            sql: fixedSQL,
             query,
             schemas,
             setError,
