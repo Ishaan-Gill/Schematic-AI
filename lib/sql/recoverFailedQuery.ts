@@ -1,3 +1,4 @@
+import { Message } from "@/app/page"
 import { Relationship } from "../ai/relationships"
 import { fixQueryWithAI } from "./fixQuery"
 import { suggestFix } from "./suggestFix"
@@ -9,10 +10,14 @@ type RecoverFailedQueryArgs = {
     schemas: Record<string, any[]>
     relevantTables?: string[]
     relationships: Relationship[]
-    setError: (val: string | null) => void
     signal?: AbortSignal
     guard?: () => boolean
     fixAttemptsRef: React.MutableRefObject<number>
+    assistantMessageId: string
+    updateMessage: (
+        id: string,
+        updates: Partial<Message>
+    ) => void
 }
 
 export async function recoverFailedQuery({
@@ -22,25 +27,29 @@ export async function recoverFailedQuery({
     schemas,
     relevantTables,
     relationships,
-    setError,
     signal,
     guard,
     fixAttemptsRef,
+    assistantMessageId,
+    updateMessage
 }: RecoverFailedQueryArgs) {
 
     await suggestFix({
         userQuery: query,
         schemas,
         relevantTables,
-        setError,
         relationships,
         signal,
         guard,
-        error: errorMsg
+        error: errorMsg,
+        assistantMessageId,
+        updateMessage
     })
 
     if (fixAttemptsRef.current >= 2) {
-        setError("AI could not fix this query.")
+        updateMessage(assistantMessageId, {
+            error: "AI could not fix this query."
+        })
         return null
     }
     fixAttemptsRef.current += 1
@@ -50,12 +59,15 @@ export async function recoverFailedQuery({
         errorMsg,
         schemas,
         relationships,
-        setError,
         signal,
         guard,
+        assistantMessageId,
+        updateMessage
     })
     if (!fixedSQL) {
-        setError("AI could not fix this query.")
+        updateMessage(assistantMessageId, {
+            error: "AI could not fix this query."
+        })
         return null
     }
     return fixedSQL

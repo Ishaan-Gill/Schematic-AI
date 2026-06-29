@@ -7,13 +7,11 @@ import ThinkPanel from "@/components/ui/ThinkPanel"
 import type React from "react"
 import { exportCsv } from "@/lib/export/exportCsv"
 import type { Message } from "@/app/page"
-import { div } from "framer-motion/client"
 
 type ChatPanelProps = {
   messages: Message[]
   loading: boolean
   hasResults: boolean
-  error: string | null
   page: number
   hasMore: boolean
   setPage: React.Dispatch<React.SetStateAction<number>>
@@ -23,7 +21,6 @@ export default function ChatPanel({
   messages,
   loading,
   hasResults,
-  error,
   page,
   hasMore,
   setPage,
@@ -51,13 +48,13 @@ export default function ChatPanel({
                     generatedSQL={message.generatedSQL ?? ""}
                   />
 
-                  {error && (
+                  {message.error && (
                     <motion.div
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="rounded-[8px] border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] p-4 font-sans text-[13px] leading-6 text-[#fecaca]"
                     >
-                      {error}
+                      {message.error}
                     </motion.div>
                   )}
 

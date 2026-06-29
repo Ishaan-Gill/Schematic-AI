@@ -1,25 +1,31 @@
+import { Message } from "@/app/page"
 import type { Relationship } from "../ai/relationships"
 
 type SuggestFixArgs = {
     userQuery: string
     schemas: Record<string, any[]>
     relevantTables?: string[]
-    setError: (val: string | null) => void
     relationships: Relationship[]
     signal?: AbortSignal
     guard?: () => boolean
     error?: string
+    assistantMessageId: string
+    updateMessage: (
+        id: string,
+        updates: Partial<Message>
+    ) => void
 }
 
 export const suggestFix = async ({
     userQuery,
     schemas,
     relevantTables,
-    setError,
     relationships,
     signal,
     guard,
-    error
+    error,
+    assistantMessageId,
+    updateMessage
 }: SuggestFixArgs) => {
     try {
         if (signal?.aborted || !(guard?.() ?? true)) return
@@ -33,7 +39,7 @@ export const suggestFix = async ({
                 schemas,
                 relevantTables,
                 relationships,
-                error
+                ...(error && { error }),
             })
         })
         const data = await res.json()
@@ -41,7 +47,9 @@ export const suggestFix = async ({
 
         if (process.env.NEXT_PUBLIC_DEBUG === "true") console.log("Suggestion:", data.suggestion)
 
-        setError(data.suggestion)
+        updateMessage(assistantMessageId, {
+            error: data.suggestion
+        })
     } catch (err) {
         if (signal?.aborted) return
         console.error("Suggestion failed:", err)

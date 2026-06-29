@@ -11,12 +11,21 @@ type GenerateSQLArgs = {
     query: string
     schemas: Record<string, any[]>
     lastSQL: string
-    setError: (val: string | null) => void
     setLoading: React.Dispatch<React.SetStateAction<boolean>>
     setLastSQL: React.Dispatch<React.SetStateAction<string>>
     signal?: AbortSignal
     guard?: () => boolean
 }
+
+type GenerateSQLResult =
+    | {
+        ok: true
+        sql: string
+    }
+    | {
+        ok: false
+        error: string
+    }
 
 const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
     !signal?.aborted && (guard?.() ?? true)
@@ -25,14 +34,11 @@ export const generateSQL = async ({
     query,
     schemas,
     lastSQL,
-    setError,
     setLoading,
     setLastSQL,
     signal,
     guard,
-}: GenerateSQLArgs): Promise<string | undefined> => {
-
-    setError(null)
+}: GenerateSQLArgs): Promise<GenerateSQLResult> => {
 
     const relationships = updateDetectedRelationships(schemas)
     const isFollowUp = isFollowUpQuery(query, lastSQL)
@@ -41,19 +47,26 @@ export const generateSQL = async ({
         relevantTables,
         relationships
     )
+    const CANCELLED: GenerateSQLResult = {
+        ok: false,
+        error: "Request Cancelled."
+    }
+
     if (finalRelevantTables.length === 0) {
-        setError("No datasets loaded. Please upload a file first.")
-        return
+        return {
+            ok: false,
+            error: "No datasets loaded. Please upload a file first."
+        }
     }
 
     setLoading(true)
-    
+
     let conn: any = null
     try {
         const db = await getDuckDB()
         conn = await db.connect()
-        
-        if (!isActive(guard, signal)) return
+
+        if (!isActive(guard, signal)) return CANCELLED
 
         // Database Context:
         const sampleRowsByTable: Record<string, any[]> = {}
@@ -95,17 +108,21 @@ export const generateSQL = async ({
 
         const data = await res.json()
         if (!res.ok) {
-            setError(data.error || "Something went wrong. Please try again.")
-            return
+            return {
+                ok: false,
+                error: data.error || "Something went wrong. Please try again."
+            }
         }
 
-        if (!isActive(guard, signal)) return
+        if (!isActive(guard, signal)) return CANCELLED
 
         if (!isFollowUp) setLastSQL("")
 
         if (!data.sql) {
-            setError("Something went wrong. Please try again.")
-            return
+            return {
+                ok: false,
+                error: "Something went wrong. Please try again."
+            }
         }
 
         // validateSQL:
@@ -113,18 +130,27 @@ export const generateSQL = async ({
             sql: data.sql,
         })
         if (validationError) {
-            setError(validationError)
-            return
+            return {
+                ok: false,
+                error: validationError
+            }
         }
 
         const freshSQL = data.sql
         setLastSQL(freshSQL)
 
-        return freshSQL
+        return {
+            ok: true,
+            sql: freshSQL
+        }
 
     } catch (err) {
-        if (signal?.aborted) return
+        if (signal?.aborted) return CANCELLED
         console.error("AI error:", err)
+        return {
+            ok: false,
+            error: "Something went wrong. Please try again."
+        }
     } finally {
         if (isActive(guard, signal)) {
             setLoading(false)

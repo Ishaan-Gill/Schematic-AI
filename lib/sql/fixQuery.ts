@@ -1,3 +1,4 @@
+import { Message } from "@/app/page"
 import type { Relationship } from "../ai/relationships"
 import { validateSQL } from "./validateSQL"
 
@@ -6,9 +7,13 @@ type FixQueryArgs = {
     errorMsg: string
     schemas: Record<string, any[]>
     relationships: Relationship[]
-    setError: (val: string | null) => void
     signal?: AbortSignal
     guard?: () => boolean
+    assistantMessageId: string
+    updateMessage: (
+        id: string,
+        updates: Partial<Message>
+    ) => void
 }
 
 export const fixQueryWithAI = async ({
@@ -16,14 +21,17 @@ export const fixQueryWithAI = async ({
     errorMsg,
     schemas,
     relationships,
-    setError,
     signal,
-    guard
+    guard,
+    assistantMessageId,
+    updateMessage
 }: FixQueryArgs) => {
     try {
-        setError(null)
-
         if (signal?.aborted || !(guard?.() ?? true)) return
+
+        updateMessage(assistantMessageId, {
+            error: undefined
+        })
 
         const res = await fetch("/api/fix-sql", {
             method: "POST",
@@ -59,7 +67,9 @@ export const fixQueryWithAI = async ({
 
         const validateError = await validateSQL({ sql: fixedSQL })
         if (validateError) {
-            setError(validateError)
+            updateMessage(assistantMessageId, {
+                error: validateError
+            })
             return
         }
 
@@ -68,5 +78,9 @@ export const fixQueryWithAI = async ({
     } catch (err) {
         if (signal?.aborted) return
         console.error("Fix Failed:", err)
+
+        updateMessage(assistantMessageId, {
+            error: "AI failed to fix this query."
+        })
     }
 }

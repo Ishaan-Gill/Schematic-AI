@@ -32,7 +32,7 @@ const PAGE_SIZE = 100
 export default function Home() {
   const [tables, setTables] = useState<string[]>([])
   const [query, setQuery] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
@@ -65,7 +65,6 @@ export default function Home() {
       sql: sql.trim(),
       query,
       schemas,
-      setError,
       relationships: getRelationshipsMemory(),
       page,
       PAGE_SIZE,
@@ -150,6 +149,9 @@ export default function Home() {
       queryResult: [],
       timestamp: new Date().toISOString()
     }
+    updateMessage(assistantMessage.id, {
+      error: undefined
+    })
     setSessions(prev =>
       prev.map(session =>
         session.id === activeSessionId
@@ -164,16 +166,24 @@ export default function Home() {
     queryControllerRef.current?.abort()
     setHasMore(false)
     setPage(0)
-    const sql = await generateSQL({
+    const result = await generateSQL({
       query,
       schemas,
       lastSQL,
-      setError,
       setLoading,
       setLastSQL,
       signal: controller.signal,
       guard: () => isControllerActive(controller)
     })
+
+    if (!result.ok) {
+      updateMessage(assistantMessage.id, {
+        error: result.error
+      })
+      return
+    }
+
+    const sql = result.sql
     updateMessage(assistantMessage.id, { generatedSQL: sql, content: "Generated SQL successfully" })
     await executeQuery(sql, assistantMessage.id)
   }
@@ -190,7 +200,7 @@ export default function Home() {
 
     await handleFile(e, {
       setTables,
-      setError,
+      setUploadError,
       setQuery,
       setSchemas,
       signal: controller.signal,
@@ -217,7 +227,6 @@ export default function Home() {
           messages={activeSession?.messages ?? []}
           loading={loading}
           hasResults={Boolean(latestSQL)}
-          error={error}
           page={page}
           hasMore={hasMore}
           setPage={setPage}
@@ -226,8 +235,8 @@ export default function Home() {
         <FileUpload
           query={query}
           setQuery={setQuery}
-          error={error}
-          setError={setError}
+          uploadError={uploadError}
+          setUploadError={setUploadError}
           loading={loading}
           onSend={handleSendMessage}
           onFileChange={handleFileChange}

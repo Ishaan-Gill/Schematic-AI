@@ -18,7 +18,6 @@ type RunQueryArgs = {
     sql: string
     query: string
     schemas: Record<string, any[]>
-    setError: (val: string | null) => void
     relationships: Relationship[]
     page: number
     PAGE_SIZE: number
@@ -42,7 +41,6 @@ export const runQuery = async (
         sql,
         query,
         schemas,
-        setError,
         relationships,
         page,
         PAGE_SIZE = 100,
@@ -58,7 +56,9 @@ export const runQuery = async (
 
     if (!isActive(guard, signal)) return
 
-    setError(null)
+    updateMessage(assistantMessageId, {
+        error: undefined,
+    })
 
     const { baseQuery, finalQuery } = buildExecutableSQL({
         sql,
@@ -74,8 +74,9 @@ export const runQuery = async (
 
     let conn: any = null
     try {
-        setError(null)
-
+        updateMessage(assistantMessageId, {
+            error: undefined,
+        })
         const db = await getDuckDB()
         conn = await db.connect()
 
@@ -96,7 +97,9 @@ export const runQuery = async (
 
         const validationError = await validateSQL({ sql: finalQuery })
         if (validationError) {
-            setError(validationError)
+            updateMessage(assistantMessageId, {
+                error: validationError
+            })
             return
         }
 
@@ -105,10 +108,11 @@ export const runQuery = async (
                 userQuery: query,
                 schemas,
                 relevantTables,
-                setError,
                 relationships: getRelationshipsMemory(),
                 signal,
-                guard
+                guard,
+                assistantMessageId,
+                updateMessage
             })
             if (!isActive(guard, signal)) return
         }
@@ -117,9 +121,8 @@ export const runQuery = async (
             rows: formatted,
         })
         if (queryResultValidation) {
-            setError(queryResultValidation)
-
             updateMessage(assistantMessageId, {
+                error: queryResultValidation,
                 queryResult: [],
             })
             return
@@ -182,10 +185,11 @@ export const runQuery = async (
             schemas,
             relevantTables,
             relationships,
-            setError,
             signal,
             guard,
             fixAttemptsRef,
+            assistantMessageId,
+            updateMessage,
         })
         if (!fixedSQL) return
 
@@ -194,7 +198,6 @@ export const runQuery = async (
             sql: fixedSQL,
             query,
             schemas,
-            setError,
             relationships,
             page,
             PAGE_SIZE,

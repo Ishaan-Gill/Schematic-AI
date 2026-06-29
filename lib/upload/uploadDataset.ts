@@ -10,7 +10,7 @@ type UploadCSVArgs = {
     files: FileList | File[]
     setTables: React.Dispatch<React.SetStateAction<string[]>>
     setSchemas: React.Dispatch<React.SetStateAction<Record<string, any[]>>>
-    setError?: (val: string | null) => void
+    setUploadError?: (val: string | null) => void
     setQuery?: React.Dispatch<React.SetStateAction<string>>
     signal?: AbortSignal
     guard?: () => boolean
@@ -20,14 +20,14 @@ export const uploadDataset = async ({
     files,
     setTables,
     setSchemas,
-    setError,
+    setUploadError,
     setQuery,
     signal,
     guard,
 }: UploadCSVArgs) => {
     const isActive = () => !signal?.aborted && (guard?.() ?? true)
 
-    setError?.(null)
+    setUploadError?.(null)
     setQuery?.("")
 
     for (const file of Array.from(files)) {
@@ -80,7 +80,7 @@ export const uploadDataset = async ({
 
             console.error("Upload failed:", error)
 
-            setError?.(
+            setUploadError?.(
                 error instanceof Error
                     ? error.message
                     : `Failed to upload ${file.name}`

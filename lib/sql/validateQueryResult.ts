@@ -1,5 +1,3 @@
-import { Message } from "@/app/page"
-
 type ValidateQueryResult = {
     rows: Record<string, unknown>[]
 }
