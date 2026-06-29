@@ -8,17 +8,8 @@ import { generateSQL } from "@/lib/sql/generateSQL"
 import { runQuery } from "@/lib/sql/runQuery"
 import { handleFile } from "@/lib/upload/uploadDataset"
 import React from "react"
+import { Message } from "@/types/message"
 
-export type Message = {
-  id: string
-  role: "user" | "assistant"
-  content: string
-  generatedSQL?: string
-  queryResult?: Record<string, unknown>[]
-  status?: "thinking" | "running" | "success" | "error"
-  error?: string
-  timestamp: string
-}
 
 type SchemaMap = Record<string, unknown[]>
 

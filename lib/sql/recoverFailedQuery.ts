@@ -1,4 +1,4 @@
-import { Message } from "@/app/page"
+import { Message } from "@/types/message"
 import { Relationship } from "../ai/relationships"
 import { fixQueryWithAI } from "./fixQuery"
 import { suggestFix } from "./suggestFix"

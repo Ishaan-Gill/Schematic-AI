@@ -6,7 +6,7 @@ import ResultTable from "@/components/ui/resultTable"
 import ThinkPanel from "@/components/ui/ThinkPanel"
 import type React from "react"
 import { exportCsv } from "@/lib/export/exportCsv"
-import type { Message } from "@/app/page"
+import { Message } from "@/types/message"
 
 type ChatPanelProps = {
   messages: Message[]

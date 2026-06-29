@@ -1,4 +1,4 @@
-import { Message } from "@/app/page"
+import { Message } from "@/types/message"
 import type { Relationship } from "../ai/relationships"
 import { validateSQL } from "./validateSQL"
 
