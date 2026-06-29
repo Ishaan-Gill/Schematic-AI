@@ -8,16 +8,12 @@ import { ArrowUp, Paperclip, Sparkles } from "lucide-react"
 export default function FileUpload({
     query,
     setQuery,
-    uploadError,
-    setUploadError,
     loading,
     onSend,
     onFileChange,
 }: {
     query: string
     setQuery: React.Dispatch<React.SetStateAction<string>>
-    uploadError: string | null
-    setUploadError: React.Dispatch<React.SetStateAction<string | null>>
     loading: boolean
     onSend: (query: string) => Promise<void>
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
@@ -72,7 +68,6 @@ export default function FileUpload({
                             onChange={(e) => {
                                 setQuery(e.target.value)
                                 resize()
-                                if (uploadError) setUploadError(null)
                             }}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter" && !e.shiftKey) {

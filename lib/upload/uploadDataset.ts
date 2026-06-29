@@ -5,29 +5,32 @@ import { ingestParsedTable } from "@/lib/upload/ingestion/ingestParsedTable"
 import { updateDetectedRelationships } from "./metadata/detectRelationships"
 import { processFile } from "./handlers/processFile"
 import { quoteIdentifier } from "../utils/quoteIdentifier"
+import { ToastItem } from "@/types/toast"
 
 type UploadCSVArgs = {
     files: FileList | File[]
     setTables: React.Dispatch<React.SetStateAction<string[]>>
     setSchemas: React.Dispatch<React.SetStateAction<Record<string, any[]>>>
-    setUploadError?: (val: string | null) => void
     setQuery?: React.Dispatch<React.SetStateAction<string>>
     signal?: AbortSignal
     guard?: () => boolean
+    showToast: (
+        type: ToastItem["type"], 
+        message: string
+    ) => void
 }
 
 export const uploadDataset = async ({
     files,
     setTables,
     setSchemas,
-    setUploadError,
     setQuery,
     signal,
     guard,
+    showToast
 }: UploadCSVArgs) => {
     const isActive = () => !signal?.aborted && (guard?.() ?? true)
 
-    setUploadError?.(null)
     setQuery?.("")
 
     for (const file of Array.from(files)) {
@@ -80,11 +83,13 @@ export const uploadDataset = async ({
 
             console.error("Upload failed:", error)
 
-            setUploadError?.(
+            showToast(
+                "error",
                 error instanceof Error
                     ? error.message
                     : `Failed to upload ${file.name}`
             )
+
         } finally {
             if (conn) await conn.close()
         }

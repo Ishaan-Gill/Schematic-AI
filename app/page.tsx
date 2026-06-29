@@ -9,6 +9,8 @@ import { runQuery } from "@/lib/sql/runQuery"
 import { handleFile } from "@/lib/upload/uploadDataset"
 import React from "react"
 import { Message } from "@/types/message"
+import { ToastItem } from "@/types/toast"
+import ToastContainer from "@/components/ui/ToastContainer"
 
 
 type SchemaMap = Record<string, unknown[]>
@@ -23,7 +25,6 @@ const PAGE_SIZE = 100
 export default function Home() {
   const [tables, setTables] = useState<string[]>([])
   const [query, setQuery] = useState("")
-  const [uploadError, setUploadError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
@@ -31,6 +32,7 @@ export default function Home() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [schemas, setSchemas] = useState<SchemaMap>({})
   const [lastSQL, setLastSQL] = useState("")
+  const [toasts, setToasts] = useState<ToastItem[]>([])
   const uploadControllerRef = useRef<AbortController | null>(null)
   const queryControllerRef = useRef<AbortController | null>(null)
   const generateControllerRef = useRef<AbortController | null>(null)
@@ -179,6 +181,19 @@ export default function Home() {
     await executeQuery(sql, assistantMessage.id)
   }
 
+  const showToast = (
+    type: ToastItem["type"],
+    message: string
+  ) => {
+    setToasts(prev => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        type,
+        message,
+      },
+    ])
+  }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const controller = startController(uploadControllerRef)
@@ -191,16 +206,22 @@ export default function Home() {
 
     await handleFile(e, {
       setTables,
-      setUploadError,
       setQuery,
       setSchemas,
       signal: controller.signal,
-      guard: () => isControllerActive(controller)
+      guard: () => isControllerActive(controller),
+      showToast,
     })
   }
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#030405] text-zinc-100 md:h-screen md:flex-row">
+
+      <ToastContainer
+        toasts={toasts}
+        setToasts={setToasts}
+      />
+
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_55%_-10%,rgba(34,211,238,0.14),transparent_34rem),radial-gradient(circle_at_95%_20%,rgba(255,255,255,0.055),transparent_26rem),linear-gradient(180deg,#030405_0%,#06080a_48%,#020303_100%)]" />
       <div className="pointer-events-none absolute inset-0 opacity-[0.16] [background-image:linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] [background-size:72px_72px]" />
 
@@ -226,8 +247,6 @@ export default function Home() {
         <FileUpload
           query={query}
           setQuery={setQuery}
-          uploadError={uploadError}
-          setUploadError={setUploadError}
           loading={loading}
           onSend={handleSendMessage}
           onFileChange={handleFileChange}
