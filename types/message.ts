@@ -6,5 +6,7 @@ export type Message = {
   queryResult?: Record<string, unknown>[]
   loading?: boolean
   error?: string
+  page?: number
+  hasMore?: boolean
   timestamp: string
 }

@@ -23,7 +23,6 @@ type RunQueryArgs = {
     PAGE_SIZE: number
     signal?: AbortSignal
     guard?: () => boolean
-    setHasMore: React.Dispatch<React.SetStateAction<boolean>>
     fixAttemptsRef: React.MutableRefObject<number>
     assistantMessageId: string
     updateMessage: (
@@ -46,7 +45,6 @@ export const runQuery = async (
         PAGE_SIZE = 100,
         signal,
         guard,
-        setHasMore,
         fixAttemptsRef,
         assistantMessageId,
         updateMessage
@@ -93,7 +91,9 @@ export const runQuery = async (
             ? rawRows.slice(0, PAGE_SIZE)
             : rawRows
 
-        setHasMore(hasMore)
+        updateMessage(assistantMessageId, {
+            hasMore,
+        })
 
         const validationError = await validateSQL({ sql: finalQuery })
         if (validationError) {
@@ -170,7 +170,9 @@ export const runQuery = async (
         if (process.env.NEXT_PUBLIC_DEBUG === "true") {
             console.log("FEEDBACK MEMORY (FAILURE):", addFeedbackMemory)
         }
-        setHasMore(false)
+        updateMessage(assistantMessageId, {
+            hasMore: false
+        })
         console.error(err)
 
         if (process.env.NEXT_PUBLIC_DEBUG === "true") {
@@ -211,7 +213,6 @@ export const runQuery = async (
             PAGE_SIZE,
             signal,
             guard,
-            setHasMore,
             fixAttemptsRef,
             assistantMessageId,
             updateMessage,

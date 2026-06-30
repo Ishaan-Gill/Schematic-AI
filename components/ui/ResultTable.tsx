@@ -9,16 +9,18 @@ import ActionRow from "./ActionRow"
 type ResultTableProps = {
     rows: Record<string, unknown>[]
     page: number
-    setPage: React.Dispatch<React.SetStateAction<number>>
     hasMore: boolean
+    onPrevPage: () => void
+    onNextPage: () => void
     onExport: () => void
 }
 
 export default function ResultTable({
     rows,
     page,
-    setPage,
     hasMore,
+    onNextPage,
+    onPrevPage,
     onExport
 }: ResultTableProps) {
 
@@ -84,9 +86,7 @@ export default function ResultTable({
                     <motion.button
                         type="button"
                         disabled={page === 0}
-                        onClick={() =>
-                            setPage((prev) => Math.max(0, prev - 1))
-                        }
+                        onClick={onPrevPage}
                         whileTap={{ scale: 0.96 }}
                         className="inline-flex h-7 items-center gap-1.5 rounded-[6px] px-2 font-mono text-[10px] text-[#6b7280] transition hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
                     >
@@ -101,11 +101,7 @@ export default function ResultTable({
                     <motion.button
                         type="button"
                         disabled={!hasMore}
-                        onClick={() => {
-                            if (hasMore) {
-                                setPage((prev) => prev + 1)
-                            }
-                        }}
+                        onClick={onNextPage}
                         whileTap={{ scale: 0.96 }}
                         className="inline-flex h-7 items-center gap-1.5 rounded-[6px] px-2 font-mono text-[10px] text-[#6b7280] transition hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
                     >

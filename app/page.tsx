@@ -25,8 +25,6 @@ const PAGE_SIZE = 100
 export default function Home() {
   const [tables, setTables] = useState<string[]>([])
   const [query, setQuery] = useState("")
-  const [page, setPage] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
   const [sessions, setSessions] = useState<Session[]>([])
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [schemas, setSchemas] = useState<SchemaMap>({})
@@ -47,7 +45,7 @@ export default function Home() {
   const isControllerActive = (controller: AbortController) =>
     isMountedRef.current && !controller.signal.aborted
 
-  const executeQuery = async (sql?: string, assistantMessageId = "") => {
+  const executeQuery = async (sql?: string, assistantMessageId = "", page = 0) => {
     const controller = startController(queryControllerRef)
     fixAttemptsRef.current = 0
 
@@ -58,11 +56,10 @@ export default function Home() {
       query,
       schemas,
       relationships: getRelationshipsMemory(),
-      page,
+      page: page,
       PAGE_SIZE,
       signal: controller.signal,
       guard: () => isControllerActive(controller),
-      setHasMore,
       fixAttemptsRef,
       assistantMessageId: assistantMessageId!,
       updateMessage,
@@ -89,12 +86,6 @@ export default function Home() {
   const activeSession = sessions.find(s => s.id === activeSessionId)
 
   const latestSQL = [...(activeSession?.messages ?? [])].reverse().find((m) => m.generatedSQL)?.generatedSQL
-  useEffect(() => {
-    if (!latestSQL) return
-    if (page === 0) return
-    void runQueryForPagination(latestSQL)
-  }, [latestSQL, page])
-
 
   const handleNewChat = () => {
     const newSession: Session = {
@@ -139,6 +130,8 @@ export default function Home() {
       content: "",
       generatedSQL: "",
       queryResult: [],
+      page: 0,
+      hasMore: false,
       timestamp: new Date().toISOString()
     }
     updateMessage(assistantMessage.id, {
@@ -156,8 +149,10 @@ export default function Home() {
     )
     const controller = startController(generateControllerRef)
     queryControllerRef.current?.abort()
-    setHasMore(false)
-    setPage(0)
+    updateMessage(assistantMessage.id, {
+      page: 0,
+      hasMore: false
+    })
     const result = await generateSQL({
       query,
       schemas,
@@ -204,8 +199,6 @@ export default function Home() {
     generateControllerRef.current?.abort()
 
     setLastSQL("")
-    setPage(0)
-    setHasMore(false)
 
     await handleFile(e, {
       setTables,
@@ -243,9 +236,8 @@ export default function Home() {
         <ChatPanel
           messages={activeSession?.messages ?? []}
           hasResults={Boolean(latestSQL)}
-          page={page}
-          hasMore={hasMore}
-          setPage={setPage}
+          updateMessage={updateMessage}
+          executeQuery={executeQuery}
         />
 
         <FileUpload

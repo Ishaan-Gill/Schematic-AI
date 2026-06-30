@@ -4,24 +4,28 @@ import { AnimatePresence, motion } from "framer-motion"
 import ChatMessage from "@/components/ui/ChatMessages"
 import ResultTable from "@/components/ui/resultTable"
 import ThinkPanel from "@/components/ui/ThinkPanel"
-import type React from "react"
 import { exportCsv } from "@/lib/export/exportCsv"
 import { Message } from "@/types/message"
 
 type ChatPanelProps = {
   messages: Message[]
   hasResults: boolean
-  page: number
-  hasMore: boolean
-  setPage: React.Dispatch<React.SetStateAction<number>>
+  updateMessage: (
+    id: string,
+    updates: Partial<Message>
+  ) => void
+  executeQuery: (
+    sql?: string,
+    assistantMessageId?: string,
+    page?: number,
+  ) => Promise<void>
 }
 
 export default function ChatPanel({
   messages,
   hasResults,
-  page,
-  hasMore,
-  setPage,
+  updateMessage,
+  executeQuery
 }: ChatPanelProps) {
 
   return (
@@ -58,9 +62,30 @@ export default function ChatPanel({
 
                   <ResultTable
                     rows={message.queryResult ?? []}
-                    page={page}
-                    hasMore={hasMore}
-                    setPage={setPage}
+                    page={message.page ?? 0}
+                    hasMore={message.hasMore ?? false}
+                    onPrevPage={() => {
+                      const newPage = Math.max(0, (message.page ?? 0) - 1)
+                      updateMessage(message.id, {
+                        page: newPage
+                      })
+                      void executeQuery(
+                        message.generatedSQL,
+                        message.id,
+                        newPage
+                      )
+                    }}
+                    onNextPage={() => {
+                      const newPage = (message.page ?? 0) + 1
+                      updateMessage(message.id, {
+                        page: newPage
+                      })
+                      void executeQuery(
+                        message.generatedSQL,
+                        message.id,
+                        newPage
+                      )
+                    }}
                     onExport={() =>
                       exportCsv(
                         message.queryResult ?? [],
