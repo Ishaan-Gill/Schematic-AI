@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useEffectEvent, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import FileUpload from "@/components/ui/FileUpload"
 import Sidebar from "@/components/ui/Sidebar"
 import ChatPanel from "@/components/ui/ChatPanel"
@@ -45,7 +45,12 @@ export default function Home() {
   const isControllerActive = (controller: AbortController) =>
     isMountedRef.current && !controller.signal.aborted
 
-  const executeQuery = async (sql?: string, assistantMessageId = "", page = 0) => {
+  const executeQuery = async (
+    sql?: string,
+    assistantMessageId = "",
+    page = 0,
+    sessionId?: string,
+  ) => {
     const controller = startController(queryControllerRef)
     fixAttemptsRef.current = 0
 
@@ -62,13 +67,10 @@ export default function Home() {
       guard: () => isControllerActive(controller),
       fixAttemptsRef,
       assistantMessageId: assistantMessageId!,
-      updateMessage,
+      updateMessage: (messageId, updates) =>
+        updateMessage(messageId, updates, sessionId),
     })
   }
-
-  const runQueryForPagination = useEffectEvent(async (overrideQuery?: string) => {
-    await executeQuery(overrideQuery)
-  })
 
   useEffect(() => {
     const uploadController = uploadControllerRef
@@ -99,11 +101,14 @@ export default function Home() {
 
   const updateMessage = (
     messageId: string,
-    updates: Partial<Message>
+    updates: Partial<Message>,
+    sessionId = activeSessionId
   ) => {
+    if (!sessionId) return
+
     setSessions(prev =>
       prev.map(session =>
-        session.id !== activeSessionId
+        session.id !== sessionId
           ? session
           : {
             ...session,
@@ -134,25 +139,42 @@ export default function Home() {
       hasMore: false,
       timestamp: new Date().toISOString()
     }
+
+    let sessionId: string
+
+    if (!activeSession) {
+      const newSession: Session = {
+        id: crypto.randomUUID(),
+        title: "New Chat",
+        messages: [userMessage, assistantMessage]
+      }
+      sessionId = newSession.id
+      setSessions(prev => [newSession, ...prev])
+      setActiveSessionId(newSession.id)
+    } else {
+      sessionId = activeSession.id
+      setSessions(prev =>
+        prev.map(session =>
+          session.id === sessionId
+            ? {
+              ...session,
+              messages: [...session.messages, userMessage, assistantMessage],
+            }
+            : session
+        )
+      )
+    }
+
     updateMessage(assistantMessage.id, {
       error: undefined
-    })
-    setSessions(prev =>
-      prev.map(session =>
-        session.id === activeSessionId
-          ? {
-            ...session,
-            messages: [...session.messages, userMessage, assistantMessage],
-          }
-          : session
-      )
-    )
+    }, sessionId)
+
     const controller = startController(generateControllerRef)
     queryControllerRef.current?.abort()
     updateMessage(assistantMessage.id, {
       page: 0,
       hasMore: false
-    })
+    }, sessionId)
     const result = await generateSQL({
       query,
       schemas,
@@ -166,17 +188,17 @@ export default function Home() {
       updateMessage(assistantMessage.id, {
         error: result.error,
         loading: false
-      })
+      }, sessionId)
       return
     }
 
     const sql = result.sql
-    updateMessage(assistantMessage.id, { 
-      generatedSQL: sql, 
-      content: "Generated SQL successfully", 
-      loading: false 
-    })
-    await executeQuery(sql, assistantMessage.id)
+    updateMessage(assistantMessage.id, {
+      generatedSQL: sql,
+      content: "Generated SQL successfully",
+      loading: false
+    }, sessionId)
+    await executeQuery(sql, assistantMessage.id, 0, sessionId)
   }
 
   const showToast = (

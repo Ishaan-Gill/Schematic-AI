@@ -12,12 +12,14 @@ type ChatPanelProps = {
   hasResults: boolean
   updateMessage: (
     id: string,
-    updates: Partial<Message>
+    updates: Partial<Message>,
+    sessionId?: string,
   ) => void
   executeQuery: (
     sql?: string,
     assistantMessageId?: string,
     page?: number,
+    sessionId?: string,
   ) => Promise<void>
 }
 
