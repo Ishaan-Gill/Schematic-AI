@@ -10,7 +10,6 @@ import { Message } from "@/types/message"
 
 type ChatPanelProps = {
   messages: Message[]
-  loading: boolean
   hasResults: boolean
   page: number
   hasMore: boolean
@@ -19,7 +18,6 @@ type ChatPanelProps = {
 
 export default function ChatPanel({
   messages,
-  loading,
   hasResults,
   page,
   hasMore,
@@ -44,7 +42,7 @@ export default function ChatPanel({
                 <div className="mx-auto w-full max-w-[860px] space-y-6">
 
                   <ThinkPanel
-                    loading={loading}
+                    loading={message.loading ?? false}
                     generatedSQL={message.generatedSQL ?? ""}
                   />
 

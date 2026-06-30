@@ -98,7 +98,8 @@ export const runQuery = async (
         const validationError = await validateSQL({ sql: finalQuery })
         if (validationError) {
             updateMessage(assistantMessageId, {
-                error: validationError
+                error: validationError,
+                loading: false
             })
             return
         }
@@ -124,6 +125,7 @@ export const runQuery = async (
             updateMessage(assistantMessageId, {
                 error: queryResultValidation,
                 queryResult: [],
+                loading: false
             })
             return
         }
@@ -151,6 +153,7 @@ export const runQuery = async (
 
         updateMessage(assistantMessageId, {
             queryResult: formatted,
+            loading: false
         })
 
     } catch (err) {
@@ -191,7 +194,12 @@ export const runQuery = async (
             assistantMessageId,
             updateMessage,
         })
-        if (!fixedSQL) return
+        if (!fixedSQL) {
+            updateMessage(assistantMessageId, {
+                loading: false
+            })
+            return
+        }
 
         await runQuery({
             relevantTables,

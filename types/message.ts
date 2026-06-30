@@ -4,7 +4,7 @@ export type Message = {
   content: string
   generatedSQL?: string
   queryResult?: Record<string, unknown>[]
-  status?: "thinking" | "running" | "success" | "error"
+  loading?: boolean
   error?: string
   timestamp: string
 }

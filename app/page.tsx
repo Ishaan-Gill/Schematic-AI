@@ -25,7 +25,6 @@ const PAGE_SIZE = 100
 export default function Home() {
   const [tables, setTables] = useState<string[]>([])
   const [query, setQuery] = useState("")
-  const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [sessions, setSessions] = useState<Session[]>([])
@@ -163,7 +162,6 @@ export default function Home() {
       query,
       schemas,
       lastSQL,
-      setLoading,
       setLastSQL,
       signal: controller.signal,
       guard: () => isControllerActive(controller)
@@ -171,13 +169,18 @@ export default function Home() {
 
     if (!result.ok) {
       updateMessage(assistantMessage.id, {
-        error: result.error
+        error: result.error,
+        loading: false
       })
       return
     }
 
     const sql = result.sql
-    updateMessage(assistantMessage.id, { generatedSQL: sql, content: "Generated SQL successfully" })
+    updateMessage(assistantMessage.id, { 
+      generatedSQL: sql, 
+      content: "Generated SQL successfully", 
+      loading: false 
+    })
     await executeQuery(sql, assistantMessage.id)
   }
 
@@ -214,6 +217,8 @@ export default function Home() {
     })
   }
 
+  const latestAssistantLoading = [...(activeSession?.messages ?? [])].reverse().find(m => m.role === "assistant")?.loading ?? false
+
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#030405] text-zinc-100 md:h-screen md:flex-row">
 
@@ -237,7 +242,6 @@ export default function Home() {
       <div className="relative flex min-h-0 flex-1 flex-col md:ml-[220px] md:overflow-y-auto">
         <ChatPanel
           messages={activeSession?.messages ?? []}
-          loading={loading}
           hasResults={Boolean(latestSQL)}
           page={page}
           hasMore={hasMore}
@@ -247,7 +251,7 @@ export default function Home() {
         <FileUpload
           query={query}
           setQuery={setQuery}
-          loading={loading}
+          loading={latestAssistantLoading}
           onSend={handleSendMessage}
           onFileChange={handleFileChange}
         />

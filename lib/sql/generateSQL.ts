@@ -11,7 +11,6 @@ type GenerateSQLArgs = {
     query: string
     schemas: Record<string, any[]>
     lastSQL: string
-    setLoading: React.Dispatch<React.SetStateAction<boolean>>
     setLastSQL: React.Dispatch<React.SetStateAction<string>>
     signal?: AbortSignal
     guard?: () => boolean
@@ -34,7 +33,6 @@ export const generateSQL = async ({
     query,
     schemas,
     lastSQL,
-    setLoading,
     setLastSQL,
     signal,
     guard,
@@ -58,8 +56,6 @@ export const generateSQL = async ({
             error: "No datasets loaded. Please upload a file first."
         }
     }
-
-    setLoading(true)
 
     let conn: any = null
     try {
@@ -152,9 +148,6 @@ export const generateSQL = async ({
             error: "Something went wrong. Please try again."
         }
     } finally {
-        if (isActive(guard, signal)) {
-            setLoading(false)
-        }
         if (conn) await conn.close()
     }
 }
