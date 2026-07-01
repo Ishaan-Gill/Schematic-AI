@@ -7,7 +7,7 @@ import { profileTable } from "./profileTable"
 
 import { datasetMemory } from "../metadata/datasetMemory"
 
-import { inferSemanticContext } from "@/lib/metadata/sematicInference"
+import { inferSemanticContext } from "@/lib/metadata/semanticInference"
 
 import type { ParsedTable } from "../parsers/parseExcel"
 import { buildRelationshipsMemory } from "@/lib/ai/relationshipsMap"
