@@ -36,7 +36,7 @@ This is not a "chat with your CSV" wrapper. The pipeline does: file parsing → 
 
 ## Testing and Verification
 
-- There is no explicit `test` script defined in `package.json`. Agents should prioritize `npm run lint` and `npx tsc --noEmit` for code quality verification.
+- There is no explicit `test` script defined in `package.json`. Agents should prioritize `npm.cmd run lint` and `npx tsc --noEmit` for code quality verification.
 - Always refer to `node_modules/next/dist/docs/` for up-to-date Next.js documentation and heed deprecation notices due to significant breaking changes in this Next.js version.
 - Before considering a task complete, run both lint and typecheck.
 
