@@ -281,6 +281,8 @@ export default function Home() {
       .reverse()
       .find((m) => m.role === "assistant")?.loading ?? false;
 
+  const isEmptyChat = (activeSession?.messages?.length ?? 0) === 0;
+
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#030405] text-zinc-100 md:h-screen md:flex-row">
       <ToastContainer toasts={toasts} setToasts={setToasts} />
@@ -298,20 +300,45 @@ export default function Home() {
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col md:ml-[220px] md:overflow-y-auto">
-        <ChatPanel
-          messages={activeSession?.messages ?? []}
-          hasResults={Boolean(latestSQL)}
-          updateMessage={updateMessage}
-          executeQuery={executeQuery}
-        />
+        {isEmptyChat ? (
+          <div className="flex flex-1 flex-col justify-center">
+            <ChatPanel
+              messages={activeSession?.messages ?? []}
+              hasResults={Boolean(latestSQL)}
+              updateMessage={updateMessage}
+              executeQuery={executeQuery}
+              isEmptyChat={isEmptyChat}
+            />
 
-        <FileUpload
-          query={query}
-          setQuery={setQuery}
-          loading={latestAssistantLoading}
-          onSend={handleSendMessage}
-          onFileChange={handleFileChange}
-        />
+            <div className="w-full max-w-[860px]">
+              <FileUpload
+                query={query}
+                setQuery={setQuery}
+                loading={latestAssistantLoading}
+                onSend={handleSendMessage}
+                onFileChange={handleFileChange}
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            <ChatPanel
+              messages={activeSession?.messages ?? []}
+              hasResults={Boolean(latestSQL)}
+              updateMessage={updateMessage}
+              executeQuery={executeQuery}
+              isEmptyChat={isEmptyChat}
+            />
+
+            <FileUpload
+              query={query}
+              setQuery={setQuery}
+              loading={latestAssistantLoading}
+              onSend={handleSendMessage}
+              onFileChange={handleFileChange}
+            />
+          </>
+        )}
       </div>
     </div>
   );

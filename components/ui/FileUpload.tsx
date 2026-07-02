@@ -34,7 +34,7 @@ export default function FileUpload({
     }, [query])
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-20 px-6 pb-6 pt-10 md:left-[220px]">
+        <div className="fixed bottom-0 left-0 right-0 z-20 px-6 pb-85 pt-10 md:left-[220px]">
             <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-[#0a0b0e] via-[#0a0b0e] to-transparent" />
             <div className="mx-auto max-w-[860px]">
                 <motion.div
