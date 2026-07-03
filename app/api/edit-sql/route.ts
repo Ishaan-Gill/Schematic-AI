@@ -1,3 +1,4 @@
+import { editSQLPrompt } from "@/lib/ai/prompts/edit-sql-prompt"
 import { checkRateLimit } from "@/lib/security/checkRateLimit"
 import Groq from "groq-sdk"
 import { NextResponse } from "next/server"
@@ -22,18 +23,12 @@ export async function POST(req: Request) {
     }
     const { query, lastSQL, schemas, relationships } = body
 
-    const schemaText = Object.entries(schemas)
-        .map(([tableName, cols]) => {
-            const colText = (cols as any[])
-                .map((col: any) => col.column_name)
-                .join(", ")
-            return `${tableName} (${colText})`
-        })
-        .join("\n")
-
-    const relationshipText = relationships
-        .map((r: any) => `${r.fromTable}.${r.fromColumn} = ${r.toTable}.${r.toColumn}`)
-        .join("\n")
+    const prompt = editSQLPrompt({
+        query,
+        lastSQL,
+        schemas,
+        relationships
+    })
 
     let completion
     for (let attempt = 1; attempt <= 2; attempt++) {
@@ -44,56 +39,11 @@ export async function POST(req: Request) {
                 messages: [
                     {
                         role: "system",
-                        content: `
-                            You are an expert SQL editor.
-
-                            You will either:
-                            1. Generate a NEW query
-                            2. MODIFY an existing query (for follow-ups)
-
-                            ----------------------------
-
-                            RULES:
-
-                            - Use ONLY tables and columns from schema
-                            - NEVER invent names
-                            - Preserve correct SQL structure
-                            - Return ONLY SQL
-
-                            ----------------------------
-
-                            IF isFollowUp = true:
-
-                            - MODIFY the previous SQL
-                            - DO NOT rewrite from scratch
-                            - Keep existing SELECT, JOIN, GROUP BY
-                            - Only ADD or UPDATE conditions
-
-                            Examples:
-                            - "only from chicago" → add WHERE condition
-                            - "only electronics" → add JOIN + filter if needed
-                            - "last month" → add date filter
-
-                            ----------------------------
-
-                            Return SQL:
-                            `
+                        content: prompt.system
                     },
                     {
                         role: "user",
-                        content: `
-                            Schema:
-                            ${schemaText}
-    
-                            Relationships:
-                            ${relationshipText}
-        
-                            Previous SQL:
-                            ${lastSQL}
-        
-                            User request:
-                            "${query}"
-                        `
+                        content: prompt.user
                     }
                 ]
             })

@@ -1,6 +1,7 @@
 import Groq from "groq-sdk"
 import { NextResponse } from "next/server"
 import { checkRateLimit } from "@/lib/security/checkRateLimit"
+import { fixSQLPrompt } from "@/lib/ai/prompts/fix-sql-prompt"
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY!,
@@ -29,22 +30,12 @@ export async function POST(req: Request) {
         )
     }
 
-    const schemaText = Object.entries(schemas)
-        .map(([tableName, cols]) => {
-            const colText = (cols as any[])
-                .map((col: any) =>
-                    `${col.column_name} (${col.column_type})`
-                )
-                .join(", ")
-
-            return `${tableName}: ${colText}`
-        })
-        .join("\n\n")
-
-    const relationshipText = relationships
-        .map((r: any) => `${r.fromTable}.${r.fromColumn} = ${r.toTable}.${r.toColumn}`)
-        .join("\n")
-
+    const prompt = fixSQLPrompt({
+        query,
+        error,
+        schemas,
+        relationships
+    })
 
     let completion
     for (let attempt = 1; attempt <= 2; attempt++) {
@@ -55,33 +46,11 @@ export async function POST(req: Request) {
                 messages: [
                     {
                         role: "system",
-                        content: `
-                            You are a SQL repair engine.
-
-                            Your ONLY job:
-                            - repair invalid SQL
-                            - preserve original intent
-                            - NEVER invent columns
-                            - NEVER invent tables
-                            - ONLY use provided schema
-                            - Return ONLY executable SQL
-                        `
+                        content: prompt.system
                     },
                     {
                         role: "user",
-                        content: `
-                            Relationships:
-                            ${relationshipText}
-
-                            Tables:
-                            ${schemaText}
-
-                            Broken SQL:
-                            ${query}
-
-                            Database Error:
-                            ${error}
-                        `
+                        content: prompt.user
                     }
                 ]
             })
