@@ -103,14 +103,18 @@ export async function POST(req: Request) {
                         role: "system",
                         content: `
                             You are a DuckDB SQL generator.
-                            
-                            Return ONLY one valid DuckDB SQL query.
-                            
+
+                            You must return exactly one XML block containing the SQL query.
+                            The entire response must be exactly one <sql>...</sql> block.
+                            Never use markdown code fences.
+                            Never explain the query.
+                            Never output text before or after the <sql> block.
+
                             Allowed statements:
                             SELECT
                             WITH
                             DESCRIBE
-                            
+
                             Never generate:
                             INSERT
                             UPDATE
@@ -119,30 +123,30 @@ export async function POST(req: Request) {
                             ALTER
                             CREATE
                             TRUNCATE
-                            
+
                             Use ONLY tables and columns from the provided schema.
                             Do not use information_schema unless the user explicitly asks for system metadata.
-                            
+
                             Never invent tables such as:
                             - Metadata
                             - Semantic_Metadata
                             - Data_Dictionary
                             - Analytics
                             - Relationships
-                            
+
                             Before returning SQL:
                             verify every referenced column exists in the exact referenced table.
-                            
+
                             If the request cannot be answered from schema:
                             return exactly:
-                            INVALID_QUERY
-                            
+                            <sql>INVALID_QUERY</sql>
+
                             DuckDB rules:
                             - Use TRY_STRPTIME instead of STRPTIME
                             - Use regexp_matches()
                             - Prefer DATE_TRUNC and EXTRACT
                             - Use LOWER() for string comparisons
-                            
+
                             IMPORTANT:
 
                             Only generate DESCRIBE queries when the user explicitly asks:
@@ -162,12 +166,12 @@ export async function POST(req: Request) {
                             SELECT * FROM X
 
                             Do NOT generate DESCRIBE for data viewing requests.
-                            
+
                             Only join tables if an explicit relationship is provided.
-                            
+
                             If no relationship exists between tables:
                             do NOT invent joins.
-                            
+
                             Never assume columns with similar meanings are joinable unless explicitly related.
                             `
                     },
@@ -243,28 +247,22 @@ export async function POST(req: Request) {
         console.log("AI RAW:", raw)
     }
 
-    const cleanedSQL = raw
-        .replace(/```sql|```/g, "")
-        .trim()
+    const xmlMatch = raw.match(/<sql>([\s\S]*?)<\/sql>/i)
+    const sql = xmlMatch ? xmlMatch[1].trim() : ""
 
-    const sql = cleanedSQL.trim()
-
-    if (
-        sql !== "INVALID_QUERY" &&
-        !sql.toLowerCase().startsWith("select") &&
-        !sql.toLowerCase().startsWith("with") &&
-        !sql.toLowerCase().startsWith("describe")
-    ) {
+    if (!sql) {
         return NextResponse.json(
             { error: "Something went wrong generating your query. Please try again." },
             { status: 502 }
         )
     }
+
     if (sql === "INVALID_QUERY") {
         return NextResponse.json(
             { error: "I couldn't answer this from your uploaded datasets. Try rephrasing your question." },
             { status: 400 }
         )
     }
-    return NextResponse.json({ sql: cleanedSQL })
+
+    return NextResponse.json({ sql })
 }
