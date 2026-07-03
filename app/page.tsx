@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import FileUpload from "@/components/ui/FileUpload";
 import Sidebar from "@/components/ui/Sidebar";
 import ChatPanel from "@/components/ui/ChatPanel";
+import EmptyChat from "@/components/ui/EmptyChat";
 import {
   getRelationshipsMemory,
   relationshipsMemory,
@@ -301,16 +302,9 @@ export default function Home() {
 
       <div className="relative flex min-h-0 flex-1 flex-col md:ml-[220px] md:overflow-y-auto">
         {isEmptyChat ? (
-          <div className="flex flex-1 flex-col justify-center">
-            <ChatPanel
-              messages={activeSession?.messages ?? []}
-              hasResults={Boolean(latestSQL)}
-              updateMessage={updateMessage}
-              executeQuery={executeQuery}
-              isEmptyChat={isEmptyChat}
-            />
-
-            <div className="w-full max-w-[860px]">
+          <div className="flex flex-1 flex-col items-center justify-center px-6">
+            <EmptyChat />
+            <div className="mt-8 w-full">
               <FileUpload
                 query={query}
                 setQuery={setQuery}
@@ -327,16 +321,20 @@ export default function Home() {
               hasResults={Boolean(latestSQL)}
               updateMessage={updateMessage}
               executeQuery={executeQuery}
-              isEmptyChat={isEmptyChat}
             />
 
-            <FileUpload
-              query={query}
-              setQuery={setQuery}
-              loading={latestAssistantLoading}
-              onSend={handleSendMessage}
-              onFileChange={handleFileChange}
-            />
+            <div className="fixed bottom-0 left-0 right-0 z-20 md:left-[220px]">
+              <div className="pointer-events-none h-24 bg-gradient-to-b from-transparent via-[#0a0b0e]/30 to-[#0a0b0e]" />
+              <div className="bg-[#0a0b0e] px-6 pb-4 pt-3">
+                <FileUpload
+                  query={query}
+                  setQuery={setQuery}
+                  loading={latestAssistantLoading}
+                  onSend={handleSendMessage}
+                  onFileChange={handleFileChange}
+                />
+              </div>
+            </div>
           </>
         )}
       </div>

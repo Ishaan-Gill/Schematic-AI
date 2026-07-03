@@ -17,7 +17,7 @@ export default function EmptyChat() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="flex flex-1 flex-col items-center justify-center px-6 text-center"
+      className="flex flex-col items-center justify-center px-6 text-center"
     >
       <div className="space-y-5">
         <p className="font-mono text-xl tracking-[0.2em] font-medium uppercase tracking-[0.18em] text-[#4fffb0]">

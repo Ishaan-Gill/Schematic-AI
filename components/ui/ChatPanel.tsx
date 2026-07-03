@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import ChatMessage from "@/components/ui/ChatMessages";
 import ResultTable from "@/components/ui/resultTable";
 import ThinkPanel from "@/components/ui/ThinkPanel";
-import EmptyChat from "@/components/ui/EmptyChat";
 import { exportCsv } from "@/lib/export/exportCsv";
 import { Message } from "@/types/message";
 
@@ -22,7 +21,6 @@ type ChatPanelProps = {
     page?: number,
     sessionId?: string,
   ) => Promise<void>;
-  isEmptyChat: boolean;
 };
 
 export default function ChatPanel({
@@ -30,18 +28,12 @@ export default function ChatPanel({
   hasResults,
   updateMessage,
   executeQuery,
-  isEmptyChat,
 }: ChatPanelProps) {
   return (
     <section className="flex w-full flex-1 flex-col bg-[#0a0b0e]">
       <div className="mx-auto flex w-full max-w-[1300px] flex-1 flex-col gap-6 px-6 py-6 pb-40">
-        {isEmptyChat ? (
-          <div className="flex flex-1 items-center justify-center pb-30">
-            <EmptyChat />
-          </div>
-        ) : (
-          <AnimatePresence>
-            {messages.map((message) => (
+        <AnimatePresence>
+          {messages.map((message) => (
               <div key={message.id} className="space-y-6">
                 <ChatMessage role={message.role} content={message.content} />
                 {message.role === "assistant" && (
@@ -96,7 +88,6 @@ export default function ChatPanel({
               </div>
             ))}
           </AnimatePresence>
-        )}
 
         <AnimatePresence>
           {hasResults && (

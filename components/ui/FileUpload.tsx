@@ -11,12 +11,14 @@ export default function FileUpload({
     loading,
     onSend,
     onFileChange,
+    className,
 }: {
     query: string
     setQuery: React.Dispatch<React.SetStateAction<string>>
     loading: boolean
     onSend: (query: string) => Promise<void>
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
+    className?: string
 }) {
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const MAX_HEIGHT = 120
@@ -34,9 +36,8 @@ export default function FileUpload({
     }, [query])
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-20 px-6 pb-85 pt-10 md:left-[220px]">
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-[#0a0b0e] via-[#0a0b0e] to-transparent" />
-            <div className="mx-auto max-w-[860px]">
+        <div className={className}>
+            <div className="mx-auto w-full max-w-[860px]">
                 <motion.div
                     initial={{ opacity: 0, y: 18 }}
                     animate={{ opacity: 1, y: 0 }}
