@@ -7,7 +7,7 @@ import EmptyChat from "@/components/ui/EmptyChat";
 import {
   getRelationshipsMemory,
   relationshipsMemory,
-} from "@/lib/ai/relationshipsMap";
+} from "@/lib/ai/context/relationshipsMap";
 import { generateSQL } from "@/lib/sql/generateSQL";
 import { runQuery } from "@/lib/sql/runQuery";
 import { handleFile } from "@/lib/upload/uploadDataset";
@@ -15,6 +15,9 @@ import React from "react";
 import { Message } from "@/types/message";
 import { ToastItem } from "@/types/toast";
 import ToastContainer from "@/components/ui/ToastContainer";
+import { classifyIntent } from "@/lib/ai/core/classifyIntent";
+import { conversational } from "@/lib/ai/core/conversational";
+import { reasoning } from "@/lib/ai/core/reasoning";
 
 type SchemaMap = Record<string, unknown[]>;
 
@@ -128,7 +131,7 @@ export default function Home() {
     );
   };
 
-  const handleSendMessage = async (query: string) => {
+  const handleSendMessage = async (query: string): Promise<void> => {
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: "user",
@@ -215,40 +218,94 @@ export default function Home() {
       },
       sessionId,
     );
-    const result = await generateSQL({
+    const intent = await classifyIntent({
       query,
       schemas,
-      lastSQL,
-      setLastSQL,
       signal: controller.signal,
       guard: () => isControllerActive(controller),
     });
 
-    if (!result.ok) {
-      updateMessage(
-        assistantMessage.id,
+    switch (intent) {
+      case "CONVERSATIONAL":
         {
-          error: result.error,
-          loading: false,
-        },
-        sessionId,
-      );
-      return;
+          const response = await conversational({
+            query,
+            signal: controller.signal,
+            guard: () => isControllerActive(controller),
+          });
+          if (!response) return;
+          updateMessage(
+            assistantMessage.id,
+            {
+              content: response,
+              loading: false,
+            },
+            sessionId,
+          );
+        }
+        break;
+
+      case "REASONING":
+        {
+          const response = await reasoning({
+            query,
+            schemas,
+            relationships: getRelationshipsMemory(),
+            signal: controller.signal,
+            guard: () => isControllerActive(controller),
+          });
+          if (!response) return;
+          updateMessage(
+            assistantMessage.id,
+            {
+              content: response,
+              loading: false,
+            },
+            sessionId,
+          );
+        }
+        break;
+
+      case "DATA_QUERY":
+        {
+          const result = await generateSQL({
+            query,
+            schemas,
+            lastSQL,
+            setLastSQL,
+            signal: controller.signal,
+            guard: () => isControllerActive(controller),
+          });
+          if (!result.ok) {
+            updateMessage(
+              assistantMessage.id,
+              {
+                error: result.error,
+                loading: false,
+              },
+              sessionId,
+            );
+            return;
+          }
+
+          const sql = result.sql;
+          updateMessage(
+            assistantMessage.id,
+            {
+              generatedSQL: sql,
+              content: "Generated SQL successfully",
+              loading: false,
+            },
+            sessionId,
+          );
+          await executeQuery(sql, assistantMessage.id, 0, sessionId);
+        }
+        break;
+
+      case "AMBIGUOUS":
+        break;
     }
-
-    const sql = result.sql;
-    updateMessage(
-      assistantMessage.id,
-      {
-        generatedSQL: sql,
-        content: "Generated SQL successfully",
-        loading: false,
-      },
-      sessionId,
-    );
-    await executeQuery(sql, assistantMessage.id, 0, sessionId);
   };
-
   const showToast = (type: ToastItem["type"], message: string) => {
     setToasts((prev) => [
       ...prev,
