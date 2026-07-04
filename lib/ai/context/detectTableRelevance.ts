@@ -1,5 +1,5 @@
 import { inferSemanticRole } from "@/lib/metadata/inferSemanticRole"
-import { quoteIdentifier } from "../utils/quoteIdentifier"
+import { quoteIdentifier } from "../../utils/quoteIdentifier"
 
 type ColumnInfo = {
     column_name: string

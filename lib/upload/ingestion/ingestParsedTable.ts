@@ -10,7 +10,7 @@ import { datasetMemory } from "../metadata/datasetMemory"
 import { inferSemanticContext } from "@/lib/metadata/semanticInference"
 
 import type { ParsedTable } from "../parsers/parseExcel"
-import { buildRelationshipsMemory } from "@/lib/ai/relationshipsMap"
+import { buildRelationshipsMemory } from "@/lib/ai/context/relationshipsMap"
 import { quoteIdentifier } from "@/lib/utils/quoteIdentifier"
 
 type QueryRow = Record<string, unknown>

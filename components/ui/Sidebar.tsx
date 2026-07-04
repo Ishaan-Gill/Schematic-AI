@@ -9,7 +9,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import { datasetMemory } from "@/lib/upload/metadata/datasetMemory"
-import { Relationship } from "@/lib/ai/relationships"
+import { Relationship } from "@/lib/ai/context/relationships"
 import { Session } from "@/app/page"
 
 type SidebarProps = {

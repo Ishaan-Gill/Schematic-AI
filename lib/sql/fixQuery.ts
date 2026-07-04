@@ -1,5 +1,5 @@
 import { Message } from "@/types/message"
-import type { Relationship } from "../ai/relationships"
+import type { Relationship } from "../ai/context/relationships"
 import { validateSQL } from "./validateSQL"
 
 type FixQueryArgs = {

@@ -1,3 +1,5 @@
+import { Relationship } from "../context/relationships";
+
 export function formatSchemaText(schemas: Record<string, any[]>) {
   return Object.entries(schemas)
     .map(([tableName, cols]) => {
@@ -9,7 +11,7 @@ export function formatSchemaText(schemas: Record<string, any[]>) {
     .join("\n");
 }
 
-export function formatRelationshipText(relationships: any[]) {
+export function formatRelationshipText(relationships: Relationship[]) {
   if (relationships.length === 0) {
     return "No relationships detected.";
   }

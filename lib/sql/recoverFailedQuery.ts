@@ -1,5 +1,5 @@
 import { Message } from "@/types/message"
-import { Relationship } from "../ai/relationships"
+import { Relationship } from "../ai/context/relationships"
 import { fixQueryWithAI } from "./fixQuery"
 import { suggestFix } from "./suggestFix"
 

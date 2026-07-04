@@ -1,10 +1,11 @@
+import { Relationship } from "../context/relationships";
 import { formatRelationshipText, formatSchemaText } from "./shared";
 
 type SuggestFixPromptParams = {
   query: string;
   error: string;
   schemas: Record<string, any[]>;
-  relationships: any[];
+  relationships: Relationship[];
 };
 
 export function suggestFixPrompt({

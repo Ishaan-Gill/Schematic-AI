@@ -1,5 +1,5 @@
-import { detectRelationships } from "./relationships"
-import type { Relationship, TableSchemas } from "./relationships"
+import { detectRelationships } from "@/lib/ai/context/relationships"
+import type { Relationship, TableSchemas } from "@/lib/ai/context/relationships"
 
 export type { Relationship }
 

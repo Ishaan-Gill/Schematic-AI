@@ -1,11 +1,10 @@
 import React from "react"
 
 import { getDuckDB } from "@/lib/duckdb"
-import { fixQueryWithAI } from "@/lib/sql/fixQuery"
 import { suggestFix } from "@/lib/sql/suggestFix"
 import { addFeedbackMemory } from "../upload/metadata/feedbackMemory"
-import type { Relationship } from "../ai/relationships"
-import { getRelationshipsMemory } from "../ai/relationshipsMap"
+import type { Relationship } from "../ai/context/relationships"
+import { getRelationshipsMemory } from "../ai/context/relationshipsMap"
 import { validateSQL } from "./validateSQL"
 import { Message } from "@/types/message"
 import { buildExecutableSQL } from "./buildExecutableSQL"

@@ -1,5 +1,5 @@
 import { Message } from "@/types/message"
-import type { Relationship } from "../ai/relationships"
+import type { Relationship } from "../ai/context/relationships"
 
 type SuggestFixArgs = {
     userQuery: string

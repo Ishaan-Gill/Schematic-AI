@@ -1,6 +1,6 @@
-import { detectRelationships } from "@/lib/ai/relationships"
-import type { TableSchemas } from "@/lib/ai/relationships"
-import { relationshipsMemory } from "@/lib/ai/relationshipsMap"
+import { detectRelationships } from "@/lib/ai/context/relationships"
+import type { TableSchemas } from "@/lib/ai/context/relationships"
+import { relationshipsMemory } from "@/lib/ai/context/relationshipsMap"
 
 export const updateDetectedRelationships = (updatedSchemas: TableSchemas) => {
     const detected = detectRelationships(updatedSchemas)
