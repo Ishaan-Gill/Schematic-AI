@@ -69,6 +69,29 @@ export function classifyIntentPrompt({
 
         "Revenue"
         → AMBIGUOUS
+
+        IMPORTANT:
+
+        If a message contains BOTH conversational language and a data request,
+        ALWAYS classify it as DATA_QUERY.
+
+        Ignore greetings, politeness, and thanks if the user is requesting analysis or asking about their uploaded data.
+
+        Examples:
+
+        "Hi, show monthly revenue."
+        → DATA_QUERY
+
+        "Hey! Please list customers."
+        → DATA_QUERY
+
+        "Thanks! Show sales by month."
+        → DATA_QUERY
+
+        "Good morning, what tables do I have?"
+        → REASONING
+
+        Only classify as CONVERSATIONAL if the entire message is purely conversational.
     `,
     user: `
         Available Schemas:

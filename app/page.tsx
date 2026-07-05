@@ -18,6 +18,7 @@ import ToastContainer from "@/components/ui/ToastContainer";
 import { classifyIntent } from "@/lib/ai/core/classifyIntent";
 import { conversational } from "@/lib/ai/core/conversational";
 import { reasoning } from "@/lib/ai/core/reasoning";
+import { explainSQL } from "@/lib/ai/core/explainSQL";
 
 type SchemaMap = Record<string, unknown[]>;
 
@@ -59,13 +60,13 @@ export default function Home() {
     assistantMessageId = "",
     page = 0,
     sessionId?: string,
-  ) => {
+  ): Promise<Record<string, unknown>[] | undefined> => {
     const controller = startController(queryControllerRef);
     fixAttemptsRef.current = 0;
 
     if (!sql) return;
 
-    await runQuery({
+    return await runQuery({
       sql: sql.trim(),
       query,
       schemas,
@@ -293,12 +294,40 @@ export default function Home() {
             assistantMessage.id,
             {
               generatedSQL: sql,
-              content: "Generated SQL successfully",
+              content: "Analyzing data...",
               loading: false,
             },
             sessionId,
           );
-          await executeQuery(sql, assistantMessage.id, 0, sessionId);
+          const rows = await executeQuery(
+            sql,
+            assistantMessage.id,
+            0,
+            sessionId,
+          );
+
+          if (!rows) return;
+
+          const explanation = await explainSQL({
+            query,
+            sql,
+            result: rows ?? [],
+            schemas,
+            relationships: getRelationshipsMemory(),
+            relevantTables: result.relevantTables,
+            finalDatasetContext: result.finalDatasetContext,
+            signal: controller.signal,
+            guard: () => isControllerActive(controller),
+          });
+          if (!explanation) return;
+
+          updateMessage(
+            assistantMessage.id,
+            {
+              content: explanation,
+            },
+            sessionId,
+          );
         }
         break;
 
