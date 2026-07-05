@@ -20,7 +20,7 @@ type ChatPanelProps = {
     assistantMessageId?: string,
     page?: number,
     sessionId?: string,
-  ) => Promise<void>;
+  ) => Promise<Record<string, unknown>[] | undefined>;
 };
 
 export default function ChatPanel({

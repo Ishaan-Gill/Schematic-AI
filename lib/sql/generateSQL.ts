@@ -22,6 +22,8 @@ type GenerateSQLResult =
   | {
       ok: true;
       sql: string;
+      relevantTables: string[];
+      finalDatasetContext: Record<string, any>;
     }
   | {
       ok: false;
@@ -141,6 +143,8 @@ export const generateSQL = async ({
     return {
       ok: true,
       sql: freshSQL,
+      relevantTables,
+      finalDatasetContext
     };
   } catch (err) {
     if (signal?.aborted) return CANCELLED;

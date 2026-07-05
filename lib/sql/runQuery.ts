@@ -48,7 +48,7 @@ export const runQuery = async (
         assistantMessageId,
         updateMessage
     }: RunQueryArgs
-) => {
+): Promise<Record<string, unknown>[] | undefined> => {
     const startTime = performance.now()
 
     if (!isActive(guard, signal)) return
@@ -155,6 +155,8 @@ export const runQuery = async (
             loading: false
         })
 
+        return formatted
+
     } catch (err) {
         const errorMsg = String(err)
 
@@ -202,7 +204,7 @@ export const runQuery = async (
             return
         }
 
-        await runQuery({
+        return await runQuery({
             relevantTables,
             sql: fixedSQL,
             query,
@@ -216,7 +218,6 @@ export const runQuery = async (
             assistantMessageId,
             updateMessage,
         })
-        return
 
     } finally {
         if (timeoutId) {
