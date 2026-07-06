@@ -1,5 +1,5 @@
 import { getDuckDB } from "@/lib/duckdb";
-import { isFollowUpQuery, isTimeQuery } from "@/lib/ai/followUp";
+import { isTimeQuery } from "@/lib/ai/timeQuery";
 import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelationships";
 import { validateSQL } from "./validateSQL";
 import { feedbackMemory } from "@/lib/upload/metadata/feedbackMemory";
@@ -8,12 +8,12 @@ import {
   expandRelevantTables,
 } from "@/lib/ai/context/detectTableRelevance";
 import { buildSQLContext } from "../ai/context/buildSQLContext";
+import type { ConversationEntry } from "../ai/context/buildConversationContext";
 
 type GenerateSQLArgs = {
   query: string;
   schemas: Record<string, any[]>;
-  lastSQL: string;
-  setLastSQL: React.Dispatch<React.SetStateAction<string>>;
+  conversationContext: ConversationEntry[];
   signal?: AbortSignal;
   guard?: () => boolean;
 };
@@ -36,13 +36,11 @@ const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
 export const generateSQL = async ({
   query,
   schemas,
-  lastSQL,
-  setLastSQL,
+  conversationContext,
   signal,
   guard,
 }: GenerateSQLArgs): Promise<GenerateSQLResult> => {
   const relationships = updateDetectedRelationships(schemas);
-  const isFollowUp = isFollowUpQuery(query, lastSQL);
   const relevantTables = detectTableRelevance(query, schemas);
   const finalRelevantTables = expandRelevantTables(
     relevantTables,
@@ -82,23 +80,19 @@ export const generateSQL = async ({
             `
       : "";
 
-    const endpoint =
-      isFollowUp && lastSQL ? "/api/edit-sql" : "/api/generate-sql";
-    const body =
-      endpoint === "/api/edit-sql"
-        ? { query, lastSQL, schemas, relationships, isFollowUp }
-        : {
-            query,
-            schemas,
-            relevantTables: finalRelevantTables,
-            relationships,
-            sampleRowsByTable,
-            finalDatasetContext,
-            feedbackMemory,
-            timeHint,
-          };
+    const body = {
+      query,
+      schemas,
+      relevantTables: finalRelevantTables,
+      relationships,
+      sampleRowsByTable,
+      finalDatasetContext,
+      feedbackMemory,
+      timeHint,
+      conversationContext,
+    };
 
-    const res = await fetch(endpoint, {
+    const res = await fetch("/api/generate-sql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal,
@@ -116,8 +110,6 @@ export const generateSQL = async ({
     }
 
     if (!isActive(guard, signal)) return CANCELLED;
-
-    if (!isFollowUp) setLastSQL("");
 
     if (!data.sql) {
       return {
@@ -137,12 +129,9 @@ export const generateSQL = async ({
       };
     }
 
-    const freshSQL = data.sql;
-    setLastSQL(freshSQL);
-
     return {
       ok: true,
-      sql: freshSQL,
+      sql: data.sql,
       relevantTables,
       finalDatasetContext
     };

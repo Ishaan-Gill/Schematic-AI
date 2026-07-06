@@ -19,6 +19,8 @@ import { classifyIntent } from "@/lib/ai/core/classifyIntent";
 import { conversational } from "@/lib/ai/core/conversational";
 import { reasoning } from "@/lib/ai/core/reasoning";
 import { explainSQL } from "@/lib/ai/core/explainSQL";
+import { buildConversationContext } from "@/lib/ai/context/buildConversationContext";
+import { ambiguous } from "@/lib/ai/core/ambiguous";
 
 type SchemaMap = Record<string, unknown[]>;
 
@@ -36,7 +38,6 @@ export default function Home() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [schemas, setSchemas] = useState<SchemaMap>({});
-  const [lastSQL, setLastSQL] = useState("");
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const uploadControllerRef = useRef<AbortController | null>(null);
   const queryControllerRef = useRef<AbortController | null>(null);
@@ -269,11 +270,13 @@ export default function Home() {
 
       case "DATA_QUERY":
         {
+          const conversationContext = buildConversationContext(
+            activeSession?.messages ?? [],
+          );
           const result = await generateSQL({
             query,
             schemas,
-            lastSQL,
-            setLastSQL,
+            conversationContext,
             signal: controller.signal,
             guard: () => isControllerActive(controller),
           });
@@ -332,6 +335,22 @@ export default function Home() {
         break;
 
       case "AMBIGUOUS":
+        {
+          const response = await ambiguous({
+            query,
+            signal: controller.signal,
+            guard: () => isControllerActive(controller),
+          });
+          if (!response) return;
+          updateMessage(
+            assistantMessage.id,
+            {
+              content: response,
+              loading: false,
+            },
+            sessionId,
+          );
+        }
         break;
     }
   };
@@ -350,8 +369,6 @@ export default function Home() {
     const controller = startController(uploadControllerRef);
     queryControllerRef.current?.abort();
     generateControllerRef.current?.abort();
-
-    setLastSQL("");
 
     await handleFile(e, {
       setTables,

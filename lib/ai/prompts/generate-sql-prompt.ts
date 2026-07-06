@@ -1,12 +1,15 @@
 type GenerateSQLPromptParams = {
   schemaText: string;
-  filteredRelationships: string;
+  filteredRelationships: any[];
   timeHint?: string;
   safeDatasetContext: Record<string, any>;
   filteredSampleText: string;
   recentFailures: any[];
   query: string;
+  conversationContext: ConversationEntry[];
 };
+
+import type { ConversationEntry } from "../context/buildConversationContext";
 
 export function generateSQLPrompt({
   schemaText,
@@ -16,6 +19,7 @@ export function generateSQLPrompt({
   filteredSampleText,
   recentFailures,
   query,
+  conversationContext,
 }: GenerateSQLPromptParams) {
   return {
     system: `
@@ -141,6 +145,24 @@ export function generateSQLPrompt({
                                 
         Recent Failed Queries:
         ${JSON.stringify(recentFailures)}
+
+        ${
+          conversationContext.length > 0
+            ? `Recent SQL Context:
+${conversationContext
+  .map(
+    (ctx) =>
+      `Q:\n${ctx.query}\n\nSQL:\n${ctx.sql}\n\nExplanation:\n${ctx.explanation}`,
+  )
+  .join("\n\n---\n\n")}
+
+---
+If the current question clearly depends on previous SQL context, continue from it.
+If it is unrelated, completely ignore previous context.
+Never force previous context if it does not apply.
+`
+            : ""
+        }
                                 
         User Request:
         "${query}"

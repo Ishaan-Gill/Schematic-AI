@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     relationships,
     finalDatasetContext,
     timeHint,
+    conversationContext,
   } = body;
 
   const feedbackMemory = (body.feedbackMemory ?? []) as FeedbackItem[];
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
     filteredSampleText,
     recentFailures,
     query,
+    conversationContext,
   });
 
   let completion;
