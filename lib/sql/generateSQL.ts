@@ -9,6 +9,10 @@ import {
 } from "@/lib/ai/context/detectTableRelevance";
 import { buildSQLContext } from "../ai/context/buildSQLContext";
 import type { ConversationEntry } from "../ai/context/buildConversationContext";
+import { normalizeQuery } from "../cache/normalizeQuery";
+import { schemaHash } from "../cache/schemaHash";
+import { buildCacheKey } from "../cache/buildCacheKey";
+import { getCachedSQL, saveCachedSQL } from "../cache/queryCache";
 
 type GenerateSQLArgs = {
   query: string;
@@ -46,6 +50,18 @@ export const generateSQL = async ({
     relevantTables,
     relationships,
   );
+
+  const normalizedQuery = normalizeQuery(query);
+  const hash = await schemaHash(
+    Object.fromEntries(
+      finalRelevantTables.map((table) => [table, schemas[table]]),
+    ),
+  );
+  const cacheKey = buildCacheKey({
+    normalizedQuery,
+    schemaHash: hash,
+  });
+
   const CANCELLED: GenerateSQLResult = {
     ok: false,
     error: "Request Cancelled.",
@@ -71,13 +87,23 @@ export const generateSQL = async ({
       schemas,
     });
 
+    const cachedSQL = await getCachedSQL(cacheKey);
+    if (cachedSQL) {
+      return {
+        ok: true,
+        sql: cachedSQL,
+        relevantTables: finalRelevantTables,
+        finalDatasetContext,
+      };
+    }
+
     // Time hint
     const timeHint = isTimeQuery(query)
       ? `
-                Time-based analytics query.
-                Prefer DATE_TRUNC, EXTRACT, proper date filtering,
-                and relative date logic where appropriate.
-            `
+        Time-based analytics query.
+        Prefer DATE_TRUNC, EXTRACT, proper date filtering,
+        and relative date logic where appropriate.
+      `
       : "";
 
     const body = {
@@ -129,11 +155,18 @@ export const generateSQL = async ({
       };
     }
 
+    await saveCachedSQL({
+      cacheKey,
+      normalizedQuery,
+      schemaHash: hash,
+      sql: data.sql,
+    });
+
     return {
       ok: true,
       sql: data.sql,
-      relevantTables,
-      finalDatasetContext
+      relevantTables: finalRelevantTables,
+      finalDatasetContext,
     };
   } catch (err) {
     if (signal?.aborted) return CANCELLED;
