@@ -93,6 +93,19 @@ export function generateSQLPrompt({
         do NOT invent joins.
             
         Never assume columns with similar meanings are joinable unless explicitly related.
+
+        CRITICAL: You must return exactly ONE SQL statement, 
+        never multiple statements separated by semicolons.
+
+        If the question requires multiple pieces of analysis 
+        (e.g. "give min, max, and category breakdown"), combine 
+        them into ONE statement using:
+        - CTEs (WITH ... AS (...))
+        - Window functions (OVER (...))
+        - UNION ALL if genuinely combining different row sets
+
+        Never write multiple separate SELECT statements. 
+        Always produce a single, self-contained query.
     `,
     user: `
         Schema:
@@ -149,18 +162,18 @@ export function generateSQLPrompt({
         ${
           conversationContext.length > 0
             ? `Recent SQL Context:
-${conversationContext
-  .map(
-    (ctx) =>
-      `Q:\n${ctx.query}\n\nSQL:\n${ctx.sql}\n\nExplanation:\n${ctx.explanation}`,
-  )
-  .join("\n\n---\n\n")}
+          ${conversationContext
+            .map(
+              (ctx) =>
+                `Q:\n${ctx.query}\n\nSQL:\n${ctx.sql}\n\nExplanation:\n${ctx.explanation}`,
+            )
+            .join("\n\n---\n\n")}
 
----
-If the current question clearly depends on previous SQL context, continue from it.
-If it is unrelated, completely ignore previous context.
-Never force previous context if it does not apply.
-`
+          ---
+          If the current question clearly depends on previous SQL context, continue from it.
+          If it is unrelated, completely ignore previous context.
+          Never force previous context if it does not apply.
+          `
             : ""
         }
                                 
