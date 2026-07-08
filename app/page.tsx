@@ -87,6 +87,7 @@ export default function Home() {
     const uploadController = uploadControllerRef;
     const queryController = queryControllerRef;
     const generateController = generateControllerRef;
+    isMountedRef.current = true;
 
     return () => {
       isMountedRef.current = false;
