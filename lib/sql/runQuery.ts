@@ -1,6 +1,6 @@
 import React from "react"
 
-import { getDuckDB } from "@/lib/duckdb"
+import { getDuckDB } from "@/lib/duckdb/duckdb"
 import { suggestFix } from "@/lib/sql/suggestFix"
 import { addFeedbackMemory } from "../upload/metadata/feedbackMemory"
 import type { Relationship } from "../ai/context/relationships"

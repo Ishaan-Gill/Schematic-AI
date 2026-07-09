@@ -1,6 +1,6 @@
 import React from "react"
 
-import { getDuckDB } from "@/lib/duckdb"
+import { getDuckDB } from "@/lib/duckdb/duckdb"
 import { ingestParsedTable } from "@/lib/upload/ingestion/ingestParsedTable"
 import { updateDetectedRelationships } from "./metadata/detectRelationships"
 import { processFile } from "./handlers/processFile"

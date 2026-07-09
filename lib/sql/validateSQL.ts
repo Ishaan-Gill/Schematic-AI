@@ -1,4 +1,4 @@
-import { getDuckDB } from "@/lib/duckdb"
+import { getDuckDB } from "@/lib/duckdb/duckdb"
 
 type ValidateSQLArgs = {
     sql: string

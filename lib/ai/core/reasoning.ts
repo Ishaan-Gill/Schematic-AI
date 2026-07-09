@@ -1,4 +1,4 @@
-import { getDuckDB } from "@/lib/duckdb";
+import { getDuckDB } from "@/lib/duckdb/duckdb";
 import { buildSQLContext } from "../context/buildSQLContext";
 import { Relationship } from "../context/relationships";
 

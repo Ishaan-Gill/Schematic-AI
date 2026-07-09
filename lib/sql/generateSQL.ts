@@ -1,4 +1,4 @@
-import { getDuckDB } from "@/lib/duckdb";
+import { getDuckDB } from "@/lib/duckdb/duckdb";
 import { isTimeQuery } from "@/lib/ai/timeQuery";
 import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelationships";
 import { validateSQL } from "./validateSQL";
