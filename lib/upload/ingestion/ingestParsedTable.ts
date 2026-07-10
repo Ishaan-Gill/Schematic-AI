@@ -15,7 +15,8 @@ import { quoteIdentifier } from "@/lib/utils/quoteIdentifier";
 import { exportParquet } from "@/lib/duckdb/exportParquet";
 import { createClient } from "@/lib/supabase/client";
 import { uploadParquet } from "@/lib/storage/uploadParquet";
-import type { DuckDatabase , DuckConnection } from "@/types/duckdb";
+import type { DuckDatabase, DuckConnection } from "@/types/duckdb";
+import { saveDataset } from "@/lib/database/saveDataset";
 
 type QueryRow = Record<string, unknown>;
 
@@ -184,13 +185,32 @@ export const ingestParsedTable = async ({
 
   const parquetBytes = await exportParquet(db, conn, tableName);
 
-  const uploadResult = await uploadParquet({
+  const { storagePath } = await uploadParquet({
     parquetBytes,
     userId: user.id,
     datasetName: tableName,
   });
 
-  console.log("✅ Parquet uploaded:", uploadResult);
+  await saveDataset({
+    user_id: user.id,
+
+    table_name: tableName,
+
+    storage_path: storagePath,
+
+    row_count: rowCount,
+
+    schema: refreshedColumns.map((column) => ({
+      column_name: column.column_name,
+      column_type: String(column.column_type),
+    })),
+
+    profile,
+
+    semantic,
+
+    relationships,
+  });
 
   return {
     tableName,
