@@ -21,6 +21,7 @@ import { reasoning } from "@/lib/ai/core/reasoning";
 import { explainSQL } from "@/lib/ai/core/explainSQL";
 import { buildConversationContext } from "@/lib/ai/context/buildConversationContext";
 import { ambiguous } from "@/lib/ai/core/ambiguous";
+import { rehydrateDuckDB } from "@/lib/duckdb/rehydrateDuckDB";
 
 type SchemaMap = Record<string, unknown[]>;
 
@@ -39,6 +40,7 @@ export default function Home() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [schemas, setSchemas] = useState<SchemaMap>({});
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [workspaceReady, setWorkspaceReady] = useState(false);
   const uploadControllerRef = useRef<AbortController | null>(null);
   const queryControllerRef = useRef<AbortController | null>(null);
   const generateControllerRef = useRef<AbortController | null>(null);
@@ -94,6 +96,53 @@ export default function Home() {
       uploadController.current?.abort();
       queryController.current?.abort();
       generateController.current?.abort();
+    };
+  }, []);
+
+  const showToast = (type: ToastItem["type"], message: string) => {
+    setToasts((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        type,
+        message,
+      },
+    ]);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    async function initWorkspace() {
+      try {
+        showToast("info", "Preparing your workspace...");
+
+        const { datasets } = await rehydrateDuckDB();
+
+        setTables(datasets.map((d) => d.table_name));
+
+        const restoredSchemas = Object.fromEntries(
+          datasets.map((d) => [d.table_name, d.schema]),
+        );
+        setSchemas(restoredSchemas);
+
+        if (!cancelled) {
+          setWorkspaceReady(true);
+        }
+
+        showToast("success", "Workspace ready");
+      } catch (err) {
+        console.error(err);
+
+        showToast("error", "Workspace failed to load");
+
+        if (!cancelled) {
+          setWorkspaceReady(true);
+        }
+      }
+    }
+    initWorkspace();
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -354,16 +403,6 @@ export default function Home() {
         }
         break;
     }
-  };
-  const showToast = (type: ToastItem["type"], message: string) => {
-    setToasts((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        type,
-        message,
-      },
-    ]);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
