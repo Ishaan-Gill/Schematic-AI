@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadParquet } from "@/lib/storage/uploadParquet";
 import type { DuckDatabase, DuckConnection } from "@/types/duckdb";
 import { saveDataset } from "@/lib/database/saveDataset";
+import { mountParquetViews } from "@/lib/duckdb/mountParquetViews";
 
 type QueryRow = Record<string, unknown>;
 
@@ -211,6 +212,13 @@ export const ingestParsedTable = async ({
 
     relationships,
   });
+
+  await mountParquetViews(conn, [
+    {
+      table_name: tableName,
+      storage_path: storagePath,
+    },
+  ]);
 
   return {
     tableName,
