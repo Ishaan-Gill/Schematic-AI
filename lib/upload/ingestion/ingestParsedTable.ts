@@ -213,6 +213,10 @@ export const ingestParsedTable = async ({
     relationships,
   });
 
+  await conn.query(`
+    DROP TABLE IF EXISTS ${quoteIdentifier(tableName)}
+  `);
+
   await mountParquetViews(conn, [
     {
       table_name: tableName,
