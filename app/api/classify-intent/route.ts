@@ -1,5 +1,6 @@
 import { classifyIntentPrompt } from "@/lib/ai/prompts/classify-intent-prompt";
 import { checkRateLimit } from "@/lib/security/checkRateLimit";
+import { checkDailyQuota } from "@/lib/usage/checkDailyQuota";
 import Groq from "groq-sdk";
 import { NextResponse } from "next/server";
 
@@ -8,6 +9,19 @@ const groq = new Groq({
 });
 
 export async function POST(req: Request) {
+  const withinQuota = await checkDailyQuota();
+  if (!withinQuota) {
+    return NextResponse.json(
+      {
+        error:
+          "You've reached today's free limit of 20 queries. Please come back tomorrow.",
+      },
+      {
+        status: 429,
+      },
+    );
+  }
+
   const limited = checkRateLimit(req, "classify-intent", 5, 60000, "Too many intent classification attempts.");
   if (limited) return limited;
 
