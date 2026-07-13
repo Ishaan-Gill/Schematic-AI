@@ -8,7 +8,7 @@ const groq = new Groq({
 });
 
 export async function POST(req: Request) {
-  const limited = checkRateLimit(req, 5, 60000, "Too many AI fix attempts.");
+  const limited = checkRateLimit(req, "explain-sql", 5, 60000, "Too many AI fix attempts.");
   if (limited) return limited;
 
   let body;

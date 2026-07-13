@@ -3,6 +3,7 @@ import { rateLimit } from "../rateLimiter"
 
 export const checkRateLimit = (
     req: Request,
+    bucket: string,
     limit: number,
     windowMs: number,
     message: string
@@ -13,7 +14,7 @@ export const checkRateLimit = (
             ?.split(",")[0]
             ?.trim() || "anonymous"
 
-    if (!rateLimit(ip, limit, windowMs)) {
+    if (!rateLimit(ip, bucket, limit, windowMs)) {
         return NextResponse.json(
             { error: message },
             { status: 429 }
