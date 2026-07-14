@@ -47,3 +47,14 @@ export async function resetDuckConnection() {
 
   conn = null;
 }
+
+export async function destroyDuckDB() {
+  if (conn) {
+    await conn.close();
+    conn = null;
+  }
+  if (db) {
+    await db.terminate();
+    db = null;
+  }
+}

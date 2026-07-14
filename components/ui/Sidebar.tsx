@@ -11,6 +11,7 @@ import { Relationship } from "@/lib/ai/context/relationships";
 import { Session } from "@/app/page";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { destroyDuckDB } from "@/lib/duckdb/duckdb";
 
 type SidebarProps = {
   datasets: StoredDataset[];
@@ -49,6 +50,8 @@ export default function Sidebar({
       console.error(error);
       return;
     }
+    
+    await destroyDuckDB();
 
     router.push("/login");
     router.refresh();
