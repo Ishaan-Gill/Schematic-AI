@@ -1,4 +1,4 @@
-import { getDuckDB } from "./duckdb";
+import { getDuckConnection } from "./duckdb";
 import { fetchDatasets } from "@/lib/rehydration/fetchDatasets";
 import { rehydrateMemory } from "@/lib/rehydration/rehydrateMemory";
 import { mountParquetViews } from "./mountParquetViews";
@@ -7,8 +7,7 @@ import { setWorkspaceExpiry } from "./workspaceExpiry";
 export async function rehydrateDuckDB() {
     console.log("Rehydrating DuckDB...");
 
-    const db = await getDuckDB();
-    const conn = await db.connect();
+    const conn = await getDuckConnection();
 
     const datasets = await fetchDatasets();
 
@@ -25,8 +24,6 @@ export async function rehydrateDuckDB() {
     console.log("DuckDB views mounted");
 
     return {
-        db,
-        conn,
         datasets,
     };
 }

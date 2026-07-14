@@ -1,6 +1,6 @@
 import React from "react"
 
-import { getDuckDB } from "@/lib/duckdb/duckdb"
+import { getDuckConnection, getDuckDB } from "@/lib/duckdb/duckdb"
 import { ingestParsedTable } from "@/lib/upload/ingestion/ingestParsedTable"
 import { updateDetectedRelationships } from "./metadata/detectRelationships"
 import { processFile } from "./handlers/processFile"
@@ -37,10 +37,10 @@ export const uploadDataset = async ({
     for (const file of Array.from(files)) {
         if (!isActive()) return
 
-        let conn: any = null
         try {
-            const db = await getDuckDB()
-            conn = await db.connect()
+            const db = await getDuckDB();
+            const conn = await getDuckConnection();
+        
 
             const parsedTables = await processFile(file)
 
@@ -90,10 +90,7 @@ export const uploadDataset = async ({
                     ? error.message
                     : `Failed to upload ${file.name}`
             )
-
-        } finally {
-            if (conn) await conn.close()
-        }
+        } 
     }
 }
 

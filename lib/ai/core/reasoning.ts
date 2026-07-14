@@ -1,4 +1,4 @@
-import { getDuckDB } from "@/lib/duckdb/duckdb";
+import { getDuckConnection } from "@/lib/duckdb/duckdb";
 import { buildSQLContext } from "../context/buildSQLContext";
 import { Relationship } from "../context/relationships";
 
@@ -19,10 +19,8 @@ export const reasoning = async ({
 }: ReasoningArgs) => {
 
   
-  let conn: any = null;
   try {
-    const db = await getDuckDB();
-    conn = await db.connect();
+    const conn = await getDuckConnection();
     
     if (signal?.aborted || !(guard?.() ?? true)) return;
 
@@ -54,7 +52,5 @@ export const reasoning = async ({
   } catch (err) {
     if (signal?.aborted) return;
     console.error("Reasoning failed:", err);
-  } finally {
-    if (conn) await conn.close();
-  }
+  } 
 };

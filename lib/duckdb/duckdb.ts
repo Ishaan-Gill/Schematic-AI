@@ -1,6 +1,7 @@
 import * as duckdb from "@duckdb/duckdb-wasm";
 
 let db: duckdb.AsyncDuckDB | null = null;
+let conn: duckdb.AsyncDuckDBConnection | null = null;
 
 export async function getDuckDB() {
   if (db) return db;
@@ -26,11 +27,23 @@ export async function getDuckDB() {
 
   await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 
-  console.log("DuckDB instance:", db);
-  console.log(
-    "Prototype methods:",
-    Object.getOwnPropertyNames(Object.getPrototypeOf(db)),
-  );
-
   return db;
+}
+
+export async function getDuckConnection() {
+  if (conn) return conn;
+
+  const db = await getDuckDB();
+
+  conn = await db.connect();
+
+  return conn;
+}
+
+export async function resetDuckConnection() {
+  if (!conn) return;
+
+  await conn.close();
+
+  conn = null;
 }

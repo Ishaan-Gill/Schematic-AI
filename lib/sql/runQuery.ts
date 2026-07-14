@@ -1,6 +1,6 @@
 import React from "react";
 
-import { getDuckDB } from "@/lib/duckdb/duckdb";
+import { getDuckConnection } from "@/lib/duckdb/duckdb";
 import { suggestFix } from "@/lib/sql/suggestFix";
 import { addFeedbackMemory } from "../upload/metadata/feedbackMemory";
 import type { Relationship } from "../ai/context/relationships";
@@ -67,13 +67,11 @@ export const runQuery = async ({
       (timeoutId = setTimeout(() => reject(new Error("Query timeout")), 8000)),
   );
 
-  let conn: any = null;
   try {
     updateMessage(assistantMessageId, {
       error: undefined,
     });
-    const db = await getDuckDB();
-    conn = await db.connect();
+    const conn = await getDuckConnection();
 
     if (Date.now() >= getWorkspaceExpiry()) {
       const datasets = await fetchDatasets();
@@ -227,6 +225,5 @@ export const runQuery = async ({
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
-    if (conn) await conn.close();
   }
 };

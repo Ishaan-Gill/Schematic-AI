@@ -1,4 +1,4 @@
-import { getDuckDB } from "@/lib/duckdb/duckdb";
+import { getDuckConnection } from "@/lib/duckdb/duckdb";
 import { isTimeQuery } from "@/lib/ai/timeQuery";
 import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelationships";
 import { validateSQL } from "./validateSQL";
@@ -74,10 +74,8 @@ export const generateSQL = async ({
     };
   }
 
-  let conn: any = null;
   try {
-    const db = await getDuckDB();
-    conn = await db.connect();
+    const conn = await getDuckConnection();
 
     if (!isActive(guard, signal)) return CANCELLED;
 
@@ -175,7 +173,5 @@ export const generateSQL = async ({
       ok: false,
       error: "Something went wrong. Please try again.",
     };
-  } finally {
-    if (conn) await conn.close();
-  }
+  } 
 };

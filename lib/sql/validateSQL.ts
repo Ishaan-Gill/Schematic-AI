@@ -1,4 +1,4 @@
-import { getDuckDB } from "@/lib/duckdb/duckdb"
+import { getDuckConnection } from "@/lib/duckdb/duckdb"
 
 type ValidateSQLArgs = {
     sql: string
@@ -41,11 +41,9 @@ export const validateSQL = async ({
         return "Multiple SQL statements detected. Please ask one question at a time, or ask for a combined breakdown."
     }
     
-    let conn: any = null
     try {
         // DuckDB parser validation:
-        const db = await getDuckDB()
-        conn = await db.connect()
+        const conn = await getDuckConnection()
 
         await conn.query(`EXPLAIN ${sql}`)
 
@@ -58,7 +56,5 @@ export const validateSQL = async ({
         if (raw.includes("Table") && raw.includes("not found")) return "Query references a table that isn't loaded."
         if (raw.includes("Column") && raw.includes("not found")) return "Query references a column that doesn't exist."
         return "Query validation failed — please try again."
-    } finally {
-        if (conn) await conn.close()
-    }
+    } 
 }
