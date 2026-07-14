@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { FileSpreadsheet, Plus } from "lucide-react";
+import { FileSpreadsheet, Plus, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ type SidebarProps = {
   activeSessionId: string | null;
   setActiveSessionId: React.Dispatch<React.SetStateAction<string | null>>;
   handleNewChat: () => void;
+  onDeleteDataset: (dataset: StoredDataset) => void;
 };
 
 export default function Sidebar({
@@ -28,6 +29,7 @@ export default function Sidebar({
   activeSessionId,
   setActiveSessionId,
   handleNewChat,
+  onDeleteDataset,
 }: SidebarProps) {
   const warningsCount = Object.values(datasetMemory).reduce(
     (total, dataset) =>
@@ -159,20 +161,32 @@ export default function Sidebar({
                 delay: i * 0.03,
               }}
             >
-              <button
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-[6px] px-3 py-2",
-                  "font-mono text-[11px] text-[#e8eaf0]",
-                  "transition-colors duration-150",
-                  "hover:bg-[#111215]",
-                )}
-              >
-                <FileSpreadsheet className="h-4 w-4 shrink-0 text-[#6b7280]" />
+              <div className="group flex items-center gap-2">
+                <button
+                  className={cn(
+                    "flex flex-1 items-center gap-2 rounded-[6px] px-3 py-2",
+                    "font-mono text-[11px] text-[#e8eaf0]",
+                    "transition-colors duration-150",
+                    "hover:bg-[#111215]",
+                  )}
+                >
+                  <FileSpreadsheet className="h-4 w-4 shrink-0 text-[#6b7280]" />
 
-                <span className="min-w-0 flex-1 truncate text-left">
-                  {dataset.table_name}
-                </span>
-              </button>
+                  <span className="min-w-0 flex-1 truncate text-left">
+                    {dataset.table_name}
+                  </span>
+                </button>
+
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteDataset(dataset);
+                  }}
+                  className="rounded p-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:bg-[#1b1d22]"
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </button>
+              </div>
             </motion.div>
           ))
         )}

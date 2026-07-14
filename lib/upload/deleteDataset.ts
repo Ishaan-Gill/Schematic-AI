@@ -1,14 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
+import type { StoredDataset } from "@/types/datasets";
 
-type DeleteDatasetArgs = {
-  tableName: string;
-  storagePath: string;
-};
-
-export async function deleteDataset({
-  tableName,
-  storagePath,
-}: DeleteDatasetArgs) {
+export async function deleteDataset(dataset: StoredDataset) {
   const supabase = createClient();
 
   const {
@@ -22,7 +15,7 @@ export async function deleteDataset({
   // Delete parquet file
   const { error: storageError } = await supabase.storage
     .from("datasets")
-    .remove([storagePath]);
+    .remove([dataset.storage_path]);
 
   if (storageError) {
     throw storageError;
@@ -33,7 +26,7 @@ export async function deleteDataset({
     .from("datasets")
     .delete()
     .eq("user_id", user.id)
-    .eq("table_name", tableName);
+    .eq("table_name", dataset.table_name);
 
   if (dbError) {
     throw dbError;

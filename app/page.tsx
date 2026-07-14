@@ -23,6 +23,8 @@ import { explainSQL } from "@/lib/ai/core/explainSQL";
 import { buildConversationContext } from "@/lib/ai/context/buildConversationContext";
 import { ambiguous } from "@/lib/ai/core/ambiguous";
 import { rehydrateDuckDB } from "@/lib/duckdb/rehydrateDuckDB";
+import { deleteDataset } from "@/lib/upload/deleteDataset";
+import { deleteWorkspaceDataset } from "@/lib/workspace/deleteWorkspaceDataset";
 
 type SchemaMap = Record<string, unknown[]>;
 
@@ -421,6 +423,35 @@ export default function Home() {
     });
   };
 
+  const handleDeleteDataset = async (dataset: StoredDataset) => {
+    const ok = confirm(
+      `Delete "${dataset.table_name}"?\n\nThis action cannot be undone.`,
+    );
+
+    if (!ok) return;
+
+    try {
+      await deleteDataset(dataset);
+
+      setDatasets((prev) =>
+        prev.filter((d) => d.table_name !== dataset.table_name),
+      );
+
+      setSchemas((prev) => {
+        const next = { ...prev };
+        delete next[dataset.table_name];
+        return next;
+      });
+
+      await deleteWorkspaceDataset({ dataset });
+
+      showToast("success", `"${dataset.table_name}" deleted from storage.`);
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to delete dataset.");
+    }
+  };
+
   const latestAssistantLoading =
     [...(activeSession?.messages ?? [])]
       .reverse()
@@ -442,6 +473,7 @@ export default function Home() {
         activeSessionId={activeSessionId}
         setActiveSessionId={setActiveSessionId}
         handleNewChat={handleNewChat}
+        onDeleteDataset={handleDeleteDataset}
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col md:ml-[220px] md:overflow-y-auto">
