@@ -13,6 +13,7 @@ import { runQuery } from "@/lib/sql/runQuery";
 import { handleFile } from "@/lib/upload/uploadDataset";
 import React from "react";
 import { Message } from "@/types/message";
+import type { StoredDataset } from "@/types/datasets";
 import { ToastItem } from "@/types/toast";
 import ToastContainer from "@/components/ui/ToastContainer";
 import { classifyIntent } from "@/lib/ai/core/classifyIntent";
@@ -34,7 +35,7 @@ export type Session = {
 const PAGE_SIZE = 100;
 const MAX_TITLE_LENGTH = 70;
 export default function Home() {
-  const [tables, setTables] = useState<string[]>([]);
+  const [datasets, setDatasets] = useState<StoredDataset[]>([]);
   const [query, setQuery] = useState("");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -118,7 +119,7 @@ export default function Home() {
 
         const { datasets } = await rehydrateDuckDB();
 
-        setTables(datasets.map((d) => d.table_name));
+        setDatasets(datasets);
 
         const restoredSchemas = Object.fromEntries(
           datasets.map((d) => [d.table_name, d.schema]),
@@ -411,7 +412,7 @@ export default function Home() {
     generateControllerRef.current?.abort();
 
     await handleFile(e, {
-      setTables,
+      setDatasets,
       setQuery,
       setSchemas,
       signal: controller.signal,
@@ -435,7 +436,7 @@ export default function Home() {
       <div className="pointer-events-none absolute inset-0 opacity-[0.16] [background-image:linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] [background-size:72px_72px]" />
 
       <Sidebar
-        tables={tables}
+        datasets={datasets}
         relationships={relationshipsMemory}
         sessions={sessions}
         activeSessionId={activeSessionId}

@@ -5,11 +5,12 @@ import { ingestParsedTable } from "@/lib/upload/ingestion/ingestParsedTable"
 import { updateDetectedRelationships } from "./metadata/detectRelationships"
 import { processFile } from "./handlers/processFile"
 import { quoteIdentifier } from "../utils/quoteIdentifier"
+import type { StoredDataset } from "@/types/datasets"
 import { ToastItem } from "@/types/toast"
 
 type UploadCSVArgs = {
     files: FileList | File[]
-    setTables: React.Dispatch<React.SetStateAction<string[]>>
+    setDatasets: React.Dispatch<React.SetStateAction<StoredDataset[]>>
     setSchemas: React.Dispatch<React.SetStateAction<Record<string, any[]>>>
     setQuery?: React.Dispatch<React.SetStateAction<string>>
     signal?: AbortSignal
@@ -22,7 +23,7 @@ type UploadCSVArgs = {
 
 export const uploadDataset = async ({
     files,
-    setTables,
+    setDatasets,
     setSchemas,
     setQuery,
     signal,
@@ -56,12 +57,12 @@ export const uploadDataset = async ({
 
                 if (!ingested || !isActive()) return
 
-                const { tableName } = ingested
+                const { tableName, dataset } = ingested
 
-                setTables((prev) =>
-                    prev.includes(tableName)
+                setDatasets((prev) =>
+                    prev.some((d) => d.table_name === tableName)
                         ? prev
-                        : [...prev, tableName]
+                        : [...prev, dataset]
                 )
 
                 const schemaResult = await conn.query(`

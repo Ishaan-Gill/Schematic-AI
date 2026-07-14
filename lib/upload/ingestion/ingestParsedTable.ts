@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadParquet } from "@/lib/storage/uploadParquet";
 import type { DuckDatabase, DuckConnection } from "@/types/duckdb";
 import { saveDataset } from "@/lib/database/saveDataset";
+import type { StoredDataset } from "@/types/datasets";
 import { mountParquetViews } from "@/lib/duckdb/mountParquetViews";
 
 type QueryRow = Record<string, unknown>;
@@ -192,7 +193,7 @@ export const ingestParsedTable = async ({
     datasetName: tableName,
   });
 
-  await saveDataset({
+  const datasetRecord: StoredDataset = {
     user_id: user.id,
 
     table_name: tableName,
@@ -211,7 +212,9 @@ export const ingestParsedTable = async ({
     semantic,
 
     relationships,
-  });
+  };
+
+  await saveDataset(datasetRecord);
 
   await conn.query(`
     DROP TABLE IF EXISTS ${quoteIdentifier(tableName)}
@@ -228,5 +231,6 @@ export const ingestParsedTable = async ({
     tableName,
     columns: refreshedColumns,
     profile,
+    dataset: datasetRecord,
   };
 };

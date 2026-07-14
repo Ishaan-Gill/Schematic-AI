@@ -6,13 +6,14 @@ import { FileSpreadsheet, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { datasetMemory } from "@/lib/upload/metadata/datasetMemory";
+import type { StoredDataset } from "@/types/datasets";
 import { Relationship } from "@/lib/ai/context/relationships";
 import { Session } from "@/app/page";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 type SidebarProps = {
-  tables: string[];
+  datasets: StoredDataset[];
   relationships: Relationship[];
   sessions: Session[];
   activeSessionId: string | null;
@@ -21,7 +22,7 @@ type SidebarProps = {
 };
 
 export default function Sidebar({
-  tables,
+  datasets,
   relationships,
   sessions,
   activeSessionId,
@@ -139,7 +140,7 @@ export default function Sidebar({
 
       {/* Dataset List */}
       <div className="mt-2 flex-1 space-y-0.5 overflow-y-auto px-2">
-        {tables.length === 0 ? (
+        {datasets.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -148,9 +149,9 @@ export default function Sidebar({
             Uploaded datasets will appear here.
           </motion.div>
         ) : (
-          tables.map((table, i) => (
+          datasets.map((dataset, i) => (
             <motion.div
-              key={table}
+              key={dataset.table_name}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
@@ -169,7 +170,7 @@ export default function Sidebar({
                 <FileSpreadsheet className="h-4 w-4 shrink-0 text-[#6b7280]" />
 
                 <span className="min-w-0 flex-1 truncate text-left">
-                  {table}
+                  {dataset.table_name}
                 </span>
               </button>
             </motion.div>
@@ -181,7 +182,7 @@ export default function Sidebar({
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            delay: Math.min(tables.length * 0.03, 0.2),
+            delay: Math.min(datasets.length * 0.03, 0.2),
           }}
           className={cn(
             "mt-3 flex w-full items-center gap-2 rounded-[6px] px-3 py-2",
@@ -207,7 +208,7 @@ export default function Sidebar({
         <div className="flex flex-col gap-1 px-3 py-2 font-mono text-[9px] text-[#374151]">
           <span className="flex items-center gap-1">
             <span className="h-[5px] w-[5px] rounded-full bg-[#4fffb0]" />
-            {tables.length} datasets
+            {datasets.length} datasets
           </span>
           <span className="flex items-center gap-1">
             <span className="h-[5px] w-[5px] rounded-full bg-[#38bdf8]" />
