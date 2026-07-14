@@ -1,4 +1,4 @@
-import { buildRelationshipsMemory } from "../ai/context/relationshipsMap";
+import { rebuildRelationshipMemory } from "../ai/context/rebuildRelationshipMemory";
 import { datasetMemory } from "../upload/metadata/datasetMemory";
 
 export async function rehydrateMemory(datasets: any[]) {
@@ -22,22 +22,5 @@ export async function rehydrateMemory(datasets: any[]) {
   }
 
   // rebuild relationships
-  const allSchemas = Object.fromEntries(
-    Object.entries(datasetMemory).map(([table, data]) => [table, data.schema]),
-  );
-
-  const relationships = buildRelationshipsMemory(allSchemas);
-
-  for (const table of Object.keys(datasetMemory)) {
-    datasetMemory[table].relationships = [];
-  }
-
-  for (const rel of relationships) {
-    const fromEntry = datasetMemory[rel.fromTable];
-
-    if (!fromEntry) continue;
-
-    fromEntry.relationships = fromEntry.relationships ?? [];
-    fromEntry.relationships.push(rel);
-  }
+  rebuildRelationshipMemory();
 }

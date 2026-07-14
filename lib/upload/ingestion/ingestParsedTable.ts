@@ -10,7 +10,6 @@ import { datasetMemory } from "../metadata/datasetMemory";
 import { inferSemanticContext } from "@/lib/metadata/semanticInference";
 
 import type { ParsedTable } from "../parsers/parseExcel";
-import { buildRelationshipsMemory } from "@/lib/ai/context/relationshipsMap";
 import { quoteIdentifier } from "@/lib/utils/quoteIdentifier";
 import { exportParquet } from "@/lib/duckdb/exportParquet";
 import { createClient } from "@/lib/supabase/client";
@@ -19,6 +18,7 @@ import type { DuckDatabase, DuckConnection } from "@/types/duckdb";
 import { saveDataset } from "@/lib/database/saveDataset";
 import type { StoredDataset } from "@/types/datasets";
 import { mountParquetViews } from "@/lib/duckdb/mountParquetViews";
+import { rebuildRelationshipMemory } from "@/lib/ai/context/rebuildRelationshipMemory";
 
 type QueryRow = Record<string, unknown>;
 
@@ -157,24 +157,7 @@ export const ingestParsedTable = async ({
     },
   };
   // Rebuilds relationship:
-  const allSchemas = Object.fromEntries(
-    Object.entries(datasetMemory).map(([t, d]) => [t, d.schema]),
-  );
-
-  const relationships = buildRelationshipsMemory(allSchemas);
-
-  // Clears old relationships:
-  for (const table of Object.keys(datasetMemory)) {
-    datasetMemory[table].relationships = [];
-  }
-
-  // Injects fresh relationships:
-  for (const rel of relationships) {
-    const fromEntry = datasetMemory[rel.fromTable];
-    if (!fromEntry) continue;
-    fromEntry.relationships = fromEntry.relationships ?? [];
-    fromEntry.relationships.push(rel);
-  }
+  const relationships = rebuildRelationshipMemory();
 
   const supabase = createClient();
   const {
