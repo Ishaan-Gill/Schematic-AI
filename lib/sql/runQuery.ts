@@ -12,7 +12,11 @@ import { validateQueryResult } from "./validateQueryResult";
 import { recoverFailedQuery } from "./recoverFailedQuery";
 import { fetchDatasets } from "../rehydration/fetchDatasets";
 import { mountParquetViews } from "../duckdb/mountParquetViews";
-import { getWorkspaceExpiry, setWorkspaceExpiry } from "../duckdb/workspaceExpiry";
+import {
+  getWorkspaceExpiry,
+  setWorkspaceExpiry,
+} from "../duckdb/workspaceExpiry";
+import { updateStoredMessage } from "../chat/updateMessage";
 
 type RunQueryArgs = {
   relevantTables?: string[];
@@ -157,6 +161,14 @@ export const runQuery = async ({
     updateMessage(assistantMessageId, {
       queryResult: formatted,
       loading: false,
+    });
+
+    await updateStoredMessage({
+      id: assistantMessageId,
+      updates: {
+        queryResult: formatted,
+        hasMore,
+      },
     });
 
     return formatted;
