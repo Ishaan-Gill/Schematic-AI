@@ -25,6 +25,10 @@ import { ambiguous } from "@/lib/ai/core/ambiguous";
 import { rehydrateDuckDB } from "@/lib/duckdb/rehydrateDuckDB";
 import { deleteDataset } from "@/lib/upload/deleteDataset";
 import { deleteWorkspaceDataset } from "@/lib/workspace/deleteWorkspaceDataset";
+import { createSession } from "@/lib/chat/createSession";
+import { appendMessage } from "@/lib/chat/appendMessages";
+import { updateStoredMessage } from "@/lib/chat/updateMessage";
+import { fetchSessions } from "@/lib/chat/fetchSessions";
 
 type SchemaMap = Record<string, unknown[]>;
 
@@ -122,6 +126,14 @@ export default function Home() {
         );
         setSchemas(restoredSchemas);
 
+        const restoredSessions = await fetchSessions();
+
+        setSessions(restoredSessions);
+
+        if (restoredSessions.length > 0) {
+          setActiveSessionId(restoredSessions[0].id);
+        }
+
         if (!cancelled) {
           setWorkspaceReady(true);
         }
@@ -149,12 +161,18 @@ export default function Home() {
     .reverse()
     .find((m) => m.generatedSQL)?.generatedSQL;
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
     const newSession: Session = {
       id: crypto.randomUUID(),
       title: "New Chat",
       messages: [],
     };
+
+    await createSession({
+      id: newSession.id,
+      title: newSession.title,
+    });
+
     setSessions((prev) => [newSession, ...prev]);
     setActiveSessionId(newSession.id);
   };
@@ -211,6 +229,16 @@ export default function Home() {
         messages: [userMessage, assistantMessage],
       };
       sessionId = newSession.id;
+      try {
+        await createSession({
+          id: newSession.id,
+          title: truncatedQuery,
+        });
+      } catch (err) {
+        console.error(err);
+        showToast("error", "Failed to create session.");
+        return;
+      }
       setSessions((prev) => [newSession, ...prev]);
       setActiveSessionId(newSession.id);
     } else {
@@ -248,6 +276,15 @@ export default function Home() {
         );
       }
     }
+
+    await appendMessage({
+      sessionId,
+      message: userMessage,
+    });
+    await appendMessage({
+      sessionId,
+      message: assistantMessage,
+    });
 
     updateMessage(
       assistantMessage.id,
@@ -291,6 +328,12 @@ export default function Home() {
             },
             sessionId,
           );
+          await updateStoredMessage({
+            id: assistantMessage.id,
+            updates: {
+              content: response,
+            },
+          });
         }
         break;
 
@@ -312,6 +355,12 @@ export default function Home() {
             },
             sessionId,
           );
+          await updateStoredMessage({
+            id: assistantMessage.id,
+            updates: {
+              content: response,
+            },
+          });
         }
         break;
 
@@ -349,6 +398,13 @@ export default function Home() {
             },
             sessionId,
           );
+          await updateStoredMessage({
+            id: assistantMessage.id,
+            updates: {
+              generatedSQL: sql,
+              content: "Analyzing data...",
+            },
+          });
           const rows = await executeQuery(
             sql,
             assistantMessage.id,
@@ -378,6 +434,12 @@ export default function Home() {
             },
             sessionId,
           );
+          await updateStoredMessage({
+            id: assistantMessage.id,
+            updates: {
+              content: explanation,
+            },
+          });
         }
         break;
 
@@ -397,6 +459,12 @@ export default function Home() {
             },
             sessionId,
           );
+          await updateStoredMessage({
+            id: assistantMessage.id,
+            updates: {
+              content: response,
+            },
+          });
         }
         break;
     }

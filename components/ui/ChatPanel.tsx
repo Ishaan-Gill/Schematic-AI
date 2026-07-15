@@ -6,6 +6,7 @@ import ResultTable from "@/components/ui/resultTable";
 import ThinkPanel from "@/components/ui/ThinkPanel";
 import { exportCsv } from "@/lib/export/exportCsv";
 import { Message } from "@/types/chat";
+import { updateStoredMessage } from "@/lib/chat/updateMessage";
 
 type ChatPanelProps = {
   messages: Message[];
@@ -62,6 +63,12 @@ export default function ChatPanel({
                         updateMessage(message.id, {
                           page: newPage,
                         });
+                        void updateStoredMessage({
+                          id: message.id,
+                          updates: {
+                            page: newPage,
+                          },
+                        });
                         void executeQuery(
                           message.generatedSQL,
                           message.id,
@@ -72,6 +79,12 @@ export default function ChatPanel({
                         const newPage = (message.page ?? 0) + 1;
                         updateMessage(message.id, {
                           page: newPage,
+                        });
+                        void updateStoredMessage({
+                          id: message.id,
+                          updates: {
+                            page: newPage,
+                          },
                         });
                         void executeQuery(
                           message.generatedSQL,
