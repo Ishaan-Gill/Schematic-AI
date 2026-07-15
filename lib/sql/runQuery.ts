@@ -6,7 +6,7 @@ import { addFeedbackMemory } from "../upload/metadata/feedbackMemory";
 import type { Relationship } from "../ai/context/relationships";
 import { getRelationshipsMemory } from "../ai/context/relationshipsMap";
 import { validateSQL } from "./validateSQL";
-import { Message } from "@/types/message";
+import { Message } from "@/types/chat";
 import { buildExecutableSQL } from "./buildExecutableSQL";
 import { validateQueryResult } from "./validateQueryResult";
 import { recoverFailedQuery } from "./recoverFailedQuery";

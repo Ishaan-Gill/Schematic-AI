@@ -1,3 +1,9 @@
+export type Session = {
+  id: string;
+  title: string;
+  messages: Message[];
+};
+
 export type Message = {
   id: string
   role: "user" | "assistant"

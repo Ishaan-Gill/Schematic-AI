@@ -12,7 +12,7 @@ import { generateSQL } from "@/lib/sql/generateSQL";
 import { runQuery } from "@/lib/sql/runQuery";
 import { handleFile } from "@/lib/upload/uploadDataset";
 import React from "react";
-import { Message } from "@/types/message";
+import { Message, Session } from "@/types/chat";
 import type { StoredDataset } from "@/types/datasets";
 import { ToastItem } from "@/types/toast";
 import ToastContainer from "@/components/ui/ToastContainer";
@@ -27,12 +27,6 @@ import { deleteDataset } from "@/lib/upload/deleteDataset";
 import { deleteWorkspaceDataset } from "@/lib/workspace/deleteWorkspaceDataset";
 
 type SchemaMap = Record<string, unknown[]>;
-
-export type Session = {
-  id: string;
-  title: string;
-  messages: Message[];
-};
 
 const PAGE_SIZE = 100;
 const MAX_TITLE_LENGTH = 70;

@@ -1,4 +1,4 @@
-import { Message } from "@/types/message"
+import { Message } from "@/types/chat"
 import type { Relationship } from "../ai/context/relationships"
 
 type SuggestFixArgs = {

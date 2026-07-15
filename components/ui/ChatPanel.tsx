@@ -5,7 +5,7 @@ import ChatMessage from "@/components/ui/ChatMessages";
 import ResultTable from "@/components/ui/resultTable";
 import ThinkPanel from "@/components/ui/ThinkPanel";
 import { exportCsv } from "@/lib/export/exportCsv";
-import { Message } from "@/types/message";
+import { Message } from "@/types/chat";
 
 type ChatPanelProps = {
   messages: Message[];

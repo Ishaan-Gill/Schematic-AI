@@ -1,4 +1,4 @@
-import { Message } from "@/types/message"
+import { Message } from "@/types/chat"
 import { Relationship } from "../ai/context/relationships"
 import { fixQueryWithAI } from "./fixQuery"
 import { suggestFix } from "./suggestFix"
