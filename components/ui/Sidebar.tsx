@@ -264,7 +264,7 @@ export default function Sidebar({
               <div className="group flex items-center gap-2">
                 <button
                   className={cn(
-                    "flex flex-1 items-center gap-2 rounded-[6px] px-3 py-2",
+                    "flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2",
                     "font-mono text-[11px] text-[#e8eaf0]",
                     "transition-colors duration-150",
                     "hover:bg-[#111215]",
@@ -282,7 +282,7 @@ export default function Sidebar({
                     e.stopPropagation();
                     onDeleteDataset(dataset);
                   }}
-                  className="rounded p-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:bg-[#1b1d22]"
+                  className="shrink-0 rounded p-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:bg-[#1b1d22]"
                 >
                   <Trash2 className="h-4 w-4 text-red-500" />
                 </button>
