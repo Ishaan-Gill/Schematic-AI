@@ -29,6 +29,8 @@ import { createSession } from "@/lib/chat/createSession";
 import { appendMessage } from "@/lib/chat/appendMessages";
 import { updateStoredMessage } from "@/lib/chat/updateMessage";
 import { fetchSessions } from "@/lib/chat/fetchSessions";
+import { updateSession } from "@/lib/chat/updateSession";
+import { deleteSession } from "@/lib/chat/deleteSession";
 
 type SchemaMap = Record<string, unknown[]>;
 
@@ -259,6 +261,10 @@ export default function Home() {
               : session,
           ),
         );
+        await updateSession({
+          sessionId: sessionId,
+          title: truncatedQuery,
+        });
       } else {
         setSessions((prev) =>
           prev.map((session) =>
@@ -470,6 +476,29 @@ export default function Home() {
     }
   };
 
+  const handleDeleteSession = async (sessionId: string) => {
+    const ok = confirm("Delete this chat?\n\nThis action cannot be undone.");
+
+    if (!ok) return;
+
+    try {
+      await deleteSession({ sessionId });
+
+      const remaining = sessions.filter((s) => s.id !== sessionId);
+      setSessions(remaining);
+
+      if (activeSessionId === sessionId) {
+        setActiveSessionId(remaining[0]?.id ?? null);
+      }
+
+      showToast("success", "Chat deleted.");
+    } catch (err) {
+      console.error(err);
+
+      showToast("error", "Failed to delete chat.");
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const controller = startController(uploadControllerRef);
     queryControllerRef.current?.abort();
@@ -536,6 +565,7 @@ export default function Home() {
         setActiveSessionId={setActiveSessionId}
         handleNewChat={handleNewChat}
         onDeleteDataset={handleDeleteDataset}
+        onDeleteSession={handleDeleteSession}
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col md:ml-[220px] md:overflow-y-auto">

@@ -1,14 +1,20 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { FileSpreadsheet, Plus, Trash2 } from "lucide-react";
+import { FileSpreadsheet, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { datasetMemory } from "@/lib/upload/metadata/datasetMemory";
 import type { StoredDataset } from "@/types/datasets";
 import { Relationship } from "@/lib/ai/context/relationships";
-import { Session } from "@/app/page";
+import { Session } from "@/types/chat";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { destroyDuckDB } from "@/lib/duckdb/duckdb";
@@ -20,6 +26,7 @@ type SidebarProps = {
   activeSessionId: string | null;
   setActiveSessionId: React.Dispatch<React.SetStateAction<string | null>>;
   handleNewChat: () => void;
+  onDeleteSession?: (sessionId: string) => void;
   onDeleteDataset: (dataset: StoredDataset) => void;
 };
 
@@ -30,6 +37,7 @@ export default function Sidebar({
   activeSessionId,
   setActiveSessionId,
   handleNewChat,
+  onDeleteSession,
   onDeleteDataset,
 }: SidebarProps) {
   const warningsCount = Object.values(datasetMemory).reduce(
@@ -116,20 +124,44 @@ export default function Sidebar({
       {/* Recents List */}
       <div className="space-y-1 px-2">
         {sessions.map((session) => (
-          <button
+          <div
             key={session.id}
-            onClick={() => setActiveSessionId(session.id)}
-            className={cn(
-              "flex w-full rounded-lg px-3 py-2",
-              "text-left text-[13px]",
-              "transition-colors",
-              activeSessionId === session.id
-                ? "bg-[#1b1d22] text-white"
-                : "text-[#b6bcc8] hover:bg-[#111215]",
-            )}
+            className="group flex items-center gap-2"
           >
-            <span className="truncate">{session.title}</span>
-          </button>
+            <button
+              onClick={() => setActiveSessionId(session.id)}
+              className={cn(
+                "flex flex-1 rounded-lg px-3 py-2",
+                "text-left text-[13px]",
+                "transition-colors",
+                activeSessionId === session.id
+                  ? "bg-[#1b1d22] text-white"
+                  : "text-[#b6bcc8] hover:bg-[#111215]",
+              )}
+            >
+              <span className="truncate">{session.title}</span>
+            </button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="rounded p-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:bg-[#1b1d22]"
+                >
+                  <MoreHorizontal className="h-4 w-4 text-[#6b7280]" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="start">
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={() => onDeleteSession?.(session.id)}
+                >
+                  🗑 Delete Chat
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         ))}
       </div>
 
