@@ -1,7 +1,14 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { FileSpreadsheet, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import {
+  FileSpreadsheet,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -26,6 +33,7 @@ type SidebarProps = {
   activeSessionId: string | null;
   setActiveSessionId: React.Dispatch<React.SetStateAction<string | null>>;
   handleNewChat: () => void;
+  onRenameSession?: (sessionId: string, newTitle: string) => void;
   onDeleteSession?: (sessionId: string) => void;
   onDeleteDataset: (dataset: StoredDataset) => void;
 };
@@ -37,6 +45,7 @@ export default function Sidebar({
   activeSessionId,
   setActiveSessionId,
   handleNewChat,
+  onRenameSession,
   onDeleteSession,
   onDeleteDataset,
 }: SidebarProps) {
@@ -48,6 +57,33 @@ export default function Sidebar({
     0,
   );
 
+  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(
+    null,
+  );
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (renamingSessionId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingSessionId]);
+
+  const saveRename = (sessionId: string) => {
+    const trimmed = renameValue.trim();
+    if (!trimmed) {
+      setRenamingSessionId(null);
+      return;
+    }
+    onRenameSession?.(sessionId, trimmed);
+    setRenamingSessionId(null);
+  };
+
+  const cancelRename = () => {
+    setRenamingSessionId(null);
+  };
+
   const supabase = createClient();
   const router = useRouter();
 
@@ -58,7 +94,7 @@ export default function Sidebar({
       console.error(error);
       return;
     }
-    
+
     await destroyDuckDB();
 
     router.push("/login");
@@ -124,40 +160,69 @@ export default function Sidebar({
       {/* Recents List */}
       <div className="space-y-1 px-2">
         {sessions.map((session) => (
-          <div
-            key={session.id}
-            className="group flex items-center gap-2"
-          >
-            <button
-              onClick={() => setActiveSessionId(session.id)}
-              className={cn(
-                "flex flex-1 rounded-lg px-3 py-2",
-                "text-left text-[13px]",
-                "transition-colors",
-                activeSessionId === session.id
-                  ? "bg-[#1b1d22] text-white"
-                  : "text-[#b6bcc8] hover:bg-[#111215]",
-              )}
-            >
-              <span className="truncate">{session.title}</span>
-            </button>
+          <div key={session.id} className="group flex items-center gap-2">
+            {renamingSessionId === session.id ? (
+              <div className="flex min-w-0 flex-1 items-center rounded-lg bg-[#1b1d22] px-3 py-2">
+                <input
+                  ref={renameInputRef}
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={() => saveRename(session.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      saveRename(session.id);
+                    }
+                    if (e.key === "Escape") {
+                      cancelRename();
+                    }
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="min-w-0 flex-1 bg-transparent text-[13px] text-white outline-none"
+                />
+              </div>
+            ) : (
+              <button
+                onClick={() => setActiveSessionId(session.id)}
+                className={cn(
+                  "flex min-w-0 flex-1 rounded-lg px-3 py-2",
+                  "text-left text-[13px]",
+                  "transition-colors",
+                  activeSessionId === session.id
+                    ? "bg-[#1b1d22] text-white"
+                    : "text-[#b6bcc8] hover:bg-[#111215]",
+                )}
+              >
+                <span className="truncate">{session.title}</span>
+              </button>
+            )}
 
-            <DropdownMenu>
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
-                  className="rounded p-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:bg-[#1b1d22]"
+                  className="shrink-0 rounded p-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:bg-[#1b1d22]"
                 >
                   <MoreHorizontal className="h-4 w-4 text-[#6b7280]" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="start">
                 <DropdownMenuItem
+                  onSelect={() => {
+                    setRenamingSessionId(session.id);
+                    setRenameValue(session.title);
+                  }}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   variant="destructive"
                   onSelect={() => onDeleteSession?.(session.id)}
                 >
-                  🗑 Delete Chat
+                  <Trash2 className="h-4 w-4" />
+                  Delete Chat
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -212,7 +277,7 @@ export default function Sidebar({
                   </span>
                 </button>
 
-                <button 
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onDeleteDataset(dataset);

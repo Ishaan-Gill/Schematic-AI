@@ -476,6 +476,20 @@ export default function Home() {
     }
   };
 
+  const handleRenameSession = async (sessionId: string, newTitle: string) => {
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === sessionId ? { ...s, title: newTitle } : s,
+      ),
+    );
+    try {
+      await updateSession({ sessionId, title: newTitle });
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to rename session.");
+    }
+  };
+
   const handleDeleteSession = async (sessionId: string) => {
     const ok = confirm("Delete this chat?\n\nThis action cannot be undone.");
 
@@ -564,6 +578,7 @@ export default function Home() {
         activeSessionId={activeSessionId}
         setActiveSessionId={setActiveSessionId}
         handleNewChat={handleNewChat}
+        onRenameSession={handleRenameSession}
         onDeleteDataset={handleDeleteDataset}
         onDeleteSession={handleDeleteSession}
       />
