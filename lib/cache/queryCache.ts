@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 type SaveCachedSQLArgs = {
   cacheKey: string;
@@ -14,6 +14,8 @@ type SaveCachedSQLArgs = {
  *  - SQL string -> Cache HIT
  *  - null       -> Cache MISS
  */
+const supabase = createClient();
+
 export async function getCachedSQL(cacheKey: string): Promise<string | null> {
   const { data, error } = await supabase
     .from("query_cache")
