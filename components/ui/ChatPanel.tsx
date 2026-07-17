@@ -101,18 +101,6 @@ export default function ChatPanel({
               </div>
             ))}
           </AnimatePresence>
-
-        <AnimatePresence>
-          {hasResults && (
-            <motion.div
-              key="results-synthesized-indicator"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#6b7280]"
-            ></motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </section>
   );
