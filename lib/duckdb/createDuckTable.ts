@@ -17,7 +17,8 @@ export const createDuckTable = async ({
   csvText,
 }: CreateDuckTableArgs) => {
   await db.registerFileText(tempName, csvText);
-  await conn.query(`
+  try {
+    await conn.query(`
         CREATE TABLE ${quoteIdentifier(tableName)} AS
         SELECT * FROM read_csv_auto(
             '${escapeSqlString(tempName)}',
@@ -27,4 +28,7 @@ export const createDuckTable = async ({
             parallel = false
         )
     `);
+  } finally {
+    await db.dropFile(tempName);
+  }
 };

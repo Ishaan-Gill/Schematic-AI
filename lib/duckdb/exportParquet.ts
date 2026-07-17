@@ -8,14 +8,16 @@ export const exportParquet = async (
 ) => {
   const parquetFileName = `${tableName}.parquet`;
 
-  await conn.query(`
-        COPY ${quoteIdentifier(tableName)}
-        TO '${escapeSqlString(parquetFileName)}'
-        (FORMAT PARQUET)
-        `);
-  console.log("COPY finished");
+  try {
+    await conn.query(`
+      COPY ${quoteIdentifier(tableName)}
+      TO '${escapeSqlString(parquetFileName)}'
+      (FORMAT PARQUET)
+    `);
 
-  const bytes = await db.copyFileToBuffer(parquetFileName);
-
-  return bytes;
+    const bytes = await db.copyFileToBuffer(parquetFileName);
+    return bytes;
+  } finally {
+    await db.dropFile(parquetFileName);
+  }
 };
