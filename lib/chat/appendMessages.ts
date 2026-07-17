@@ -20,6 +20,17 @@ export async function appendMessage({
     throw new Error("User not authenticated");
   }
 
+  const { data: session, error: sessionError } = await supabase
+    .from("chat_sessions")
+    .select("id")
+    .eq("id", sessionId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (sessionError || !session) {
+    throw new Error("Session does not belong to the current user.");
+  }
+
   const { error } = await supabase.from("chat_messages").insert({
     id: message.id,
 
