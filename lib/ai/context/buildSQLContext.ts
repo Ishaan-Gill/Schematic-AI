@@ -1,5 +1,5 @@
 import { buildDatasetContext } from "../../metadata/buildDatasetContext";
-import { quoteIdentifier } from "../../utils/quoteIdentifier";
+import { quoteIdentifier } from "../../utils/sqlHelpers";
 
 type BuildSQLContextArgs = {
   conn: any;

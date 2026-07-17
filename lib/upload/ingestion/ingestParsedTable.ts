@@ -10,7 +10,7 @@ import { datasetMemory } from "../metadata/datasetMemory";
 import { inferSemanticContext } from "@/lib/metadata/semanticInference";
 
 import type { ParsedTable } from "../parsers/parseExcel";
-import { quoteIdentifier } from "@/lib/utils/quoteIdentifier";
+import { quoteIdentifier } from "@/lib/utils/sqlHelpers";
 import { exportParquet } from "@/lib/duckdb/exportParquet";
 import { createClient } from "@/lib/supabase/client";
 import { uploadParquet } from "@/lib/storage/uploadParquet";

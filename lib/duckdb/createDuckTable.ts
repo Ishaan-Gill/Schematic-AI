@@ -1,4 +1,4 @@
-import { quoteIdentifier } from "@/lib/utils/quoteIdentifier";
+import { escapeSqlString, quoteIdentifier } from "@/lib/utils/sqlHelpers";
 import type { DuckConnection, DuckDatabase } from "@/types/duckdb";
 
 type CreateDuckTableArgs = {
@@ -20,7 +20,7 @@ export const createDuckTable = async ({
   await conn.query(`
         CREATE TABLE ${quoteIdentifier(tableName)} AS
         SELECT * FROM read_csv_auto(
-            '${tempName}',
+            '${escapeSqlString(tempName)}',
             strict_mode = false,
             ignore_errors = true,
             null_padding = true,

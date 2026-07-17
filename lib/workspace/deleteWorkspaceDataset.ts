@@ -1,5 +1,5 @@
 import type { StoredDataset } from "@/types/datasets";
-import { quoteIdentifier } from "../utils/quoteIdentifier";
+import { quoteIdentifier } from "../utils/sqlHelpers";
 import { datasetMemory } from "../upload/metadata/datasetMemory";
 import { rebuildRelationshipMemory } from "../ai/context/rebuildRelationshipMemory";
 import { getDuckConnection } from "../duckdb/duckdb";

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { quoteIdentifier } from "@/lib/utils/quoteIdentifier";
+import { escapeSqlString, quoteIdentifier } from "@/lib/utils/sqlHelpers";
 import type { DuckConnection } from "@/types/duckdb";
 
 export async function mountParquetViews(conn: DuckConnection, datasets: any[]) {
@@ -28,7 +28,7 @@ export async function mountParquetViews(conn: DuckConnection, datasets: any[]) {
       ${quoteIdentifier(dataset.table_name)}
       AS
       SELECT *
-      FROM read_parquet('${dataset.signedUrl}')
+      FROM read_parquet('${escapeSqlString(dataset.signedUrl)}')
       `);
   }
 }

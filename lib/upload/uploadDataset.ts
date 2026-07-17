@@ -4,7 +4,7 @@ import { getDuckConnection, getDuckDB } from "@/lib/duckdb/duckdb"
 import { ingestParsedTable } from "@/lib/upload/ingestion/ingestParsedTable"
 import { updateDetectedRelationships } from "./metadata/detectRelationships"
 import { processFile } from "./handlers/processFile"
-import { quoteIdentifier } from "../utils/quoteIdentifier"
+import { quoteIdentifier } from "../utils/sqlHelpers"
 import type { StoredDataset } from "@/types/datasets"
 import { ToastItem } from "@/types/toast"
 

@@ -1,4 +1,4 @@
-import { quoteIdentifier } from "@/lib/utils/quoteIdentifier"
+import { quoteIdentifier } from "@/lib/utils/sqlHelpers"
 import type { ColumnProfile } from "../metadata/profileMemory"
 
 type ColumnInfo = {

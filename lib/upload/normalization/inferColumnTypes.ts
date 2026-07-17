@@ -1,4 +1,4 @@
-import { quoteIdentifier } from "@/lib/utils/quoteIdentifier"
+import { quoteIdentifier } from "@/lib/utils/sqlHelpers"
 
 type ColumnInfo = {
     column_name: string

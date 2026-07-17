@@ -1,5 +1,5 @@
 import * as duckdb from "@duckdb/duckdb-wasm";
-import { quoteIdentifier } from "../utils/quoteIdentifier";
+import { escapeSqlString, quoteIdentifier } from "../utils/sqlHelpers";
 
 export const exportParquet = async (
   db: duckdb.AsyncDuckDB,
@@ -10,7 +10,7 @@ export const exportParquet = async (
 
   await conn.query(`
         COPY ${quoteIdentifier(tableName)}
-        TO '${parquetFileName}'
+        TO '${escapeSqlString(parquetFileName)}'
         (FORMAT PARQUET)
         `);
   console.log("COPY finished");
