@@ -1,11 +1,7 @@
 import { suggestFixPrompt } from "@/lib/ai/prompts/suggest-fix-prompt"
 import { checkRateLimit } from "@/lib/security/checkRateLimit"
-import Groq from "groq-sdk"
+import { groq } from "@/lib/ai/client";
 import { NextResponse } from "next/server"
-
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY!,
-})
 
 export async function POST(req: Request) {
 

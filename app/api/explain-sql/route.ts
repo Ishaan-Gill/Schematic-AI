@@ -1,11 +1,7 @@
 import { ExplainSQLPrompt } from "@/lib/ai/prompts/explain-sql-prompt";
 import { checkRateLimit } from "@/lib/security/checkRateLimit";
-import Groq from "groq-sdk";
+import { groq } from "@/lib/ai/client";
 import { NextResponse } from "next/server";
-
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY!,
-});
 
 export async function POST(req: Request) {
   const limited = checkRateLimit(req, "explain-sql", 5, 60000, "Too many AI fix attempts.");

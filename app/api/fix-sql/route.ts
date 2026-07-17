@@ -1,11 +1,7 @@
-import Groq from "groq-sdk"
+import { groq } from "@/lib/ai/client";
 import { NextResponse } from "next/server"
 import { checkRateLimit } from "@/lib/security/checkRateLimit"
 import { fixSQLPrompt } from "@/lib/ai/prompts/fix-sql-prompt"
-
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY!,
-})
 
 export async function POST(req: Request) {
 

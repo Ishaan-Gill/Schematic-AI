@@ -1,11 +1,7 @@
 import { ambiguousPrompt } from "@/lib/ai/prompts/ambiguous-prompt";
 import { checkRateLimit } from "@/lib/security/checkRateLimit";
-import Groq from "groq-sdk";
 import { NextResponse } from "next/server";
-
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY!,
-});
+import { groq } from "@/lib/ai/client";
 
 export async function POST(req: Request) {
   const limited = checkRateLimit(req, "ambiguous", 5, 60000, "Too many ambiguous attempts.");

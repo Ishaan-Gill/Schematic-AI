@@ -1,12 +1,8 @@
 import { classifyIntentPrompt } from "@/lib/ai/prompts/classify-intent-prompt";
 import { checkRateLimit } from "@/lib/security/checkRateLimit";
 import { checkDailyQuota } from "@/lib/usage/checkDailyQuota";
-import Groq from "groq-sdk";
+import { groq } from "@/lib/ai/client";
 import { NextResponse } from "next/server";
-
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY!,
-});
 
 export async function POST(req: Request) {
   const withinQuota = await checkDailyQuota();
