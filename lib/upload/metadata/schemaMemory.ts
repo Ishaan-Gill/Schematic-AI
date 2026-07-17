@@ -6,5 +6,3 @@ export type SchemaColumn = {
 export type SchemaMemory = {
     [tableName: string]: SchemaColumn[]
 }
-
-export const schemaMemory: SchemaMemory = {}

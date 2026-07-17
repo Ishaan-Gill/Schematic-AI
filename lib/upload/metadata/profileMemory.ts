@@ -19,5 +19,3 @@ export type TableProfile = {
 export type ProfileMemory = {
     [tableName: string]: TableProfile
 }
-
-export const profileMemory: ProfileMemory = {}
