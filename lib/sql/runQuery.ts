@@ -64,6 +64,15 @@ export const runQuery = async ({
     PAGE_SIZE: PAGE_SIZE,
   });
 
+  const validationError = await validateSQL({ sql: finalQuery });
+  if (validationError) {
+    updateMessage(assistantMessageId, {
+      error: validationError,
+      loading: false,
+    });
+    return;
+  }
+
   // Timeout protection:
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   const timeoutPromise = new Promise(
@@ -101,15 +110,6 @@ export const runQuery = async ({
     updateMessage(assistantMessageId, {
       hasMore,
     });
-
-    const validationError = await validateSQL({ sql: finalQuery });
-    if (validationError) {
-      updateMessage(assistantMessageId, {
-        error: validationError,
-        loading: false,
-      });
-      return;
-    }
 
     if (formatted.length === 0) {
       await suggestFix({
