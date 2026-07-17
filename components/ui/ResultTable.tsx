@@ -3,7 +3,6 @@
 import { motion } from "framer-motion"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type React from "react"
 import ActionRow from "./ActionRow"
 
 type ResultTableProps = {
