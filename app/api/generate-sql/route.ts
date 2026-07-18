@@ -28,7 +28,6 @@ export async function POST(req: Request) {
     query,
     schemas,
     relevantTables,
-    sampleRowsByTable,
     relationships,
     finalDatasetContext,
     timeHint,
@@ -48,14 +47,6 @@ export async function POST(req: Request) {
 
   const finalRelevantTables =
     relevantTables?.length > 0 ? relevantTables : Object.keys(schemas);
-
-  // text from filtered tables:
-  const filteredSampleText = Object.entries(sampleRowsByTable)
-    .filter(([tableName]) => finalRelevantTables?.includes(tableName))
-    .map(
-      ([tableName, rows]) => `${tableName}:\n${JSON.stringify(rows, null, 2)}`,
-    )
-    .join("\n\n");
 
   // Schemas of filtered Tables:
   const filteredSchemas = Object.fromEntries(
@@ -92,7 +83,6 @@ export async function POST(req: Request) {
     filteredRelationships,
     timeHint,
     safeDatasetContext,
-    filteredSampleText,
     recentFailures,
     query,
     conversationContext,

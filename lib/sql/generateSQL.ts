@@ -79,7 +79,7 @@ export const generateSQL = async ({
 
     if (!isActive(guard, signal)) return CANCELLED;
 
-    const { sampleRowsByTable, finalDatasetContext } = await buildSQLContext({
+    const { finalDatasetContext } = await buildSQLContext({
       conn,
       tables: finalRelevantTables,
       schemas,
@@ -109,7 +109,6 @@ export const generateSQL = async ({
       schemas,
       relevantTables: finalRelevantTables,
       relationships,
-      sampleRowsByTable,
       finalDatasetContext,
       feedbackMemory,
       timeHint,
