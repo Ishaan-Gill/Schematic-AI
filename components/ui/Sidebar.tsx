@@ -36,6 +36,7 @@ type SidebarProps = {
   onRenameSession?: (sessionId: string, newTitle: string) => void;
   onDeleteSession?: (sessionId: string) => void;
   onDeleteDataset: (dataset: StoredDataset) => void;
+  userInitial: string;
 };
 
 export default function Sidebar({
@@ -48,6 +49,7 @@ export default function Sidebar({
   onRenameSession,
   onDeleteSession,
   onDeleteDataset,
+  userInitial,
 }: SidebarProps) {
   const warningsCount = Object.values(datasetMemory).reduce(
     (total, dataset) =>
@@ -336,7 +338,7 @@ export default function Sidebar({
 
         <div className="border-t border-[#1c1e24] px-3 py-3">
           <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[rgba(79,255,176,0.2)] bg-[rgba(79,255,176,0.1)] font-sans text-[12px] font-medium text-[#4fffb0]">
-            A
+            {userInitial}
           </div>
           <div>
             <button onClick={handleLogout}>Logout</button>

@@ -31,6 +31,7 @@ import { updateStoredMessage } from "@/lib/chat/updateMessage";
 import { fetchSessions } from "@/lib/chat/fetchSessions";
 import { updateSession } from "@/lib/chat/updateSession";
 import { deleteSession } from "@/lib/chat/deleteSession";
+import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 
 type SchemaMap = Record<string, unknown[]>;
 
@@ -43,6 +44,7 @@ export default function Home() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [schemas, setSchemas] = useState<SchemaMap>({});
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
   const [workspaceReady, setWorkspaceReady] = useState(false);
   const uploadControllerRef = useRef<AbortController | null>(null);
   const queryControllerRef = useRef<AbortController | null>(null);
@@ -112,6 +114,10 @@ export default function Home() {
       },
     ]);
   };
+
+  useEffect(() => {
+    getCurrentUser().then(setUser);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -581,6 +587,7 @@ export default function Home() {
         onRenameSession={handleRenameSession}
         onDeleteDataset={handleDeleteDataset}
         onDeleteSession={handleDeleteSession}
+        userInitial={user?.email?.charAt(0).toUpperCase() ?? "?"}
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col md:ml-[220px] md:overflow-y-auto">
