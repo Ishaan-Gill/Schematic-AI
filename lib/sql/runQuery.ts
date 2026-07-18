@@ -1,6 +1,6 @@
 import React from "react";
 
-import { getDuckConnection } from "@/lib/duckdb/duckdb";
+import { getDuckConnection, resetDuckConnection } from "@/lib/duckdb/duckdb";
 import { suggestFix } from "@/lib/sql/suggestFix";
 import { addFeedbackMemory } from "../upload/metadata/feedbackMemory";
 import type { Relationship } from "../ai/context/relationships";
@@ -75,10 +75,7 @@ export const runQuery = async ({
 
   // Timeout protection:
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  const timeoutPromise = new Promise(
-    (_, reject) =>
-      (timeoutId = setTimeout(() => reject(new Error("Query timeout")), 8000)),
-  );
+  const TIMEOUT_MS = 8000;
 
   try {
     updateMessage(assistantMessageId, {
@@ -96,14 +93,47 @@ export const runQuery = async ({
       console.log("🔄 Signed URLs refreshed");
     }
 
-    const result = (await Promise.race([
-      conn.query(finalQuery),
-      timeoutPromise,
-    ])) as any;
+    const timeoutPromise = new Promise<never>(
+      (_, reject) =>
+        (timeoutId = setTimeout(() => reject(new Error("Query timeout")), TIMEOUT_MS)),
+    );
+
+    const reader = await conn.send(finalQuery);
+
+    const collectPromise = (async (): Promise<Record<string, unknown>[]> => {
+      const rows: Record<string, unknown>[] = [];
+      for await (const batch of reader) {
+        const batchRows = batch.toArray();
+        for (let i = 0; i < batchRows.length; i++) {
+          rows.push({ ...(batchRows[i] as any) });
+        }
+      }
+      return rows;
+    })();
+
+    collectPromise.catch(() => {});
+
+    let rawRows: Record<string, unknown>[];
+    try {
+      rawRows = await Promise.race([collectPromise, timeoutPromise]);
+    } catch (err) {
+      if ((err as Error)?.message === "Query timeout") {
+        try {
+          const cancelled = await conn.cancelSent();
+          if (!cancelled) {
+            await resetDuckConnection();
+          }
+        } catch {}
+      }
+      throw err;
+    }
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
 
     if (!isActive(guard, signal)) return;
-
-    const rawRows = result.toArray().map((row: any) => ({ ...row }));
     const hasMore = rawRows.length > PAGE_SIZE;
     const formatted = hasMore ? rawRows.slice(0, PAGE_SIZE) : rawRows;
 
