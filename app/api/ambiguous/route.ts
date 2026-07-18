@@ -1,5 +1,6 @@
 import { ambiguousPrompt } from "@/lib/ai/prompts/ambiguous-prompt";
 import { checkRateLimit } from "@/lib/security/checkRateLimit";
+import { isPayloadTooLarge } from "@/lib/api/validateRequestSize";
 import { NextResponse } from "next/server";
 import { groq } from "@/lib/ai/client";
 
@@ -16,6 +17,14 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+
+  if (isPayloadTooLarge(body)) {
+    return NextResponse.json(
+      { error: "Request payload too large" },
+      { status: 413 },
+    );
+  }
+
   const { query } = body;
 
   if (!query) {

@@ -1,5 +1,6 @@
 import { reasoningPrompt } from "@/lib/ai/prompts/reasoning-prompt";
 import { checkRateLimit } from "@/lib/security/checkRateLimit";
+import { isPayloadTooLarge } from "@/lib/api/validateRequestSize";
 import { groq } from "@/lib/ai/client";
 import { NextResponse } from "next/server";
 
@@ -16,6 +17,14 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+
+  if (isPayloadTooLarge(body)) {
+    return NextResponse.json(
+      { error: "Request payload too large" },
+      { status: 413 },
+    );
+  }
+
   const { query, schemas, relationships, finalDatasetContext } = body;
 
   if (!query || !schemas) {

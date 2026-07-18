@@ -1,6 +1,7 @@
 import { classifyIntentPrompt } from "@/lib/ai/prompts/classify-intent-prompt";
 import { checkRateLimit } from "@/lib/security/checkRateLimit";
 import { checkDailyQuota } from "@/lib/usage/checkDailyQuota";
+import { isPayloadTooLarge } from "@/lib/api/validateRequestSize";
 import { groq } from "@/lib/ai/client";
 import { NextResponse } from "next/server";
 
@@ -30,6 +31,14 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+
+  if (isPayloadTooLarge(body)) {
+    return NextResponse.json(
+      { error: "Request payload too large" },
+      { status: 413 },
+    );
+  }
+
   const { query, schemas } = body;
 
   if (!query || !schemas) {

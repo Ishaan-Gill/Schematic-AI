@@ -1,6 +1,7 @@
 import { groq } from "@/lib/ai/client";
 import { NextResponse } from "next/server"
 import { checkRateLimit } from "@/lib/security/checkRateLimit"
+import { isPayloadTooLarge } from "@/lib/api/validateRequestSize"
 import { fixSQLPrompt } from "@/lib/ai/prompts/fix-sql-prompt"
 
 export async function POST(req: Request) {
@@ -17,6 +18,14 @@ export async function POST(req: Request) {
             { status: 400 }
         )
     }
+
+    if (isPayloadTooLarge(body)) {
+        return NextResponse.json(
+            { error: "Request payload too large" },
+            { status: 413 }
+        )
+    }
+
     const { query, error, schemas, relationships } = body
 
     if (!query || !error || !schemas) {

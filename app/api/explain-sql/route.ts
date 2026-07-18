@@ -1,5 +1,6 @@
 import { ExplainSQLPrompt } from "@/lib/ai/prompts/explain-sql-prompt";
 import { checkRateLimit } from "@/lib/security/checkRateLimit";
+import { isPayloadTooLarge } from "@/lib/api/validateRequestSize";
 import { groq } from "@/lib/ai/client";
 import { NextResponse } from "next/server";
 
@@ -14,6 +15,13 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "invalid request body" },
       { status: 400 },
+    );
+  }
+
+  if (isPayloadTooLarge(body)) {
+    return NextResponse.json(
+      { error: "Request payload too large" },
+      { status: 413 },
     );
   }
 
