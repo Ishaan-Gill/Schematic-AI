@@ -1,7 +1,12 @@
+type ResultSummary = {
+  rowCount: number;
+  columns: string[];
+};
+
 type ExplainSQLPromptParams = {
   schemaText: string;
   sql: string;
-  result: any[];
+  resultSummary: ResultSummary;
   filteredRelationships: any; // can be an array of relationships or a string
   safeDatasetContext: Record<string, any>;
   query: string;
@@ -10,7 +15,7 @@ type ExplainSQLPromptParams = {
 export function ExplainSQLPrompt({
   schemaText,
   sql,
-  result,
+  resultSummary,
   filteredRelationships,
   safeDatasetContext,
   query,
@@ -139,8 +144,8 @@ export function ExplainSQLPrompt({
         User Request:
         "${query}"
 
-        Returned Result:
-        ${JSON.stringify(result, null, 2)}
+        Returned Result summary:
+        ${JSON.stringify(resultSummary, null, 2)}
 
         sql generated:
         ${sql}

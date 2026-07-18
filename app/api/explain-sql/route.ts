@@ -64,10 +64,15 @@ export async function POST(req: Request) {
       finalRelevantTables?.includes(r.toTable),
   );
 
+  const resultSummary = {
+    rowCount: result.length,
+    columns: result.length > 0 ? Object.keys(result[0]) : [],
+  };
+
   const prompt = ExplainSQLPrompt({
     schemaText,
     sql,
-    result,
+    resultSummary,
     filteredRelationships,
     safeDatasetContext,
     query,
