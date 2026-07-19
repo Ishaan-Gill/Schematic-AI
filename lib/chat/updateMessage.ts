@@ -12,14 +12,6 @@ export async function updateStoredMessage({
 }: UpdateStoredMessageArgs): Promise<void> {
   const supabase = createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
-
   const payload: Record<string, unknown> = {};
 
   if (updates.content !== undefined) {
@@ -50,8 +42,7 @@ export async function updateStoredMessage({
   const { error } = await supabase
     .from("chat_messages")
     .update(payload)
-    .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("id", id);
 
   if (error) {
     throw error;
