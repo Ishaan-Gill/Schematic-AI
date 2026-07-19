@@ -1,14 +1,13 @@
 import { groq } from "@/lib/ai/client";
 import { DEBUG } from "@/lib/config/debug";
 import { NextResponse } from "next/server"
-import { checkRateLimit } from "@/lib/security/checkRateLimit"
 import { isPayloadTooLarge } from "@/lib/api/validateRequestSize"
+import { authorizeAIRequest } from "@/lib/api/authorizeAIRequest"
 import { fixSQLPrompt } from "@/lib/ai/prompts/fix-sql-prompt"
 
 export async function POST(req: Request) {
-
-    const limited = checkRateLimit(req, "fix-sql", 5, 60000, "Too many AI fix attempts.")
-    if (limited) return limited
+    const auth = await authorizeAIRequest(req, "fix-sql", 5, 60000, "Too many AI fix attempts.")
+    if (!auth.authorized) return auth.response
 
     let body
     try {

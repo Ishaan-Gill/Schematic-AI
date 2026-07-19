@@ -1,27 +1,16 @@
 import { classifyIntentPrompt } from "@/lib/ai/prompts/classify-intent-prompt";
-import { checkRateLimit } from "@/lib/security/checkRateLimit";
-import { checkDailyQuota } from "@/lib/usage/checkDailyQuota";
 import { isPayloadTooLarge } from "@/lib/api/validateRequestSize";
+import { authorizeAIRequest } from "@/lib/api/authorizeAIRequest";
+import { consumeQuota } from "@/lib/api/consumeQuota";
 import { groq } from "@/lib/ai/client";
 import { DEBUG } from "@/lib/config/debug";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const withinQuota = await checkDailyQuota();
-  if (!withinQuota) {
-    return NextResponse.json(
-      {
-        error:
-          "You've reached today's free limit of 20 queries. Please come back tomorrow.",
-      },
-      {
-        status: 429,
-      },
-    );
-  }
+  const auth = await authorizeAIRequest(req, "classify-intent", 5, 60000, "Too many intent classification attempts.");
+  if (!auth.authorized) return auth.response;
 
-  const limited = checkRateLimit(req, "classify-intent", 5, 60000, "Too many intent classification attempts.");
-  if (limited) return limited;
+  await consumeQuota(auth.user.id);
 
   let body;
   try {
