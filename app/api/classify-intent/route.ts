@@ -3,6 +3,7 @@ import { checkRateLimit } from "@/lib/security/checkRateLimit";
 import { checkDailyQuota } from "@/lib/usage/checkDailyQuota";
 import { isPayloadTooLarge } from "@/lib/api/validateRequestSize";
 import { groq } from "@/lib/ai/client";
+import { DEBUG } from "@/lib/config/debug";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -72,7 +73,6 @@ export async function POST(req: Request) {
       });
       break;
     } catch (err) {
-      const DEBUG = process.env.NODE_ENV === "development";
       if (DEBUG) {
         console.error(`Groq attempt (classify intent) ${attempt} failed: `, err);
       }
@@ -93,7 +93,6 @@ export async function POST(req: Request) {
 
   const intent = completion.choices[0].message.content?.trim() || "";
 
-  const DEBUG = process.env.NODE_ENV === "development";
   if (DEBUG) {
     console.log("Intent:", intent);
   }

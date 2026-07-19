@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { DEBUG } from "@/lib/config/debug";
 
 type SaveCachedSQLArgs = {
   cacheKey: string;
@@ -30,13 +31,13 @@ export async function getCachedSQL(cacheKey: string): Promise<string | null> {
   }
 
   if (!data) {
-    if (process.env.NEXT_PUBLIC_DEBUG === "true") {
+    if (DEBUG) {
       console.log("CACHE MISS");
     }
     return null;
   }
 
-  if (process.env.NEXT_PUBLIC_DEBUG === "true") {
+  if (DEBUG) {
     console.log("CACHE HIT");
   }
 
@@ -72,7 +73,7 @@ export async function saveCachedSQL({
     return;
   }
 
-  if (process.env.NEXT_PUBLIC_DEBUG === "true") {
+  if (DEBUG) {
     console.log("CACHE SAVED");
   }
 }

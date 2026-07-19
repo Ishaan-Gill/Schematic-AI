@@ -1,4 +1,5 @@
 import { Message } from "@/types/chat"
+import { DEBUG } from "@/lib/config/debug"
 import type { Relationship } from "../ai/context/relationships"
 import { validateSQL } from "./validateSQL"
 
@@ -73,7 +74,7 @@ export const fixQueryWithAI = async ({
             return
         }
 
-        if (process.env.NEXT_PUBLIC_DEBUG === "true") console.log("FIXED SQL:", fixedSQL)
+        if (DEBUG) console.log("FIXED SQL:", fixedSQL)
         return fixedSQL
     } catch (err) {
         if (signal?.aborted) return

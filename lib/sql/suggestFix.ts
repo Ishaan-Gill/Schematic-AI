@@ -1,4 +1,5 @@
 import { Message } from "@/types/chat"
+import { DEBUG } from "@/lib/config/debug"
 import type { Relationship } from "../ai/context/relationships"
 
 type SuggestFixArgs = {
@@ -45,7 +46,7 @@ export const suggestFix = async ({
         const data = await res.json()
         if (signal?.aborted || !(guard?.() ?? true)) return
 
-        if (process.env.NEXT_PUBLIC_DEBUG === "true") console.log("Suggestion:", data.suggestion)
+        if (DEBUG) console.log("Suggestion:", data.suggestion)
 
         updateMessage(assistantMessageId, {
             error: data.suggestion

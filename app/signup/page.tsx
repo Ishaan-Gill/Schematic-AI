@@ -25,9 +25,7 @@ export default function SignupPage() {
       setLoading(false);
       return;
     }
-  
-    console.log("Signup successful");
-  
+    
     setLoading(false);
   };
 

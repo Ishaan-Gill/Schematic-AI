@@ -135,7 +135,7 @@ Do not rewrite them unless directly related to the task.
 - Do not add new dependencies without explicit approval.
 - Do not rename files, folders, or exported APIs unless explicitly requested.
 - User-facing errors must be plain-language and never expose internal stack traces.
-- Gate debug logging behind `process.env.NEXT_PUBLIC_DEBUG === "true"`.
+- Gate debug logging behind the shared `DEBUG` constant from `lib/config/debug.ts`.
 - Before considering a task complete, run:
   - `npm.cmd run lint`
   - `npx tsc --noEmit`

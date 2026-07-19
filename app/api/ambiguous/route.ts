@@ -3,6 +3,7 @@ import { checkRateLimit } from "@/lib/security/checkRateLimit";
 import { isPayloadTooLarge } from "@/lib/api/validateRequestSize";
 import { NextResponse } from "next/server";
 import { groq } from "@/lib/ai/client";
+import { DEBUG } from "@/lib/config/debug";
 
 export async function POST(req: Request) {
   const limited = checkRateLimit(req, "ambiguous", 5, 60000, "Too many ambiguous attempts.");
@@ -57,7 +58,6 @@ export async function POST(req: Request) {
       });
       break;
     } catch (err) {
-      const DEBUG = process.env.NODE_ENV === "development";
       if (DEBUG) {
         console.error(`Groq attempt (ambiguous) ${attempt} failed: `, err);
       }
@@ -78,7 +78,6 @@ export async function POST(req: Request) {
 
   const ambiguous = completion.choices[0].message.content?.trim() || "";
 
-  const DEBUG = process.env.NODE_ENV === "development";
   if (DEBUG) {
     console.log("AI RAW (ambiguous):", ambiguous);
   }

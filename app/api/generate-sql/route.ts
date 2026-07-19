@@ -2,6 +2,7 @@ import { generateSQLPrompt } from "@/lib/ai/prompts/generate-sql-prompt";
 import { checkRateLimit } from "@/lib/security/checkRateLimit";
 import { isPayloadTooLarge } from "@/lib/api/validateRequestSize";
 import { groq } from "@/lib/ai/client";
+import { DEBUG } from "@/lib/config/debug";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -115,7 +116,6 @@ export async function POST(req: Request) {
       });
       break;
     } catch (err) {
-      const DEBUG = process.env.NODE_ENV === "development";
       if (DEBUG) {
         console.error(`Groq attempt (generate-sql) ${attempt} failed:`, err);
       }
@@ -135,9 +135,8 @@ export async function POST(req: Request) {
 
   const raw = completion.choices[0]?.message?.content || "";
 
-  const DEBUG = process.env.NODE_ENV === "development";
   if (DEBUG) {
-    console.log("AI RAW:", raw);
+    console.log("AI RAW (generate-sql):", raw);
   }
 
   const xmlMatch = raw.match(/<sql>([\s\S]*?)<\/sql>/i);

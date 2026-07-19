@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { DEBUG } from "@/lib/config/debug";
 
 type UploadParquetArgs = {
   parquetBytes: Uint8Array;
@@ -24,11 +25,11 @@ export async function uploadParquet({
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  console.log("SESSION", session);
+  if (DEBUG) console.log("SESSION", session);
 
   const { data, error: bucketError } = await supabase.storage.listBuckets();
-  console.log("Bucket:", data);
-  console.log("Bucket Error:", bucketError);
+  if (DEBUG) console.log("Bucket:", data);
+  if (DEBUG) console.log("Bucket Error:", bucketError);
 
   const { error } = await supabase.storage
     .from("datasets")
@@ -40,8 +41,8 @@ export async function uploadParquet({
     throw error;
   }
 
-  console.log(storagePath);
-  console.log(blob.size);
+  if (DEBUG) console.log(storagePath);
+  if (DEBUG) console.log(blob.size);
 
   return { storagePath, filesize: blob.size };
 }

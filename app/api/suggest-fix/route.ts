@@ -2,6 +2,7 @@ import { suggestFixPrompt } from "@/lib/ai/prompts/suggest-fix-prompt"
 import { checkRateLimit } from "@/lib/security/checkRateLimit"
 import { isPayloadTooLarge } from "@/lib/api/validateRequestSize"
 import { groq } from "@/lib/ai/client";
+import { DEBUG } from "@/lib/config/debug";
 import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
@@ -55,7 +56,6 @@ export async function POST(req: Request) {
             break
 
         } catch (err) {
-            const DEBUG = process.env.NODE_ENV === "development"
             if (DEBUG) {
                 console.error(`Groq attempt (edit-sql) ${attempt} failed: `, err)
             }

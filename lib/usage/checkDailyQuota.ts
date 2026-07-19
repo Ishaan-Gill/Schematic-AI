@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { DEBUG } from "@/lib/config/debug";
 
 export async function checkDailyQuota(limit = 20) {
   const supabase = await createClient();
@@ -29,7 +30,7 @@ export async function checkDailyQuota(limit = 20) {
     .eq("usage_date", today)
     .single();
 
-  console.log("Queries used today:", usage?.query_count);
+  if (DEBUG) console.log("Queries used today:", usage?.query_count);
 
   return data as boolean;
 }

@@ -32,8 +32,6 @@ export default function LoginPage() {
     router.push("/");
     router.refresh();
 
-    console.log("Login successful");
-
     setLoading(false);
   };
 

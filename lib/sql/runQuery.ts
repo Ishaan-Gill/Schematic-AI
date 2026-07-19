@@ -1,6 +1,7 @@
 import React from "react";
 
 import { getDuckConnection, resetDuckConnection } from "@/lib/duckdb/duckdb";
+import { DEBUG } from "@/lib/config/debug";
 import { suggestFix } from "@/lib/sql/suggestFix";
 import { addFeedbackMemory } from "../upload/metadata/feedbackMemory";
 import type { Relationship } from "../ai/context/relationships";
@@ -90,7 +91,7 @@ export const runQuery = async ({
 
       setWorkspaceExpiry(Date.now() + 6 * 60 * 60 * 1000);
 
-      console.log("🔄 Signed URLs refreshed");
+      if (DEBUG) console.log("🔄 Signed URLs refreshed");
     }
 
     const timeoutPromise = new Promise<never>(
@@ -176,10 +177,10 @@ export const runQuery = async ({
       timestamp: Date.now(),
     });
 
-    if (process.env.NEXT_PUBLIC_DEBUG === "true") {
+    if (DEBUG) {
       console.log("FEEDBACK MEMORY (SUCCESS):", addFeedbackMemory);
     }
-    if (process.env.NEXT_PUBLIC_DEBUG === "true") {
+    if (DEBUG) {
       console.log("QUERY AUDIT", {
         query,
         sql: finalQuery,
@@ -213,7 +214,7 @@ export const runQuery = async ({
       timestamp: Date.now(),
     });
 
-    if (process.env.NEXT_PUBLIC_DEBUG === "true") {
+    if (DEBUG) {
       console.log("FEEDBACK MEMORY (FAILURE):", addFeedbackMemory);
     }
     updateMessage(assistantMessageId, {
@@ -221,7 +222,7 @@ export const runQuery = async ({
     });
     console.error(err);
 
-    if (process.env.NEXT_PUBLIC_DEBUG === "true") {
+    if (DEBUG) {
       console.log("QUERY FAILURE", {
         query,
         sql: finalQuery,
