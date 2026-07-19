@@ -1,3 +1,5 @@
+import { classifyLocalIntent } from "../classifyLocalIntent";
+
 type ClassifyIntentArgs = {
   query: string;
   schemas: Record<string, any[]>;
@@ -11,6 +13,9 @@ export const classifyIntent = async ({
   signal,
   guard,
 }: ClassifyIntentArgs) => {
+  const localIntent = classifyLocalIntent(query);
+  if (localIntent) return localIntent;
+
   try {
     if (signal?.aborted || !(guard?.() ?? true)) return;
 
