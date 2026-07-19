@@ -1,4 +1,10 @@
 import type { Relationship } from "../context/relationships";
+import { schemaHash } from "@/lib/cache/schemaHash";
+import {
+  getCachedExplanation,
+  saveCachedExplanation,
+  buildExplanationCacheKey,
+} from "@/lib/cache/explanationCache";
 
 type ExplainSQLArgs = {
   query: string;
@@ -29,6 +35,17 @@ export const explainSQL = async ({
   try {
     if (!isActive(guard, signal)) return;
 
+    const filteredSchemas = Object.fromEntries(
+      Object.entries(schemas).filter(([tableName]) =>
+        relevantTables?.includes(tableName),
+      ),
+    );
+    const hash = await schemaHash(filteredSchemas);
+    const cacheKey = await buildExplanationCacheKey(sql, hash);
+
+    const cached = await getCachedExplanation(cacheKey);
+    if (cached) return cached;
+
     const body = {
       query,
       sql,
@@ -54,7 +71,9 @@ export const explainSQL = async ({
       throw new Error(data.error ?? "explanation failed");
     }
 
-    return data.response as string;
+    const explanation = data.response as string;
+    await saveCachedExplanation({ cacheKey, schemaHash: hash, explanation });
+    return explanation;
   } catch (err) {
     if (signal?.aborted) return;
     console.error("explanation failed:", err);
