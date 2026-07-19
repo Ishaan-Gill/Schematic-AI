@@ -26,19 +26,19 @@ export async function getCachedSQL(cacheKey: string): Promise<string | null> {
     .maybeSingle();
 
   if (error) {
-    console.error("Cache lookup failed:", error);
+    console.error("Query Cache lookup failed:", error);
     return null;
   }
 
   if (!data) {
     if (DEBUG) {
-      console.log("CACHE MISS");
+      console.log("QUERY CACHE MISS");
     }
     return null;
   }
 
   if (DEBUG) {
-    console.log("CACHE HIT");
+    console.log("QUERY CACHE HIT");
   }
 
   return data.sql;
@@ -56,31 +56,25 @@ export async function saveCachedSQL({
   schemaHash,
   sql,
 }: SaveCachedSQLArgs): Promise<void> {
-  const { error } = await supabase.from("query_cache").insert({
-    cache_key: cacheKey,
-    normalized_query: normalizedQuery,
-    schema_hash: schemaHash,
-    sql,
-  });
+  const { error } = await supabase.from("query_cache").upsert(
+    {
+      cache_key: cacheKey,
+      normalized_query: normalizedQuery,
+      schema_hash: schemaHash,
+      sql,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      onConflict: "cache_key",
+    },
+  );
 
   if (error) {
-    // Duplicate cache entry -> ignore
-    if (error.code === "23505") {
-      return;
-    }
-
     console.error("Failed to save cache:", error);
     return;
   }
 
   if (DEBUG) {
-    console.log("CACHE SAVED");
+    console.log("QUERY CACHE SAVED");
   }
 }
-
-
-// TODO:
-// After authentication:
-// - add user_id to cache key
-// - replace public RLS with auth.uid() policies
-// - move cache operations to server-side API using Service Role

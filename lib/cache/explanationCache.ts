@@ -50,14 +50,19 @@ export async function saveCachedExplanation({
   schemaHash: schemaHashValue,
   explanation,
 }: SaveCachedExplanationArgs): Promise<void> {
-  const { error } = await supabase.from("explanation_cache").insert({
-    cache_key: cacheKey,
-    schema_hash: schemaHashValue,
-    explanation,
-  });
+  const { error } = await supabase.from("explanation_cache").upsert(
+    {
+      cache_key: cacheKey,
+      schema_hash: schemaHashValue,
+      explanation,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      onConflict: "cache_key",
+    },
+  );
 
   if (error) {
-    if (error.code === "23505") return;
     console.error("Failed to save explanation cache:", error);
     return;
   }
