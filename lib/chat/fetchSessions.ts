@@ -58,6 +58,16 @@ export async function fetchSessions(): Promise<Session[]> {
     messagesBySession.set(message.session_id, arr);
   }
 
+  for (const msgs of messagesBySession.values()) {
+    msgs.sort((a, b) => {
+      const tsCmp = a.timestamp.localeCompare(b.timestamp);
+      if (tsCmp !== 0) return tsCmp;
+      return a.role === "user" && b.role === "assistant" ? -1
+           : a.role === "assistant" && b.role === "user" ? 1
+           : 0;
+    });
+  }
+
   // Build Session[]
   return sessions.map((session) => ({
     id: session.id,
