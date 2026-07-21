@@ -1,4 +1,4 @@
-type FeedbackItem = {
+export type FeedbackItem = {
     query: string
     generatedSQL: string
     outcome: "success" | "failure"

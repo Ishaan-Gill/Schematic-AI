@@ -1,9 +1,7 @@
-import { generateSQLPrompt } from "@/lib/ai/prompts/generate-sql-prompt";
 import { isPayloadTooLarge } from "@/lib/api/validateRequestSize";
 import { authorizeAIRequest } from "@/lib/api/authorizeAIRequest";
-import { groq } from "@/lib/ai/client";
-import { DEBUG } from "@/lib/config/debug";
 import { NextResponse } from "next/server";
+import { generateSQL } from "@/lib/ai/chat/generate";
 
 export async function POST(req: Request) {
   const auth = await authorizeAIRequest(req, "generate-sql", 5, 60000, "Too many AI fix attempts.");
@@ -26,26 +24,7 @@ export async function POST(req: Request) {
     );
   }
 
-  type FeedbackItem = {
-    query: string;
-    generatedSQL: string;
-    outcome: "success" | "failure";
-    timestamp: number;
-    error?: string;
-  };
-  const {
-    query,
-    schemas,
-    relevantTables,
-    relationships,
-    finalDatasetContext,
-    timeHint,
-    conversationContext,
-  } = body;
-
-  const feedbackMemory = (body.feedbackMemory ?? []) as FeedbackItem[];
-
-  const safeDatasetContext: Record<string, any> = finalDatasetContext ?? {};
+  const { query, schemas, relevantTables, relationships, finalDatasetContext, timeHint, conversationContext, feedbackMemory } = body;
 
   if (!query || !schemas) {
     return NextResponse.json(
@@ -54,112 +33,30 @@ export async function POST(req: Request) {
     );
   }
 
-  const finalRelevantTables =
-    relevantTables?.length > 0 ? relevantTables : Object.keys(schemas);
-
-  // Schemas of filtered Tables:
-  const filteredSchemas = Object.fromEntries(
-    Object.entries(schemas).filter(([tableName]) =>
-      finalRelevantTables?.includes(tableName),
-    ),
-  );
-
-  // convert schema to readable text for AI:
-  const schemaText = Object.entries(filteredSchemas)
-    .slice(0, 8)
-    .map(([tableName, cols]) => {
-      const colText = (cols as any[])
-        .slice(0, 30)
-        .map((col: any) => `${col.column_name} (${col.column_type})`)
-        .join(", ");
-      return `${tableName}: ${colText}`;
-    })
-    .join("\n\n");
-
-  const filteredRelationships = relationships.filter(
-    (r: any) =>
-      finalRelevantTables?.includes(r.fromTable) &&
-      finalRelevantTables?.includes(r.toTable),
-  );
-
-  // Feedback:
-  const recentFailures = feedbackMemory
-    .filter((item) => item.outcome === "failure")
-    .slice(-5);
-
-  const prompt = generateSQLPrompt({
-    schemaText,
-    filteredRelationships,
-    timeHint,
-    safeDatasetContext,
-    recentFailures,
+  const result = await generateSQL({
     query,
-    conversationContext,
+    schemas,
+    relevantTables: relevantTables ?? [],
+    relationships: relationships ?? [],
+    finalDatasetContext: finalDatasetContext ?? {},
+    timeHint,
+    conversationContext: conversationContext ?? [],
+    feedbackMemory: feedbackMemory ?? [],
   });
 
-  let completion;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      completion = await groq.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
-        temperature: 0.1,
-        messages: [
-          {
-            role: "system",
-            content: prompt.system,
-          },
-          {
-            role: "user",
-            content: prompt.user,
-          },
-        ],
-      });
-      break;
-    } catch (err) {
-      if (DEBUG) {
-        console.error(`Groq attempt (generate-sql) ${attempt} failed:`, err);
-      }
-
-      // Small delay before retry:
-      if (attempt < 2) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-    }
-  }
-  if (!completion) {
+  if (!result) {
     return NextResponse.json(
       { error: "AI generation failed. Please try again." },
       { status: 500 },
     );
   }
 
-  const raw = completion.choices[0]?.message?.content || "";
-
-  if (DEBUG) {
-    console.log("AI RAW (generate-sql):", raw);
-  }
-
-  const xmlMatch = raw.match(/<sql>([\s\S]*?)<\/sql>/i);
-  const sql = xmlMatch ? xmlMatch[1].trim() : "";
-
-  if (!sql) {
+  if ("error" in result) {
     return NextResponse.json(
-      {
-        error: "Something went wrong generating your query. Please try again.",
-      },
-      { status: 502 },
+      { error: result.error },
+      { status: result.status },
     );
   }
 
-  if (sql === "INVALID_QUERY") {
-    return NextResponse.json(
-      {
-        error:
-          "I couldn't answer this from your uploaded datasets. Try rephrasing your question.",
-      },
-      { status: 400 },
-    );
-  }
-
-  return NextResponse.json({ sql });
+  return NextResponse.json({ sql: result.sql });
 }

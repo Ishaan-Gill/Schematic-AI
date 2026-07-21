@@ -1,0 +1,131 @@
+import { generateSQLPrompt } from "@/lib/ai/prompts/generate-sql-prompt"
+import { groq } from "@/lib/ai/client"
+import { DEBUG } from "@/lib/config/debug"
+import type { ConversationEntry } from "@/lib/ai/context/buildConversationContext"
+import { FeedbackItem } from "@/lib/upload/metadata/feedbackMemory"
+
+
+type GenerateSQLParams = {
+  query: string
+  schemas: Record<string, any[]>
+  relevantTables: string[]
+  relationships: any[]
+  finalDatasetContext: Record<string, any>
+  timeHint?: string
+  conversationContext: ConversationEntry[]
+  feedbackMemory: FeedbackItem[]
+}
+
+export async function generateSQL(
+  params: GenerateSQLParams,
+): Promise<{ sql: string } | { error: string; status: number } | null> {
+  const {
+    query,
+    schemas,
+    relevantTables,
+    relationships,
+    finalDatasetContext,
+    timeHint,
+    conversationContext,
+    feedbackMemory,
+  } = params
+
+  const safeDatasetContext: Record<string, any> = finalDatasetContext ?? {}
+
+  const finalRelevantTables =
+    relevantTables?.length > 0 ? relevantTables : Object.keys(schemas)
+
+  const filteredSchemas = Object.fromEntries(
+    Object.entries(schemas).filter(([tableName]) =>
+      finalRelevantTables?.includes(tableName),
+    ),
+  )
+
+  const schemaText = Object.entries(filteredSchemas)
+    .slice(0, 8)
+    .map(([tableName, cols]) => {
+      const colText = (cols as any[])
+        .slice(0, 30)
+        .map((col: any) => `${col.column_name} (${col.column_type})`)
+        .join(", ")
+      return `${tableName}: ${colText}`
+    })
+    .join("\n\n")
+
+  const filteredRelationships = relationships.filter(
+    (r: any) =>
+      finalRelevantTables?.includes(r.fromTable) &&
+      finalRelevantTables?.includes(r.toTable),
+  )
+
+  const recentFailures = feedbackMemory
+    .filter((item) => item.outcome === "failure")
+    .slice(-5)
+
+  const prompt = generateSQLPrompt({
+    schemaText,
+    filteredRelationships,
+    timeHint,
+    safeDatasetContext,
+    recentFailures,
+    query,
+    conversationContext,
+  })
+
+  let completion
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.1,
+        messages: [
+          {
+            role: "system",
+            content: prompt.system,
+          },
+          {
+            role: "user",
+            content: prompt.user,
+          },
+        ],
+      })
+      break
+    } catch (err) {
+      if (DEBUG) {
+        console.error(`Groq attempt (generate-sql) ${attempt} failed:`, err)
+      }
+
+      if (attempt < 2) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+    }
+  }
+
+  if (!completion) return null
+
+  const raw = completion.choices[0]?.message?.content || ""
+
+  if (DEBUG) {
+    console.log("AI RAW (generate-sql):", raw)
+  }
+
+  const xmlMatch = raw.match(/<sql>([\s\S]*?)<\/sql>/i)
+  const sql = xmlMatch ? xmlMatch[1].trim() : ""
+
+  if (!sql) {
+    return {
+      error: "Something went wrong generating your query. Please try again.",
+      status: 502,
+    }
+  }
+
+  if (sql === "INVALID_QUERY") {
+    return {
+      error:
+        "I couldn't answer this from your uploaded datasets. Try rephrasing your question.",
+      status: 400,
+    }
+  }
+
+  return { sql }
+}
