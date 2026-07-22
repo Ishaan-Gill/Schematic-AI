@@ -17,11 +17,9 @@ export const reasoning = async ({
   signal,
   guard,
 }: ReasoningArgs) => {
-
-  
   try {
     const conn = await getDuckConnection();
-    
+
     if (signal?.aborted || !(guard?.() ?? true)) return;
 
     const { finalDatasetContext } = await buildSQLContext({
@@ -30,15 +28,18 @@ export const reasoning = async ({
       schemas,
     });
 
-    const res = await fetch("/api/reasoning", {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal,
       body: JSON.stringify({
-        query,
-        schemas,
-        relationships,
-        finalDatasetContext,
+        type: "reasoning",
+        payload: {
+          query,
+          schemas,
+          relationships,
+          finalDatasetContext,
+        },
       }),
     });
     const data = await res.json();
@@ -52,5 +53,5 @@ export const reasoning = async ({
   } catch (err) {
     if (signal?.aborted) return;
     console.error("Reasoning failed:", err);
-  } 
+  }
 };

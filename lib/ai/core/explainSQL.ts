@@ -56,11 +56,11 @@ export const explainSQL = async ({
       finalDatasetContext,
     };
 
-    const res = await fetch("/api/explain-sql", {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal,
-      body: JSON.stringify(body, (_, value) =>
+      body: JSON.stringify({ type: "analysis", payload: body }, (_, value) =>
         typeof value === "bigint" ? value.toString() : value,
       ),
     });

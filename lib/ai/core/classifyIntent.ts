@@ -19,13 +19,13 @@ export const classifyIntent = async ({
   try {
     if (signal?.aborted || !(guard?.() ?? true)) return;
 
-    const res = await fetch("/api/classify-intent", {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal,
       body: JSON.stringify({
-        query,
-        schemas,
+        type: "classify-intent",
+        payload: { query, schemas },
       }),
     });
     const data = await res.json();

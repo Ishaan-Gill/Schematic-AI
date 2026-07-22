@@ -115,12 +115,16 @@ export const generateSQL = async ({
       conversationContext,
     };
 
-    const res = await fetch("/api/generate-sql", {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal,
-      body: JSON.stringify(body, (_, value) =>
-        typeof value === "bigint" ? value.toString() : value,
+      body: JSON.stringify(
+        {
+          type: "generate",
+          payload: body,
+        },
+        (_, value) => (typeof value === "bigint" ? value.toString() : value),
       ),
     });
 
@@ -172,5 +176,5 @@ export const generateSQL = async ({
       ok: false,
       error: "Something went wrong. Please try again.",
     };
-  } 
+  }
 };

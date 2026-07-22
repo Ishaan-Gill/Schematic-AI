@@ -12,12 +12,13 @@ type ambiguousArgs = {
     try {
       if (signal?.aborted || !(guard?.() ?? true)) return;
   
-      const res = await fetch("/api/ambiguous", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal,
         body: JSON.stringify({
-          query,
+          type: "ambiguous",
+          payload: {query},
         }),
       });
       const data = await res.json();
