@@ -587,6 +587,7 @@ export default function Home() {
         onRenameSession={handleRenameSession}
         onDeleteDataset={handleDeleteDataset}
         onDeleteSession={handleDeleteSession}
+        onFileChange={handleFileChange}
         userInitial={user?.email?.charAt(0).toUpperCase() ?? "?"}
       />
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import {
   FileSpreadsheet,
@@ -36,6 +37,7 @@ type SidebarProps = {
   onRenameSession?: (sessionId: string, newTitle: string) => void;
   onDeleteSession?: (sessionId: string) => void;
   onDeleteDataset: (dataset: StoredDataset) => void;
+  onFileChange?: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   userInitial: string;
 };
 
@@ -49,6 +51,7 @@ export default function Sidebar({
   onRenameSession,
   onDeleteSession,
   onDeleteDataset,
+  onFileChange,
   userInitial,
 }: SidebarProps) {
   const warningsCount = Object.values(datasetMemory).reduce(
@@ -64,6 +67,7 @@ export default function Sidebar({
   );
   const [renameValue, setRenameValue] = useState("");
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (renamingSessionId && renameInputRef.current) {
@@ -293,8 +297,17 @@ export default function Sidebar({
           ))
         )}
 
-        {/* Add dataset placeholder */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".csv,.xlsx"
+          onChange={onFileChange}
+          className="sr-only"
+        />
+
         <motion.button
+          onClick={() => fileInputRef.current?.click()}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
