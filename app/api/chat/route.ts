@@ -24,8 +24,6 @@ export async function POST(req: Request) {
 
   if (!auth.authorized) return auth.response;
 
-  await consumeQuota(auth.user.id);
-
   let body: ChatRequest;
 
   try {
@@ -43,6 +41,8 @@ export async function POST(req: Request) {
       { status: 413 },
     );
   }
+
+  await consumeQuota(auth.user.id);
 
   switch (body.type) {
     // ===========================
@@ -142,7 +142,10 @@ export async function POST(req: Request) {
       });
 
       if (!analysis) {
-        return NextResponse.json({ error: "Analysis failed." }, { status: 500 });
+        return NextResponse.json(
+          { error: "Analysis failed." },
+          { status: 500 },
+        );
       }
 
       return NextResponse.json({ response: analysis });
@@ -246,11 +249,17 @@ export async function POST(req: Request) {
         }
 
         default:
-          return NextResponse.json({ error: "Unknown intent." }, { status: 500 });
+          return NextResponse.json(
+            { error: "Unknown intent." },
+            { status: 500 },
+          );
       }
     }
 
     default:
-      return NextResponse.json({ error: "Unknown request type." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Unknown request type." },
+        { status: 400 },
+      );
   }
 }
