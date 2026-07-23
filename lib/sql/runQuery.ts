@@ -244,9 +244,6 @@ export const runQuery = async ({
       updateMessage,
     });
     if (!fixedSQL) {
-      updateMessage(assistantMessageId, {
-        loading: false,
-      });
       return;
     }
 
