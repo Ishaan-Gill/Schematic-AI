@@ -199,16 +199,16 @@ export const ingestParsedTable = async ({
 
   await saveDataset(datasetRecord);
 
-  await conn.query(`
-    DROP TABLE IF EXISTS ${quoteIdentifier(tableName)}
-  `);
-
   await mountParquetViews(conn, [
     {
       table_name: tableName,
       storage_path: storagePath,
     },
   ]);
+
+  await conn.query(`
+    DROP TABLE IF EXISTS ${quoteIdentifier(tableName)}
+  `);
 
   return {
     tableName,
