@@ -26,9 +26,23 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Refresh session if needed
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+
+  try {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+
+    user = authUser;
+  } catch (error) {
+    console.error("Middleware auth check failed:", error);
+
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("error", "auth_failed");
+
+    return NextResponse.redirect(url);
+  }
 
   const pathname = request.nextUrl.pathname;
 
