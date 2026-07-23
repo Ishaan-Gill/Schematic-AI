@@ -588,7 +588,7 @@ export default function Home() {
         onDeleteDataset={handleDeleteDataset}
         onDeleteSession={handleDeleteSession}
         onFileChange={handleFileChange}
-        userInitial={user?.email?.charAt(0).toUpperCase() ?? "?"}
+        user={user}
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col md:ml-[220px] md:overflow-y-auto">

@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import UserMenu from "@/components/ui/UserMenu";
 import { datasetMemory } from "@/lib/upload/metadata/datasetMemory";
 import type { StoredDataset } from "@/types/datasets";
 import { Relationship } from "@/lib/ai/context/relationships";
@@ -38,7 +39,7 @@ type SidebarProps = {
   onDeleteSession?: (sessionId: string) => void;
   onDeleteDataset: (dataset: StoredDataset) => void;
   onFileChange?: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
-  userInitial: string;
+  user: { email?: string; user_metadata?: Record<string, unknown> } | null;
 };
 
 export default function Sidebar({
@@ -52,7 +53,7 @@ export default function Sidebar({
   onDeleteSession,
   onDeleteDataset,
   onFileChange,
-  userInitial,
+  user,
 }: SidebarProps) {
   const warningsCount = Object.values(datasetMemory).reduce(
     (total, dataset) =>
@@ -350,12 +351,7 @@ export default function Sidebar({
         </div>
 
         <div className="border-t border-[#1c1e24] px-3 py-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[rgba(79,255,176,0.2)] bg-[rgba(79,255,176,0.1)] font-sans text-[12px] font-medium text-[#4fffb0]">
-            {userInitial}
-          </div>
-          <div>
-            <button onClick={handleLogout}>Logout</button>
-          </div>
+          <UserMenu user={user} onLogout={handleLogout} />
         </div>
       </motion.div>
     </aside>
