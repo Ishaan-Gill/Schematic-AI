@@ -42,7 +42,21 @@ export async function POST(req: Request) {
     );
   }
 
-  await consumeQuota(auth.user.id);
+  try {
+    await consumeQuota(auth.user.id);
+  } catch (err) {
+    if (err instanceof Error && err.message === "Daily quota exceeded") {
+      return NextResponse.json(
+        {
+          error: "Daily quota exceeded.",
+        },
+        {
+          status: 429,
+        },
+      );
+    }
+    throw err;
+  }
 
   switch (body.type) {
     // ===========================
