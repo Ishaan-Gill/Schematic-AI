@@ -40,12 +40,27 @@ export async function authorizeAIRequest(
 
   const today = new Date().toISOString().split("T")[0];
 
-  const { data: usage } = await supabase
+  const { data: usage, error: usageError } = await supabase
     .from("daily_usage")
     .select("query_count")
     .eq("user_id", user.id)
     .eq("usage_date", today)
     .maybeSingle();
+
+  if (usageError) {
+    console.error("Failed to fetch daily usage:", usageError);
+
+    return {
+      authorized: false,
+      response: NextResponse.json(
+        {
+          error:
+            "Unable to verify your daily quota. Please try again in a moment.",
+        },
+        { status: 503 },
+      ),
+    };
+  }
 
   const queryCount = usage?.query_count ?? 0;
 
