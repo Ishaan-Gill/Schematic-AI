@@ -24,15 +24,7 @@ export default function ResultTable({
 }: ResultTableProps) {
 
     if (!rows.length) {
-        return (
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="border border-[#1c1e24] bg-[#0a0b0d] p-6 text-sm text-[#6b7280]"
-            >
-                Results will appear here after running a query.
-            </motion.div>
-        )
+        return null;
     }
 
     const headers = Object.keys(rows[0] ?? {})
