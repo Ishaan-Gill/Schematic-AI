@@ -112,7 +112,7 @@ export const runQuery = async ({
       return rows;
     })();
 
-    collectPromise.catch(() => {});
+    void collectPromise.catch(() => {});
 
     let rawRows: Record<string, unknown>[];
     try {
