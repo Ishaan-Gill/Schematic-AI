@@ -171,109 +171,37 @@ export async function POST(req: Request) {
     case "generate": {
       const p = body.payload;
 
-      const intent = await classifyIntent({
+      const result = await generateSQL({
         query: p.query,
         schemas: p.schemas,
+        relevantTables: p.relevantTables,
+        relationships: p.relationships,
+        finalDatasetContext: p.finalDatasetContext,
+        conversationContext: p.conversationContext ?? [],
+        feedbackMemory: p.feedbackMemory ?? [],
+        timeHint: p.timeHint,
       });
 
-      if (!intent) {
+      if (!result) {
         return NextResponse.json(
-          { error: "Intent classification failed." },
+          { error: "SQL generation failed." },
           { status: 500 },
         );
       }
 
-      switch (intent) {
-        case "CONVERSATIONAL": {
-          const response = await conversational({ query: p.query });
-
-          if (!response) {
-            return NextResponse.json(
-              { error: "Conversation failed." },
-              { status: 500 },
-            );
-          }
-
-          return NextResponse.json({ response });
-        }
-
-        case "REASONING": {
-          const response = await reasoning({
-            query: p.query,
-            schemas: p.schemas,
-            relationships: p.relationships,
-            finalDatasetContext: p.finalDatasetContext,
-          });
-
-          if (!response) {
-            return NextResponse.json(
-              { error: "Reasoning failed." },
-              { status: 500 },
-            );
-          }
-
-          return NextResponse.json({ response });
-        }
-
-        case "AMBIGUOUS": {
-          const response = await ambiguous({ query: p.query });
-
-          if (!response) {
-            return NextResponse.json(
-              { error: "Clarification failed." },
-              { status: 500 },
-            );
-          }
-
-          return NextResponse.json({ response });
-        }
-
-        case "DATA_QUERY": {
-          const result = await generateSQL({
-            query: p.query,
-            schemas: p.schemas,
-            relevantTables: p.relevantTables,
-            relationships: p.relationships,
-            finalDatasetContext: p.finalDatasetContext,
-            conversationContext: p.conversationContext ?? [],
-            feedbackMemory: p.feedbackMemory ?? [],
-            timeHint: p.timeHint,
-          });
-
-          if (!result) {
-            return NextResponse.json(
-              { error: "SQL generation failed." },
-              { status: 500 },
-            );
-          }
-
-          if ("error" in result) {
-            return NextResponse.json(
-              { error: result.error },
-              { status: result.status },
-            );
-          }
-
-          return NextResponse.json({
-            type: "DATA_QUERY",
-            sql: result.sql,
-            relevantTables: p.relevantTables,
-            datasetContext: p.finalDatasetContext,
-          });
-        }
-
-        default:
-          return NextResponse.json(
-            { error: "Unknown intent." },
-            { status: 500 },
-          );
+      if ("error" in result) {
+        return NextResponse.json(
+          { error: result.error },
+          { status: result.status },
+        );
       }
-    }
 
-    default:
-      return NextResponse.json(
-        { error: "Unknown request type." },
-        { status: 400 },
-      );
+      return NextResponse.json({
+        type: "DATA_QUERY",
+        sql: result.sql,
+        relevantTables: p.relevantTables,
+        datasetContext: p.finalDatasetContext,
+      });
+    }
   }
 }
