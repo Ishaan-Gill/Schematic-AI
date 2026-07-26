@@ -2,7 +2,6 @@ import { generateSQLPrompt } from "@/lib/ai/prompts/generate-sql-prompt"
 import { groq } from "@/lib/ai/client"
 import { DEBUG } from "@/lib/config/debug"
 import type { ConversationEntry } from "@/lib/ai/context/buildConversationContext"
-import { FeedbackItem } from "@/lib/upload/metadata/feedbackMemory"
 
 
 type GenerateSQLParams = {
@@ -13,7 +12,6 @@ type GenerateSQLParams = {
   finalDatasetContext: Record<string, any>
   timeHint?: string
   conversationContext: ConversationEntry[]
-  feedbackMemory: FeedbackItem[]
 }
 
 export async function generateSQL(
@@ -27,7 +25,6 @@ export async function generateSQL(
     finalDatasetContext,
     timeHint,
     conversationContext,
-    feedbackMemory,
   } = params
 
   const safeDatasetContext: Record<string, any> = finalDatasetContext ?? {}
@@ -58,16 +55,11 @@ export async function generateSQL(
       finalRelevantTables?.includes(r.toTable),
   )
 
-  const recentFailures = feedbackMemory
-    .filter((item) => item.outcome === "failure")
-    .slice(-5)
-
   const prompt = generateSQLPrompt({
     schemaText,
     filteredRelationships,
     timeHint,
     safeDatasetContext,
-    recentFailures,
     query,
     conversationContext,
   })

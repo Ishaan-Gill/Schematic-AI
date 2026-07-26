@@ -3,7 +3,6 @@ type GenerateSQLPromptParams = {
   filteredRelationships: any[];
   timeHint?: string;
   safeDatasetContext: Record<string, any>;
-  recentFailures: any[];
   query: string;
   conversationContext: ConversationEntry[];
 };
@@ -15,7 +14,6 @@ export function generateSQLPrompt({
   filteredRelationships,
   timeHint,
   safeDatasetContext,
-  recentFailures,
   query,
   conversationContext,
 }: GenerateSQLPromptParams) {
@@ -150,10 +148,8 @@ export function generateSQLPrompt({
                 .join("\n") ?? "",
           )
           .join("\n")}
-                                
-        Recent Failed Queries:
-        ${JSON.stringify(recentFailures)}
 
+          
         ${
           conversationContext.length > 0
             ? `Recent SQL Context:

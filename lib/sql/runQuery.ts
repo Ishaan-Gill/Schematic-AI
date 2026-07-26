@@ -3,7 +3,6 @@ import React from "react";
 import { getDuckConnection, resetDuckConnection } from "@/lib/duckdb/duckdb";
 import { DEBUG } from "@/lib/config/debug";
 import { suggestFix } from "@/lib/sql/suggestFix";
-import { addFeedbackMemory } from "../upload/metadata/feedbackMemory";
 import type { Relationship } from "../ai/context/relationships";
 import { getRelationshipsMemory } from "../ai/context/relationshipsMap";
 import { validateSQL } from "./validateSQL";
@@ -157,16 +156,6 @@ export const runQuery = async ({
 
     const executionTime = performance.now() - startTime;
 
-    addFeedbackMemory({
-      query,
-      generatedSQL: finalQuery,
-      outcome: "success",
-      timestamp: Date.now(),
-    });
-
-    if (DEBUG) {
-      console.log("FEEDBACK MEMORY (SUCCESS):", addFeedbackMemory);
-    }
     if (DEBUG) {
       console.log("QUERY AUDIT", {
         query,
@@ -193,17 +182,6 @@ export const runQuery = async ({
   } catch (err) {
     const errorMsg = String(err);
 
-    addFeedbackMemory({
-      query,
-      generatedSQL: baseQuery,
-      outcome: "failure",
-      error: errorMsg,
-      timestamp: Date.now(),
-    });
-
-    if (DEBUG) {
-      console.log("FEEDBACK MEMORY (FAILURE):", addFeedbackMemory);
-    }
     updateMessage(assistantMessageId, {
       hasMore: false,
     });

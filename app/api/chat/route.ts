@@ -178,7 +178,6 @@ export async function POST(req: Request) {
         relationships: p.relationships,
         finalDatasetContext: p.finalDatasetContext,
         conversationContext: p.conversationContext ?? [],
-        feedbackMemory: p.feedbackMemory ?? [],
         timeHint: p.timeHint,
       });
 

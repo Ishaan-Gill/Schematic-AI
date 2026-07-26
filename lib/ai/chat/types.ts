@@ -1,4 +1,3 @@
-import { FeedbackItem } from "@/lib/upload/metadata/feedbackMemory";
 import { Relationship } from "../context/relationships";
 import { ConversationEntry } from "../context/buildConversationContext";
 
@@ -8,7 +7,6 @@ export type GenerateRequest = {
   relevantTables: string[];
   relationships: Relationship[];
   finalDatasetContext: Record<string, any>;
-  feedbackMemory?: FeedbackItem[];
   conversationContext?: ConversationEntry[];
   timeHint: string;
 };
