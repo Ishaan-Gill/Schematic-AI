@@ -120,10 +120,16 @@ export const ingestParsedTable = async ({
 
   // refreshed schema
   const refreshedColumnsResult = await conn.query(`
-            DESCRIBE ${quoteIdentifier(tableName)}
-        `);
+    DESCRIBE ${quoteIdentifier(tableName)}
+  `);
 
   const refreshedColumns = refreshedColumnsResult.toArray() as ColumnInfo[];
+
+  // validation
+  validateTable({
+    rowCount,
+    columns: refreshedColumns,
+  });
 
   // profiling
   const profile = await profileTable({
@@ -134,12 +140,6 @@ export const ingestParsedTable = async ({
 
   // semantic inference
   const semantic = inferSemanticContext(tableName, refreshedColumns, profile);
-
-  // validation
-  validateTable({
-    rowCount,
-    columns: refreshedColumns,
-  });
 
   // Memory injection
   datasetMemory[tableName] = {
