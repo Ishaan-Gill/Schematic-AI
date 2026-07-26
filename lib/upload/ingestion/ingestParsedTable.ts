@@ -18,6 +18,7 @@ import type { DuckDatabase, DuckConnection } from "@/types/duckdb";
 import { saveDataset } from "@/lib/database/saveDataset";
 import type { StoredDataset } from "@/types/datasets";
 import { mountParquetViews } from "@/lib/duckdb/mountParquetViews";
+import { dropTableOrView } from "@/lib/duckdb/dropObject";
 import { rebuildRelationshipMemory } from "@/lib/ai/context/rebuildRelationshipMemory";
 
 type QueryRow = Record<string, unknown>;
@@ -58,9 +59,7 @@ export const ingestParsedTable = async ({
 
   const tempName = `${tableName}.csv`;
 
-  await conn.query(`
-        DROP TABLE IF EXISTS ${quoteIdentifier(tableName)}
-    `);
+  await dropTableOrView(conn, tableName);
 
   await createDuckTable({
     db,
@@ -199,16 +198,16 @@ export const ingestParsedTable = async ({
 
   await saveDataset(datasetRecord);
 
+  await conn.query(`
+    DROP TABLE IF EXISTS ${quoteIdentifier(tableName)}
+  `);
+
   await mountParquetViews(conn, [
     {
       table_name: tableName,
       storage_path: storagePath,
     },
   ]);
-
-  await conn.query(`
-    DROP TABLE IF EXISTS ${quoteIdentifier(tableName)}
-  `);
 
   return {
     tableName,

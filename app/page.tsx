@@ -551,6 +551,8 @@ export default function Home() {
     try {
       await deleteDataset(dataset);
 
+      await deleteWorkspaceDataset({ dataset });
+
       setDatasets((prev) =>
         prev.filter((d) => d.table_name !== dataset.table_name),
       );
@@ -560,8 +562,6 @@ export default function Home() {
         delete next[dataset.table_name];
         return next;
       });
-
-      await deleteWorkspaceDataset({ dataset });
 
       showToast("success", `"${dataset.table_name}" deleted from storage.`);
     } catch (err) {
