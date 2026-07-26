@@ -46,6 +46,7 @@ export default function Home() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
   const [workspaceReady, setWorkspaceReady] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const uploadControllerRef = useRef<AbortController | null>(null);
   const queryControllerRef = useRef<AbortController | null>(null);
   const generateControllerRef = useRef<AbortController | null>(null);
@@ -520,18 +521,24 @@ export default function Home() {
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const controller = startController(uploadControllerRef);
-    queryControllerRef.current?.abort();
-    generateControllerRef.current?.abort();
+    if (isUploading) return;
+    setIsUploading(true);
+    try {
+      const controller = startController(uploadControllerRef);
+      queryControllerRef.current?.abort();
+      generateControllerRef.current?.abort();
 
-    await handleFile(e, {
-      setDatasets,
-      setQuery,
-      setSchemas,
-      signal: controller.signal,
-      guard: () => isControllerActive(controller),
-      showToast,
-    });
+      await handleFile(e, {
+        setDatasets,
+        setQuery,
+        setSchemas,
+        signal: controller.signal,
+        guard: () => isControllerActive(controller),
+        showToast,
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleDeleteDataset = async (dataset: StoredDataset) => {
@@ -588,6 +595,7 @@ export default function Home() {
         onDeleteDataset={handleDeleteDataset}
         onDeleteSession={handleDeleteSession}
         onFileChange={handleFileChange}
+        isUploading={isUploading}
         user={user}
       />
 
@@ -600,6 +608,7 @@ export default function Home() {
                 query={query}
                 setQuery={setQuery}
                 loading={latestAssistantLoading}
+                isUploading={isUploading}
                 onSend={handleSendMessage}
                 onFileChange={handleFileChange}
               />
@@ -621,6 +630,7 @@ export default function Home() {
                   query={query}
                   setQuery={setQuery}
                   loading={latestAssistantLoading}
+                  isUploading={isUploading}
                   onSend={handleSendMessage}
                   onFileChange={handleFileChange}
                 />

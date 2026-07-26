@@ -9,6 +9,7 @@ export default function FileUpload({
     query,
     setQuery,
     loading,
+    isUploading,
     onSend,
     onFileChange,
     className,
@@ -16,6 +17,7 @@ export default function FileUpload({
     query: string
     setQuery: React.Dispatch<React.SetStateAction<string>>
     loading: boolean
+    isUploading: boolean
     onSend: (query: string) => Promise<void>
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
     className?: string
@@ -44,13 +46,14 @@ export default function FileUpload({
                     transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     className="flex items-end gap-3 rounded-[12px] border border-[#1c1e24] bg-[#111215] px-4 py-3 transition-all duration-200 focus-within:border-[rgba(79,255,176,0.4)] focus-within:shadow-[0_0_0_3px_rgba(79,255,176,0.06)]"
                 >
-                    <label className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-[7px] text-[#6b7280] transition-colors duration-150 hover:text-[#e8eaf0]">
+                    <label className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-[7px] text-[#6b7280] transition-colors duration-150 hover:text-[#e8eaf0] ${isUploading ? "pointer-events-none opacity-40" : ""}`}>
                         <Paperclip className="h-[18px] w-[18px]" aria-hidden="true" />
                         <input
                             type="file"
                             multiple
                             accept=".csv,.xlsx"
                             onChange={onFileChange}
+                            disabled={isUploading}
                             className="sr-only"
                         />
                     </label>
@@ -74,7 +77,7 @@ export default function FileUpload({
                                 if (e.key === "Enter" && !e.shiftKey) {
                                     e.preventDefault()
 
-                                    if (!query.trim() || loading) return
+                                    if (!query.trim() || loading || isUploading) return
 
                                     void onSend(query)
                                 }
@@ -98,12 +101,12 @@ export default function FileUpload({
                         <div className="mt-3 flex items-center justify-between">
                             <motion.button
                                 type="submit"
-                                disabled={loading || !query.trim()}
+                                disabled={loading || isUploading || !query.trim()}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.96 }}
                                 className="flex h-8 w-8 items-center justify-center rounded-[7px] bg-[#4fffb0] text-[#0a0b0e] disabled:opacity-40"
                             >
-                                {loading
+                                {loading || isUploading
                                     ? <Sparkles className="size-4 animate-pulse" />
                                     : <ArrowUp className="size-4" />
                                 }

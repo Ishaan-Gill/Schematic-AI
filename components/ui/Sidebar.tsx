@@ -39,6 +39,7 @@ type SidebarProps = {
   onDeleteSession?: (sessionId: string) => void;
   onDeleteDataset: (dataset: StoredDataset) => void;
   onFileChange?: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  isUploading?: boolean;
   user: { email?: string; user_metadata?: Record<string, unknown> } | null;
 };
 
@@ -53,6 +54,7 @@ export default function Sidebar({
   onDeleteSession,
   onDeleteDataset,
   onFileChange,
+  isUploading,
   user,
 }: SidebarProps) {
   const warningsCount = Object.values(datasetMemory).reduce(
@@ -304,11 +306,12 @@ export default function Sidebar({
           multiple
           accept=".csv,.xlsx"
           onChange={onFileChange}
+          disabled={isUploading}
           className="sr-only"
         />
 
         <motion.button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => { if (!isUploading) fileInputRef.current?.click(); }}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -319,12 +322,14 @@ export default function Sidebar({
             "border border-dashed border-[#2a2d35]",
             "font-mono text-[10px] text-[#6b7280]",
             "transition-all duration-200",
-            "hover:border-[#4fffb0] hover:bg-[rgba(79,255,176,0.02)] hover:text-[#4fffb0]",
+            isUploading
+              ? "pointer-events-none opacity-30"
+              : "hover:border-[#4fffb0] hover:bg-[rgba(79,255,176,0.02)] hover:text-[#4fffb0]",
           )}
         >
           <Plus className="h-3.5 w-3.5" />
 
-          <span>Add dataset</span>
+          <span>{isUploading ? "Uploading..." : "Add dataset"}</span>
         </motion.button>
       </div>
 
