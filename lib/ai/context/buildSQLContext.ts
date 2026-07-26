@@ -1,5 +1,6 @@
 import { buildDatasetContext } from "../../metadata/buildDatasetContext";
 import { quoteIdentifier } from "../../utils/sqlHelpers";
+import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh";
 
 type BuildSQLContextArgs = {
   conn: any;
@@ -12,6 +13,8 @@ export async function buildSQLContext({
   tables,
   schemas,
 }: BuildSQLContextArgs) {
+  await ensureWorkspaceFresh(conn);
+
   const sampleRowsByTable: Record<string, any[]> = {};
 
   for (const tableName of tables) {

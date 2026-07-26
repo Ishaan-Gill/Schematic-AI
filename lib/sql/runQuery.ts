@@ -11,12 +11,7 @@ import { Message } from "@/types/chat";
 import { buildExecutableSQL } from "./buildExecutableSQL";
 import { validateQueryResult } from "./validateQueryResult";
 import { recoverFailedQuery } from "./recoverFailedQuery";
-import { fetchDatasets } from "../rehydration/fetchDatasets";
-import { mountParquetViews } from "../duckdb/mountParquetViews";
-import {
-  getWorkspaceExpiry,
-  setWorkspaceExpiry,
-} from "../duckdb/workspaceExpiry";
+import { ensureWorkspaceFresh } from "../duckdb/ensureWorkspaceFresh";
 import { updateStoredMessage } from "../chat/updateMessage";
 
 type RunQueryArgs = {
@@ -84,15 +79,7 @@ export const runQuery = async ({
     });
     const conn = await getDuckConnection();
 
-    if (Date.now() >= getWorkspaceExpiry()) {
-      const datasets = await fetchDatasets();
-
-      await mountParquetViews(conn, datasets);
-
-      setWorkspaceExpiry(Date.now() + 6 * 60 * 60 * 1000);
-
-      if (DEBUG) console.log("🔄 Signed URLs refreshed");
-    }
+    await ensureWorkspaceFresh(conn);
 
     const timeoutPromise = new Promise<never>(
       (_, reject) =>

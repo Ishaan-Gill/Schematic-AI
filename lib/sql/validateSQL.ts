@@ -1,4 +1,5 @@
 import { getDuckConnection } from "@/lib/duckdb/duckdb"
+import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh"
 
 type ValidateSQLArgs = {
     sql: string
@@ -44,6 +45,8 @@ export const validateSQL = async ({
     try {
         // DuckDB parser validation:
         const conn = await getDuckConnection()
+
+        await ensureWorkspaceFresh(conn)
 
         await conn.query(`EXPLAIN ${sql}`)
 
