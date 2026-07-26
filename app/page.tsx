@@ -4,10 +4,7 @@ import FileUpload from "@/components/ui/FileUpload";
 import Sidebar from "@/components/ui/Sidebar";
 import ChatPanel from "@/components/ui/ChatPanel";
 import EmptyChat from "@/components/ui/EmptyChat";
-import {
-  getRelationshipsMemory,
-  relationshipsMemory,
-} from "@/lib/ai/context/relationshipsMap";
+import { getRelationships } from "@/lib/ai/context/rebuildRelationshipMemory";
 import { generateSQL } from "@/lib/sql/generateSQL";
 import { runQuery } from "@/lib/sql/runQuery";
 import { handleFile } from "@/lib/upload/uploadDataset";
@@ -80,7 +77,7 @@ export default function Home() {
       sql: sql.trim(),
       query,
       schemas,
-      relationships: getRelationshipsMemory(),
+      relationships: getRelationships(),
       page: page,
       PAGE_SIZE,
       signal: controller.signal,
@@ -359,7 +356,7 @@ export default function Home() {
             const response = await reasoning({
               query,
               schemas,
-              relationships: getRelationshipsMemory(),
+              relationships: getRelationships(),
               signal: controller.signal,
               guard: () => isControllerActive(controller),
             });
@@ -436,7 +433,7 @@ export default function Home() {
               sql,
               result: rows ?? [],
               schemas,
-              relationships: getRelationshipsMemory(),
+              relationships: getRelationships(),
               relevantTables: result.relevantTables,
               finalDatasetContext: result.finalDatasetContext,
               signal: controller.signal,
@@ -588,7 +585,7 @@ export default function Home() {
 
       <Sidebar
         datasets={datasets}
-        relationships={relationshipsMemory}
+        relationships={getRelationships()}
         sessions={sessions}
         activeSessionId={activeSessionId}
         setActiveSessionId={setActiveSessionId}

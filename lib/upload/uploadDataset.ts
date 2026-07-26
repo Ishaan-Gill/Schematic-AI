@@ -2,7 +2,6 @@ import React from "react"
 
 import { getDuckConnection, getDuckDB } from "@/lib/duckdb/duckdb"
 import { ingestParsedTable } from "@/lib/upload/ingestion/ingestParsedTable"
-import { updateDetectedRelationships } from "./metadata/detectRelationships"
 import { processFile } from "./handlers/processFile"
 import { quoteIdentifier } from "../utils/sqlHelpers"
 import type { StoredDataset } from "@/types/datasets"
@@ -71,14 +70,10 @@ export const uploadDataset = async ({
                 nextSchemas[tableName] = schemaResult.toArray()
             }
             // Single atomic schema update
-            setSchemas((prev) => {
-                const merged = {
-                    ...prev,
-                    ...nextSchemas
-                }
-                updateDetectedRelationships(merged)
-                return merged
-            })
+            setSchemas((prev) => ({
+                ...prev,
+                ...nextSchemas
+            }))
         } catch (error) {
             if (signal?.aborted) return
 

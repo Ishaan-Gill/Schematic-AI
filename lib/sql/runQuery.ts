@@ -4,7 +4,7 @@ import { getDuckConnection, resetDuckConnection } from "@/lib/duckdb/duckdb";
 import { DEBUG } from "@/lib/config/debug";
 import { suggestFix } from "@/lib/sql/suggestFix";
 import type { Relationship } from "../ai/context/relationships";
-import { getRelationshipsMemory } from "../ai/context/relationshipsMap";
+import { getRelationships } from "../ai/context/rebuildRelationshipMemory";
 import { validateSQL } from "./validateSQL";
 import { Message } from "@/types/chat";
 import { buildExecutableSQL } from "./buildExecutableSQL";
@@ -133,7 +133,7 @@ export const runQuery = async ({
         userQuery: query,
         schemas,
         relevantTables,
-        relationships: getRelationshipsMemory(),
+        relationships: getRelationships(),
         signal,
         guard,
         assistantMessageId,

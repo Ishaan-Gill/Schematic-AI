@@ -1,6 +1,6 @@
 import { getDuckConnection } from "@/lib/duckdb/duckdb";
 import { isTimeQuery } from "@/lib/ai/timeQuery";
-import { updateDetectedRelationships } from "@/lib/upload/metadata/detectRelationships";
+import { getRelationships } from "@/lib/ai/context/rebuildRelationshipMemory";
 import { validateSQL } from "./validateSQL";
 import {
   detectTableRelevance,
@@ -43,7 +43,7 @@ export const generateSQL = async ({
   signal,
   guard,
 }: GenerateSQLArgs): Promise<GenerateSQLResult> => {
-  const relationships = updateDetectedRelationships(schemas);
+  const relationships = getRelationships();
   const relevantTables = detectTableRelevance(query, schemas);
   const finalRelevantTables = expandRelevantTables(
     relevantTables,
