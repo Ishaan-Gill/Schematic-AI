@@ -47,6 +47,7 @@ export default function Home() {
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
   const [workspaceReady, setWorkspaceReady] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const uploadControllerRef = useRef<AbortController | null>(null);
   const queryControllerRef = useRef<AbortController | null>(null);
   const generateControllerRef = useRef<AbortController | null>(null);
@@ -208,278 +209,284 @@ export default function Home() {
   };
 
   const handleSendMessage = async (query: string): Promise<void> => {
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: query,
-      timestamp: new Date().toISOString(),
-    };
-    const assistantMessage: Message = {
-      id: crypto.randomUUID(),
-      role: "assistant",
-      content: "",
-      generatedSQL: "",
-      queryResult: [],
-      page: 0,
-      hasMore: false,
-      timestamp: new Date().toISOString(),
-    };
-
-    let sessionId: string;
-
-    const truncatedQuery =
-      query.length > MAX_TITLE_LENGTH
-        ? query.slice(0, MAX_TITLE_LENGTH)
-        : query;
-    if (!activeSession) {
-      const newSession: Session = {
+    if (isSending) return;
+    setIsSending(true);
+    try {
+      const userMessage: Message = {
         id: crypto.randomUUID(),
-        title: truncatedQuery,
-        messages: [userMessage, assistantMessage],
+        role: "user",
+        content: query,
+        timestamp: new Date().toISOString(),
       };
-      sessionId = newSession.id;
-      try {
-        await createSession({
-          id: newSession.id,
-          title: truncatedQuery,
-        });
-      } catch (err) {
-        console.error(err);
-        showToast("error", "Failed to create session.");
-        return;
-      }
-      setSessions((prev) => [newSession, ...prev]);
-      setActiveSessionId(newSession.id);
-    } else {
-      sessionId = activeSession.id;
-      if (activeSession.messages.length === 0) {
-        setSessions((prev) =>
-          prev.map((session) =>
-            session.id === sessionId
-              ? {
-                  ...session,
-                  title: truncatedQuery,
-                  messages: [
-                    ...session.messages,
-                    userMessage,
-                    assistantMessage,
-                  ],
-                }
-              : session,
-          ),
-        );
-        await updateSession({
-          sessionId: sessionId,
-          title: truncatedQuery,
-        });
-      } else {
-        setSessions((prev) =>
-          prev.map((session) =>
-            session.id === sessionId
-              ? {
-                  ...session,
-                  messages: [
-                    ...session.messages,
-                    userMessage,
-                    assistantMessage,
-                  ],
-                }
-              : session,
-          ),
-        );
-      }
-    }
-
-    await appendMessage({
-      sessionId,
-      message: userMessage,
-    });
-    await appendMessage({
-      sessionId,
-      message: assistantMessage,
-    });
-
-    updateMessage(
-      assistantMessage.id,
-      {
-        error: undefined,
-      },
-      sessionId,
-    );
-
-    const controller = startController(generateControllerRef);
-    queryControllerRef.current?.abort();
-    updateMessage(
-      assistantMessage.id,
-      {
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "",
+        generatedSQL: "",
+        queryResult: [],
         page: 0,
         hasMore: false,
-      },
-      sessionId,
-    );
-    const intent = await classifyIntent({
-      query,
-      schemas,
-      signal: controller.signal,
-      guard: () => isControllerActive(controller),
-    });
+        timestamp: new Date().toISOString(),
+      };
 
-    switch (intent) {
-      case "CONVERSATIONAL":
-        {
-          const response = await conversational({
-            query,
-            signal: controller.signal,
-            guard: () => isControllerActive(controller),
+      let sessionId: string;
+
+      const truncatedQuery =
+        query.length > MAX_TITLE_LENGTH
+          ? query.slice(0, MAX_TITLE_LENGTH)
+          : query;
+      if (!activeSession) {
+        const newSession: Session = {
+          id: crypto.randomUUID(),
+          title: truncatedQuery,
+          messages: [userMessage, assistantMessage],
+        };
+        sessionId = newSession.id;
+        try {
+          await createSession({
+            id: newSession.id,
+            title: truncatedQuery,
           });
-          if (!response) return;
-          updateMessage(
-            assistantMessage.id,
-            {
-              content: response,
-              loading: false,
-            },
-            sessionId,
-          );
-          await updateStoredMessage({
-            id: assistantMessage.id,
-            updates: {
-              content: response,
-            },
-          });
+        } catch (err) {
+          console.error(err);
+          showToast("error", "Failed to create session.");
+          return;
         }
-        break;
-
-      case "REASONING":
-        {
-          const response = await reasoning({
-            query,
-            schemas,
-            relationships: getRelationshipsMemory(),
-            signal: controller.signal,
-            guard: () => isControllerActive(controller),
-          });
-          if (!response) return;
-          updateMessage(
-            assistantMessage.id,
-            {
-              content: response,
-              loading: false,
-            },
-            sessionId,
+        setSessions((prev) => [newSession, ...prev]);
+        setActiveSessionId(newSession.id);
+      } else {
+        sessionId = activeSession.id;
+        if (activeSession.messages.length === 0) {
+          setSessions((prev) =>
+            prev.map((session) =>
+              session.id === sessionId
+                ? {
+                    ...session,
+                    title: truncatedQuery,
+                    messages: [
+                      ...session.messages,
+                      userMessage,
+                      assistantMessage,
+                    ],
+                  }
+                : session,
+            ),
           );
-          await updateStoredMessage({
-            id: assistantMessage.id,
-            updates: {
-              content: response,
-            },
+          await updateSession({
+            sessionId: sessionId,
+            title: truncatedQuery,
           });
+        } else {
+          setSessions((prev) =>
+            prev.map((session) =>
+              session.id === sessionId
+                ? {
+                    ...session,
+                    messages: [
+                      ...session.messages,
+                      userMessage,
+                      assistantMessage,
+                    ],
+                  }
+                : session,
+            ),
+          );
         }
-        break;
+      }
 
-      case "DATA_QUERY":
+      await appendMessage({
+        sessionId,
+        message: userMessage,
+      });
+      await appendMessage({
+        sessionId,
+        message: assistantMessage,
+      });
+
+      updateMessage(
+        assistantMessage.id,
         {
-          const conversationContext = buildConversationContext(
-            activeSession?.messages ?? [],
-          );
-          const result = await generateSQL({
-            query,
-            schemas,
-            conversationContext,
-            signal: controller.signal,
-            guard: () => isControllerActive(controller),
-          });
-          if (!result.ok) {
+          error: undefined,
+        },
+        sessionId,
+      );
+
+      const controller = startController(generateControllerRef);
+      queryControllerRef.current?.abort();
+      updateMessage(
+        assistantMessage.id,
+        {
+          page: 0,
+          hasMore: false,
+        },
+        sessionId,
+      );
+      const intent = await classifyIntent({
+        query,
+        schemas,
+        signal: controller.signal,
+        guard: () => isControllerActive(controller),
+      });
+
+      switch (intent) {
+        case "CONVERSATIONAL":
+          {
+            const response = await conversational({
+              query,
+              signal: controller.signal,
+              guard: () => isControllerActive(controller),
+            });
+            if (!response) return;
             updateMessage(
               assistantMessage.id,
               {
-                error: result.error,
+                content: response,
                 loading: false,
               },
               sessionId,
             );
-            return;
+            await updateStoredMessage({
+              id: assistantMessage.id,
+              updates: {
+                content: response,
+              },
+            });
           }
+          break;
 
-          const sql = result.sql;
-          updateMessage(
-            assistantMessage.id,
-            {
-              generatedSQL: sql,
-              content: "Analyzing data...",
-              loading: false,
-            },
-            sessionId,
-          );
-          await updateStoredMessage({
-            id: assistantMessage.id,
-            updates: {
-              generatedSQL: sql,
-              content: "Analyzing data...",
-            },
-          });
-          const rows = await executeQuery(
-            sql,
-            assistantMessage.id,
-            0,
-            sessionId,
-          );
+        case "REASONING":
+          {
+            const response = await reasoning({
+              query,
+              schemas,
+              relationships: getRelationshipsMemory(),
+              signal: controller.signal,
+              guard: () => isControllerActive(controller),
+            });
+            if (!response) return;
+            updateMessage(
+              assistantMessage.id,
+              {
+                content: response,
+                loading: false,
+              },
+              sessionId,
+            );
+            await updateStoredMessage({
+              id: assistantMessage.id,
+              updates: {
+                content: response,
+              },
+            });
+          }
+          break;
 
-          if (!rows) return;
+        case "DATA_QUERY":
+          {
+            const conversationContext = buildConversationContext(
+              activeSession?.messages ?? [],
+            );
+            const result = await generateSQL({
+              query,
+              schemas,
+              conversationContext,
+              signal: controller.signal,
+              guard: () => isControllerActive(controller),
+            });
+            if (!result.ok) {
+              updateMessage(
+                assistantMessage.id,
+                {
+                  error: result.error,
+                  loading: false,
+                },
+                sessionId,
+              );
+              return;
+            }
 
-          const explanation = await explainSQL({
-            query,
-            sql,
-            result: rows ?? [],
-            schemas,
-            relationships: getRelationshipsMemory(),
-            relevantTables: result.relevantTables,
-            finalDatasetContext: result.finalDatasetContext,
-            signal: controller.signal,
-            guard: () => isControllerActive(controller),
-          });
-          if (!explanation) return;
+            const sql = result.sql;
+            updateMessage(
+              assistantMessage.id,
+              {
+                generatedSQL: sql,
+                content: "Analyzing data...",
+                loading: false,
+              },
+              sessionId,
+            );
+            await updateStoredMessage({
+              id: assistantMessage.id,
+              updates: {
+                generatedSQL: sql,
+                content: "Analyzing data...",
+              },
+            });
+            const rows = await executeQuery(
+              sql,
+              assistantMessage.id,
+              0,
+              sessionId,
+            );
 
-          updateMessage(
-            assistantMessage.id,
-            {
-              content: explanation,
-            },
-            sessionId,
-          );
-          await updateStoredMessage({
-            id: assistantMessage.id,
-            updates: {
-              content: explanation,
-            },
-          });
-        }
-        break;
+            if (!rows) return;
 
-      case "AMBIGUOUS":
-        {
-          const response = await ambiguous({
-            query,
-            signal: controller.signal,
-            guard: () => isControllerActive(controller),
-          });
-          if (!response) return;
-          updateMessage(
-            assistantMessage.id,
-            {
-              content: response,
-              loading: false,
-            },
-            sessionId,
-          );
-          await updateStoredMessage({
-            id: assistantMessage.id,
-            updates: {
-              content: response,
-            },
-          });
-        }
-        break;
+            const explanation = await explainSQL({
+              query,
+              sql,
+              result: rows ?? [],
+              schemas,
+              relationships: getRelationshipsMemory(),
+              relevantTables: result.relevantTables,
+              finalDatasetContext: result.finalDatasetContext,
+              signal: controller.signal,
+              guard: () => isControllerActive(controller),
+            });
+            if (!explanation) return;
+
+            updateMessage(
+              assistantMessage.id,
+              {
+                content: explanation,
+              },
+              sessionId,
+            );
+            await updateStoredMessage({
+              id: assistantMessage.id,
+              updates: {
+                content: explanation,
+              },
+            });
+          }
+          break;
+
+        case "AMBIGUOUS":
+          {
+            const response = await ambiguous({
+              query,
+              signal: controller.signal,
+              guard: () => isControllerActive(controller),
+            });
+            if (!response) return;
+            updateMessage(
+              assistantMessage.id,
+              {
+                content: response,
+                loading: false,
+              },
+              sessionId,
+            );
+            await updateStoredMessage({
+              id: assistantMessage.id,
+              updates: {
+                content: response,
+              },
+            });
+          }
+          break;
+      }
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -570,11 +577,6 @@ export default function Home() {
     }
   };
 
-  const latestAssistantLoading =
-    [...(activeSession?.messages ?? [])]
-      .reverse()
-      .find((m) => m.role === "assistant")?.loading ?? false;
-
   const isEmptyChat = (activeSession?.messages?.length ?? 0) === 0;
 
   return (
@@ -607,7 +609,7 @@ export default function Home() {
               <FileUpload
                 query={query}
                 setQuery={setQuery}
-                loading={latestAssistantLoading}
+                isSending={isSending}
                 isUploading={isUploading}
                 onSend={handleSendMessage}
                 onFileChange={handleFileChange}
@@ -629,7 +631,7 @@ export default function Home() {
                 <FileUpload
                   query={query}
                   setQuery={setQuery}
-                  loading={latestAssistantLoading}
+                  isSending={isSending}
                   isUploading={isUploading}
                   onSend={handleSendMessage}
                   onFileChange={handleFileChange}

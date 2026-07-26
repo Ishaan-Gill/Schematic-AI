@@ -8,7 +8,7 @@ import { ArrowUp, Paperclip, Sparkles } from "lucide-react"
 export default function FileUpload({
     query,
     setQuery,
-    loading,
+    isSending,
     isUploading,
     onSend,
     onFileChange,
@@ -16,7 +16,7 @@ export default function FileUpload({
 }: {
     query: string
     setQuery: React.Dispatch<React.SetStateAction<string>>
-    loading: boolean
+    isSending: boolean
     isUploading: boolean
     onSend: (query: string) => Promise<void>
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
@@ -77,7 +77,7 @@ export default function FileUpload({
                                 if (e.key === "Enter" && !e.shiftKey) {
                                     e.preventDefault()
 
-                                    if (!query.trim() || loading || isUploading) return
+                                    if (!query.trim() || isSending || isUploading) return
 
                                     void onSend(query)
                                 }
@@ -101,12 +101,12 @@ export default function FileUpload({
                         <div className="mt-3 flex items-center justify-between">
                             <motion.button
                                 type="submit"
-                                disabled={loading || isUploading || !query.trim()}
+                                disabled={isSending || isUploading || !query.trim()}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.96 }}
                                 className="flex h-8 w-8 items-center justify-center rounded-[7px] bg-[#4fffb0] text-[#0a0b0e] disabled:opacity-40"
                             >
-                                {loading || isUploading
+                                {isSending || isUploading
                                     ? <Sparkles className="size-4 animate-pulse" />
                                     : <ArrowUp className="size-4" />
                                 }
