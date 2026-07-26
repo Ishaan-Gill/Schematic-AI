@@ -55,9 +55,7 @@ export async function POST(req: Request) {
             break
 
         } catch (err) {
-            if (DEBUG) {
-                console.error(`Groq attempt (edit-sql) ${attempt} failed: `, err)
-            }
+            console.error(`Groq attempt (edit-sql) ${attempt} failed: `, err)
 
             // Small delay before retry:
             if (attempt < 2) {

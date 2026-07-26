@@ -1,17 +1,17 @@
-import { conversationalPrompt } from "@/lib/ai/prompts/conversational-prompt"
-import { groq } from "@/lib/ai/client"
-import { DEBUG } from "@/lib/config/debug"
+import { conversationalPrompt } from "@/lib/ai/prompts/conversational-prompt";
+import { groq } from "@/lib/ai/client";
+import { DEBUG } from "@/lib/config/debug";
 
 type ConversationalParams = {
-  query: string
-}
+  query: string;
+};
 
 export async function conversational({
   query,
 }: ConversationalParams): Promise<string | null> {
-  const prompt = conversationalPrompt({ query })
+  const prompt = conversationalPrompt({ query });
 
-  let completion
+  let completion;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       completion = await groq.chat.completions.create({
@@ -27,29 +27,24 @@ export async function conversational({
             content: prompt.user,
           },
         ],
-      })
-      break
+      });
+      break;
     } catch (err) {
-      if (DEBUG) {
-        console.error(
-          `Groq attempt (conversational) ${attempt} failed: `,
-          err,
-        )
-      }
+      console.error(`Groq attempt (conversational) ${attempt} failed: `, err);
 
       if (attempt < 2) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
   }
 
-  if (!completion) return null
+  if (!completion) return null;
 
-  const result = completion.choices[0].message.content?.trim() || ""
+  const result = completion.choices[0].message.content?.trim() || "";
 
   if (DEBUG) {
-    console.log("AI RAW (conversational):", result)
+    console.log("AI RAW (conversational):", result);
   }
 
-  return result
+  return result;
 }

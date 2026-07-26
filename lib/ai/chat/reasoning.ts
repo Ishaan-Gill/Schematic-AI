@@ -44,9 +44,7 @@ export async function reasoning({
       })
       break
     } catch (err) {
-      if (DEBUG) {
-        console.error(`Groq attempt (reasoning) ${attempt} failed: `, err)
-      }
+      console.error(`Groq attempt (reasoning) ${attempt} failed: `, err)
 
       if (attempt < 2) {
         await new Promise(resolve => setTimeout(resolve, 1000))

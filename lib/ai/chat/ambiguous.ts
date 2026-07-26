@@ -30,9 +30,7 @@ export async function ambiguous({
       })
       break
     } catch (err) {
-      if (DEBUG) {
-        console.error(`Groq attempt (ambiguous) ${attempt} failed: `, err)
-      }
+      console.error(`Groq attempt (ambiguous) ${attempt} failed: `, err)
 
       if (attempt < 2) {
         await new Promise(resolve => setTimeout(resolve, 1000))

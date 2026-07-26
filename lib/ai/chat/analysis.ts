@@ -82,9 +82,7 @@ export async function explainSQL({
       })
       break
     } catch (err) {
-      if (DEBUG) {
-        console.error(`Groq attempt (explain-sql) ${attempt} failed:`, err)
-      }
+      console.error(`Groq attempt (explain-sql) ${attempt} failed:`, err)
 
       if (attempt < 2) {
         await new Promise(resolve => setTimeout(resolve, 1000))
