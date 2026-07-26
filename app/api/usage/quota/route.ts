@@ -14,12 +14,25 @@ export async function GET() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const { data: usage } = await supabase
+  const { data: usage, error: usageError } = await supabase
     .from("daily_usage")
     .select("query_count")
     .eq("user_id", user.id)
     .eq("usage_date", today)
     .maybeSingle();
+
+  if (usageError) {
+    console.error("Failed to fetch quota usage:", usageError);
+
+    return NextResponse.json(
+      {
+        error: "Failed to fetch quota usage.",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
 
   const now = new Date();
   const tomorrow = new Date(now);
