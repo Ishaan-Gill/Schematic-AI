@@ -11,7 +11,7 @@ export const processFile = async (file: File) => {
         return parseCSV(file)
     }
 
-    if (file.name.endsWith(".xlsx")) {
+    if (file.name.toLowerCase().endsWith(".xlsx")) {
         return parseExcel(file)
     }
 
