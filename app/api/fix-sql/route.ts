@@ -81,7 +81,11 @@ export async function POST(req: Request) {
     }
 
     const raw = completion.choices[0]?.message?.content || ""
-    const cleanedSQL = raw.replace(/```sql|```/g, "").trim()
+
+    const xmlMatch = raw.match(/<sql>([\s\S]*?)<\/sql>/i)
+    const sql = xmlMatch ? xmlMatch[1].trim() : ""
+
+    const cleanedSQL = sql.replace(/```sql|```/g, "").trim()
 
     const blocked = ["drop", "delete", "update", "truncate", "insert", "alter", "create"]
     for (const keyword of blocked) {
