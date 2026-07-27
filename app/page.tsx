@@ -68,6 +68,7 @@ export default function Home() {
     page = 0,
     sessionId?: string,
   ): Promise<Record<string, unknown>[] | undefined> => {
+    if (!workspaceReady) return;
     const controller = startController(queryControllerRef);
     fixAttemptsRef.current = 0;
 
@@ -202,6 +203,10 @@ export default function Home() {
   };
 
   const handleSendMessage = async (query: string): Promise<void> => {
+    if (!workspaceReady) {
+      showToast("info", "Workspace is still loading. Please wait.");
+      return;
+    }
     if (isSending) return;
     setIsSending(true);
     try {
