@@ -22,14 +22,6 @@ export async function uploadParquet({
 
   const storagePath = `${userId}/${fileName}.parquet`;
   const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (DEBUG) console.log("SESSION", session);
-
-  const { data, error: bucketError } = await supabase.storage.listBuckets();
-  if (DEBUG) console.log("Bucket:", data);
-  if (DEBUG) console.log("Bucket Error:", bucketError);
 
   const { error } = await supabase.storage
     .from("datasets")
