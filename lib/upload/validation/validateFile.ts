@@ -1,3 +1,5 @@
+import { DEBUG } from "../../config/debug";
+
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 type ValidateFileArgs = {
@@ -26,7 +28,9 @@ export const validateFile = ({ file }: ValidateFileArgs): string | null => {
   ];
 
   if (!allowedMimeTypes.includes(file.type)) {
-    return "Invalid file type.";
+    if (DEBUG) {
+      console.warn(`Unexpected MIME type "${file.type}" for file "${file.name}"`);
+    }
   }
 
   return null;
