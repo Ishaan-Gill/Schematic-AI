@@ -10,7 +10,6 @@ import { updateStoredMessage } from "@/lib/chat/updateMessage";
 
 type ChatPanelProps = {
   messages: Message[];
-  hasResults: boolean;
   updateMessage: (
     id: string,
     updates: Partial<Message>,
@@ -26,7 +25,6 @@ type ChatPanelProps = {
 
 export default function ChatPanel({
   messages,
-  hasResults,
   updateMessage,
   executeQuery,
 }: ChatPanelProps) {
@@ -41,6 +39,7 @@ export default function ChatPanel({
                   <div className="mx-auto w-full max-w-[860px] space-y-6">
                     <ThinkPanel
                       loading={message.loading ?? false}
+                      loadingStage={message.loadingStage}
                       generatedSQL={message.generatedSQL ?? ""}
                     />
 

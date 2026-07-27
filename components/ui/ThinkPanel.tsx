@@ -3,14 +3,18 @@
 import { AnimatePresence, motion } from "framer-motion"
 import { ChevronDown } from "lucide-react"
 import { useState } from "react"
+import AssistantLoading from "@/components/ui/AssistantLoading"
+import { type LoadingStage } from "@/lib/chat/loadingStages"
 
 type ThinkPanelProps = {
     loading: boolean
+    loadingStage?: LoadingStage
     generatedSQL: string
 }
 
 export default function ThinkPanel({
     loading,
+    loadingStage,
     generatedSQL
 }: ThinkPanelProps) {
     const [open, setOpen] = useState(false)
@@ -27,64 +31,34 @@ export default function ThinkPanel({
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden rounded-[8px] bg-[#0d0f12] text-[#e8eaf0]"
         >
-            <button
-                type="button"
-                onClick={() => setOpen((value) => !value)}
-                className="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-2 text-left"
-            >
-                <span className="flex items-center gap-2">
-                    {loading ? (
-                        <span className="flex items-center gap-1.5">
-                            {[0, 1, 2].map((index) => (
-                                <span
-                                    key={index}
-                                    className="h-1.5 w-1.5 rounded-full bg-[#4fffb0]"
-                                    style={{
-                                        animation: "thinking 1.4s ease-in-out infinite",
-                                        animationDelay: `${index * 0.16}s`
-                                    }}
-                                />
-                            ))}
-                        </span>
-                    ) : (
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#38bdf8] animate-pulse-dot" />
-                    )}
-                    <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[#6b7280]">
-                        {loading ? "Thinking" : "SQL"}
-                    </span>
-                </span>
-                <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                    <ChevronDown className="size-4 text-[#6b7280]" aria-hidden="true" />
-                </motion.span>
-            </button>
-
-            <AnimatePresence initial={false}>
-                {open && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                        className="overflow-hidden"
+            {generatedSQL && (
+                <>
+                    <button
+                        type="button"
+                        onClick={() => setOpen((value) => !value)}
+                        className="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-2 text-left"
                     >
-                        <div className="grid gap-3 px-4 pb-4 pt-2 lg:grid-cols-[minmax(0,1fr)_220px]">
-                            {loading ? (
-                                <div className="space-y-3 rounded-[8px] bg-[#0d1117] p-4 font-mono text-[11px] leading-[1.6] text-[#e8eaf0] lg:col-span-2">
-                                    {["Profiling schema density", "Mapping likely table relationships", "Composing executable SQL"].map((item, index) => (
-                                        <motion.div
-                                            key={`${item}-${index}`}
-                                            initial={{ opacity: 0.35, x: -4 }}
-                                            animate={{ opacity: [0.35, 1, 0.35], x: 0 }}
-                                            transition={{ repeat: Infinity, duration: 1.7, delay: index * 0.18 }}
-                                            className="flex items-center gap-2 text-[#6b7280]"
-                                        >
-                                            <span className="h-1.5 w-1.5 rounded-full bg-[#38bdf8] animate-pulse-dot" />
-                                            {item}
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <>
+                        <span className="flex items-center gap-2">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#38bdf8] animate-pulse-dot" />
+                            <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[#6b7280]">
+                                SQL
+                            </span>
+                        </span>
+                        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                            <ChevronDown className="size-4 text-[#6b7280]" aria-hidden="true" />
+                        </motion.span>
+                    </button>
+
+                    <AnimatePresence initial={false}>
+                        {open && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                                className="overflow-hidden"
+                            >
+                                <div className="grid gap-3 px-4 pb-4 pt-2 lg:grid-cols-[minmax(0,1fr)_220px]">
                                     <pre className="max-h-64 overflow-auto rounded-[8px] bg-[#0d1117] p-4 font-mono text-[11px] leading-[1.6] text-[#e8eaf0]">
                                         {highlightedSQL.map((part, index) => {
                                             const keyword = /^(SELECT|FROM|WHERE|GROUP BY|ORDER BY|LIMIT|JOIN|LEFT|RIGHT|INNER|OUTER|ON|WITH|AS|AND|OR)$/i.test(part)
@@ -113,12 +87,17 @@ export default function ThinkPanel({
                                             Review before export
                                         </span>
                                     </div>
-                                </>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </>
+            )}
+            {loading && (
+                <div className={generatedSQL ? "border-t border-[#1c1e24] px-4 py-2" : "px-4 py-2"}>
+                    <AssistantLoading stage={loadingStage ?? "understanding"} />
+                </div>
+            )}
         </motion.div>
     )
 }

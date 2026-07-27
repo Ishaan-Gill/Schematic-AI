@@ -164,10 +164,6 @@ export default function Home() {
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
 
-  const latestSQL = [...(activeSession?.messages ?? [])]
-    .reverse()
-    .find((m) => m.generatedSQL)?.generatedSQL;
-
   const handleNewChat = async () => {
     const newSession: Session = {
       id: crypto.randomUUID(),
@@ -223,6 +219,8 @@ export default function Home() {
         queryResult: [],
         page: 0,
         hasMore: false,
+        loading: true,
+        loadingStage: "understanding",
         timestamp: new Date().toISOString(),
       };
 
@@ -383,6 +381,11 @@ export default function Home() {
             const conversationContext = buildConversationContext(
               activeSession?.messages ?? [],
             );
+            updateMessage(
+              assistantMessage.id,
+              { loadingStage: "checking" },
+              sessionId,
+            );
             const result = await generateSQL({
               query,
               schemas,
@@ -407,8 +410,7 @@ export default function Home() {
               assistantMessage.id,
               {
                 generatedSQL: sql,
-                content: "Analyzing data...",
-                loading: false,
+                loadingStage: "analyzing",
               },
               sessionId,
             );
@@ -416,7 +418,6 @@ export default function Home() {
               id: assistantMessage.id,
               updates: {
                 generatedSQL: sql,
-                content: "Analyzing data...",
               },
             });
             const rows = await executeQuery(
@@ -445,6 +446,7 @@ export default function Home() {
               assistantMessage.id,
               {
                 content: explanation,
+                loading: false,
               },
               sessionId,
             );
@@ -617,7 +619,6 @@ export default function Home() {
           <>
             <ChatPanel
               messages={activeSession?.messages ?? []}
-              hasResults={Boolean(latestSQL)}
               updateMessage={updateMessage}
               executeQuery={executeQuery}
             />

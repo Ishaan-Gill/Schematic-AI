@@ -1,3 +1,5 @@
+import { type LoadingStage } from "@/lib/chat/loadingStages"
+
 export type Session = {
   id: string;
   title: string;
@@ -11,6 +13,7 @@ export type Message = {
   generatedSQL?: string
   queryResult?: Record<string, unknown>[]
   loading?: boolean
+  loadingStage?: LoadingStage
   error?: string
   page?: number
   hasMore?: boolean
