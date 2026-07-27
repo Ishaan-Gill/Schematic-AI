@@ -107,7 +107,6 @@ export default function Sidebar({
     await destroyDuckDB();
 
     router.push("/login");
-    router.refresh();
   };
 
   return (

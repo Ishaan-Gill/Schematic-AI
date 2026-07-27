@@ -46,10 +46,11 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  const publicRoutes = ["/login", "/signup"];
+  const authRoutes = ["/login", "/signup"];
+  const publicRoutes = [...authRoutes, "/reset-password"]
 
   // If logged in
-  if (user && publicRoutes.includes(pathname)) {
+  if (user && authRoutes.includes(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
 
