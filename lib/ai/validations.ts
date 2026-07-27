@@ -10,7 +10,7 @@ export const getSQLValidationError = ({
     error
 }: ValidationArgs) => {
     if (!data.sql) return "Something went wrong. Please try again."
-    if (data.sql === "INVALID_QUERY" || sql === "INVALID_QUERY") {
+    if (data.sql.trim().toUpperCase() === "INVALID_QUERY" || sql.trim().toUpperCase() === "INVALID_QUERY") {
         return "I couldn't find an answer to this in your uploaded data. Try rephrasing, or check if the relevant dataset is uploaded."
     }
     if (data.error === "INVALID_TABLE_USED") {

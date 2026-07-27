@@ -109,7 +109,7 @@ export async function generateSQL(
     }
   }
 
-  if (sql === "INVALID_QUERY") {
+  if (sql.trim().toUpperCase() === "INVALID_QUERY") {
     return {
       error:
         "I couldn't answer this from your uploaded datasets. Try rephrasing your question.",
