@@ -1,3 +1,4 @@
+import { normalizeTableName } from "../normalization/normalizeTableName"
 import * as XLSX from "xlsx"
 
 export type ParsedTable = {
@@ -30,7 +31,7 @@ export const parseExcel = async (
             .map((header) => header.trim())
 
         tables.push({
-            tableName: sheetName,
+            tableName: normalizeTableName(sheetName),
             headers,
             csvText
         })
