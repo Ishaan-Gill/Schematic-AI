@@ -87,28 +87,6 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <a
-                  href="https://github.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  GitHub
-                </a>
-              </li>
-
-              <li>
-                <a
-                  href="https://linkedin.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  LinkedIn
-                </a>
-              </li>
-
-              <li>
-                <a
                   href="mailto:support@schematic.ai"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
