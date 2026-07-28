@@ -18,5 +18,8 @@ export const friendlyAuthError = (message: string): string => {
   if (message.startsWith("Invalid login credentials")) {
     return errorMap["Invalid login credentials"]
   }
+  if (message.includes("429")) {
+  return "Too many requests. Please wait a few minutes before trying again.";
+  }
   return errorMap[message] ?? fallback
 }
