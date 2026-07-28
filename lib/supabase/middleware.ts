@@ -47,12 +47,12 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   const authRoutes = ["/login", "/signup"];
-  const publicRoutes = [...authRoutes, "/reset-password"]
+  const publicRoutes = ["/", ...authRoutes, "/reset-password"];
 
   // If logged in
   if (user && authRoutes.includes(pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/workspace";
 
     return NextResponse.redirect(url);
   }

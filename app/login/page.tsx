@@ -50,7 +50,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
+    router.push("/workspace");
   };
   useEffect(() => {
     console.log("Workspace mounted");
