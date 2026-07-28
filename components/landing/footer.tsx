@@ -87,10 +87,10 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <a
-                  href="mailto:support@schematic.ai"
+                  href="mailto:getschematicai@gmail.com"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  support@schematic.ai
+                  getschematicai@gmail.com
                 </a>
               </li>
             </ul>

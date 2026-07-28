@@ -119,7 +119,7 @@ export default function PrivacyPage() {
         </p>
         <p>
           You may request a copy of all data associated with your account by
-          emailing support@schematic.ai. We will make reasonable efforts to respond to such requests in accordance with applicable law
+          emailing getschematicai@gmail.com. We will make reasonable efforts to respond to such requests in accordance with applicable law
         </p>
         <p>
           You may delete your account at any time. Upon deletion, We will make reasonable efforts to remove associated data from our active systems.
@@ -139,10 +139,10 @@ export default function PrivacyPage() {
         <p>
           Have questions about this policy or your data? Reach out to us at{" "}
           <a
-            href="mailto:support@schematic.ai"
+            href="mailto:getschematicai@gmail.com"
             className="text-primary hover:underline"
           >
-            support@schematic.ai
+            getschematicai@gmail.com
           </a>
           .
         </p>

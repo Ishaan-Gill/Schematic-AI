@@ -157,10 +157,10 @@ export default function TermsPage() {
         <p>
           Questions about these terms? Reach out to us at{" "}
           <a
-            href="mailto:support@schematic.ai"
+            href="mailto:getschematicai@gmail.com"
             className="text-primary hover:underline"
           >
-            support@schematic.ai
+            getschematicai@gmail.com
           </a>
           .
         </p>

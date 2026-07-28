@@ -225,7 +225,7 @@ export function FAQ() {
               </p>
             </div>
             <a
-              href="mailto:support@schematic.ai"
+              href="mailto:getschematicai@gmail.com"
               className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors duration-200"
             >
               Contact support
