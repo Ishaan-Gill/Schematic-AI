@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import ChatMessage from "@/components/ui/ChatMessages";
-import ResultTable from "@/components/ui/resultTable";
+import ResultTable from "@/components/ui/ResultTable";
 import ThinkPanel from "@/components/ui/ThinkPanel";
 import { exportCsv } from "@/lib/export/exportCsv";
 import { Message } from "@/types/chat";
