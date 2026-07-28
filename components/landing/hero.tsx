@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, Play } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { BrowserWindow } from './browser-window'
 
@@ -39,10 +39,6 @@ export function Hero() {
                 Start Free
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <button className="px-6 py-3 md:px-8 md:py-4 rounded-lg border border-border text-foreground font-medium hover:bg-card/50 transition-colors duration-200 flex items-center justify-center gap-2 text-base">
-                <Play className="w-4 h-4" />
-                Watch Demo
-              </button>
             </div>
 
             {/* Social proof */}
@@ -58,7 +54,7 @@ export function Hero() {
                 ))}
               </div>
               <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">500+</span> teams analyzing data
+                Built for <span className="font-medium text-foreground">CSVs</span> & multi-table <span className="font-medium text-foreground">Excel</span> files.
               </p>
             </div>
           </div>
