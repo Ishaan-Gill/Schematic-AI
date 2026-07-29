@@ -102,7 +102,10 @@ export default function FileUpload({
                     <form
                         onSubmit={(e) => {
                             e.preventDefault()
-                            void onSend(query)
+                            const currentQuery = query
+                            setQuery("")
+                            textareaRef.current?.focus()
+                            void onSend(currentQuery)
                         }}
                         className="flex w-full flex-col"
                     >
@@ -115,13 +118,16 @@ export default function FileUpload({
                                 setQuery(e.target.value)
                                 resize()
                             }}
-                            onKeyDown={(e) => {
+                                onKeyDown={(e) => {
                                 if (e.key === "Enter" && !e.shiftKey) {
                                     e.preventDefault()
 
                                     if (!query.trim() || isSending || isUploading) return
 
-                                    void onSend(query)
+                                    const currentQuery = query
+                                    setQuery("")
+                                    textareaRef.current?.focus()
+                                    void onSend(currentQuery)
                                 }
                             }}
                             className="
