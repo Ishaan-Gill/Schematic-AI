@@ -21,6 +21,8 @@ export default function SignupPage() {
   const confirmRef = useRef<HTMLInputElement>(null)
 
   const supabase = createClient()
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : ""
 
   const passwordsMatch = password === confirmPassword
   const canSubmit =
@@ -59,6 +61,9 @@ export default function SignupPage() {
     const { error: authError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback?next=/workspace`,
+      },
     })
 
     if (authError) {

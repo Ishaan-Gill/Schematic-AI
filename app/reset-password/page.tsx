@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useRef, useEffect, type FormEvent } from "react"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import { friendlyAuthError } from "@/lib/auth/authErrors"
 
-type Mode = "request" | "reset" | "sent" | "done"
+type Mode = "request" | "reset" | "sent"
 
 export default function ResetPasswordPage() {
   const [mode, setMode] = useState<Mode>("request")
@@ -23,6 +24,9 @@ export default function ResetPasswordPage() {
   const confirmRef = useRef<HTMLInputElement>(null)
 
   const supabase = createClient()
+  const router = useRouter()
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : ""
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -47,7 +51,7 @@ export default function ResetPasswordPage() {
 
     const { error: authError } = await supabase.auth.resetPasswordForEmail(
       email.trim().toLowerCase(),
-      { redirectTo: `${window.location.origin}/reset-password` },
+      { redirectTo: `${origin}/auth/callback?next=/reset-password` },
     )
 
     if (authError) {
@@ -91,8 +95,8 @@ export default function ResetPasswordPage() {
       return
     }
 
-    setMode("done")
     setLoading(false)
+    router.push("/workspace")
   }
 
   if (mode === "sent") {
@@ -110,27 +114,6 @@ export default function ResetPasswordPage() {
             className="mt-6 block w-full rounded-[8px] bg-[#4fffb0] px-3 py-2.5 text-center text-[13px] font-medium text-[#030405] transition-opacity hover:opacity-90"
           >
             Back to login
-          </Link>
-        </div>
-      </main>
-    )
-  }
-
-  if (mode === "done") {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#0a0b0e] px-4">
-        <div className="w-full max-w-sm">
-          <div className="rounded-[8px] border border-[#1c1e24] bg-[#0d0f12] p-8 text-center">
-            <h1 className="text-xl font-medium text-[#e8eaf0]">Password updated</h1>
-            <p className="mt-3 text-[13px] leading-relaxed text-[#6b7280]">
-              Your password has been changed successfully.
-            </p>
-          </div>
-          <Link
-            href="/login"
-            className="mt-6 block w-full rounded-[8px] bg-[#4fffb0] px-3 py-2.5 text-center text-[13px] font-medium text-[#030405] transition-opacity hover:opacity-90"
-          >
-            Go to login
           </Link>
         </div>
       </main>
