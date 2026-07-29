@@ -7,7 +7,7 @@ import EmptyChat from "@/components/ui/EmptyChat";
 import { getRelationships } from "@/lib/ai/context/rebuildRelationshipMemory";
 import { generateSQL } from "@/lib/sql/generateSQL";
 import { runQuery } from "@/lib/sql/runQuery";
-import { handleFile } from "@/lib/upload/uploadDataset";
+import { handleFile, uploadDataset } from "@/lib/upload/uploadDataset";
 import React from "react";
 import { Message, Session } from "@/types/chat";
 import type { StoredDataset } from "@/types/datasets";
@@ -552,6 +552,28 @@ export default function Home() {
     }
   };
 
+  const handleFilesSelected = async (files: File[]) => {
+    if (isUploading || !files.length) return;
+    setIsUploading(true);
+    try {
+      const controller = startController(uploadControllerRef);
+      queryControllerRef.current?.abort();
+      generateControllerRef.current?.abort();
+
+      await uploadDataset({
+        files,
+        setDatasets,
+        setQuery,
+        setSchemas,
+        signal: controller.signal,
+        guard: () => isControllerActive(controller),
+        showToast,
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleDeleteDataset = async (dataset: StoredDataset) => {
     const ok = confirm(
       `Delete "${dataset.table_name}"?\n\nThis action cannot be undone.`,
@@ -617,6 +639,7 @@ export default function Home() {
                 isUploading={isUploading}
                 onSend={handleSendMessage}
                 onFileChange={handleFileChange}
+                onFilesSelected={handleFilesSelected}
               />
             </div>
           </div>
@@ -638,6 +661,7 @@ export default function Home() {
                   isUploading={isUploading}
                   onSend={handleSendMessage}
                   onFileChange={handleFileChange}
+                  onFilesSelected={handleFilesSelected}
                 />
               </div>
             </div>
