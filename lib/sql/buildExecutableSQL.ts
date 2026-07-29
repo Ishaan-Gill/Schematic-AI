@@ -1,3 +1,5 @@
+import { cleanSql } from "./cleanSql"
+
 type BuildExecutableSQLArgs = {
     sql: string
     page: number
@@ -9,11 +11,7 @@ export function buildExecutableSQL({
     page,
     PAGE_SIZE=100,
 }: BuildExecutableSQLArgs) {
-    const baseQuery = sql
-    .trim()
-    .replace(/;+$/, "")
-    .replace(/```sql/g, "")
-    .replace(/```/g, "")
+    const baseQuery = cleanSql(sql)
 
     // Queries that should NOT be paginated (describe, show)
     const isNonPaginated = /^(describe|show)\b/i.test(baseQuery.trim())

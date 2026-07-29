@@ -11,7 +11,7 @@ type ResultTableProps = {
     hasMore: boolean
     onPrevPage: () => void
     onNextPage: () => void
-    onExport: () => void
+    onExport: () => Promise<void>
 }
 
 export default function ResultTable({
@@ -63,29 +63,30 @@ export default function ResultTable({
         >
 
             {/* Header */}
-            <div className="mb-3 grid grid-cols-3 items-center">
+            <div className="mb-4 space-y-3">
 
-                {/* Rows returned */}
-                <div>
+                {/* Row 1: row count + export */}
+                <div className="flex items-center justify-between">
                     <p className="font-mono text-[11px] text-[#6b7280]">
                         {rows.length} rows returned
                     </p>
+                    <ActionRow onExport={onExport} />
                 </div>
 
-                {/* Pagination */}
+                {/* Row 2: pagination centered */}
                 <div className="flex items-center justify-center gap-3">
                     <motion.button
                         type="button"
                         disabled={page === 0}
                         onClick={onPrevPage}
                         whileTap={{ scale: 0.96 }}
-                        className="inline-flex h-7 items-center gap-1.5 rounded-[6px] px-2 font-mono text-[10px] text-[#6b7280] transition hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-[6px] border border-[#1c1e24] px-3 font-mono text-[11px] text-[#6b7280] transition hover:border-[rgba(79,255,176,0.3)] hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                        <ArrowLeft className="size-3.5 shrink-0"/>
-                        Prev
+                        <ArrowLeft className="size-4 shrink-0"/>
+                        Previous
                     </motion.button>
 
-                    <span className="flex h-7 items-center rounded-[6px] border border-[#1c1e24] bg-[#111215] px-3 font-mono text-[10px] text-[#6b7280]">
+                    <span className="flex h-8 items-center rounded-[6px] border border-[#1c1e24] bg-[#111215] px-4 font-mono text-[11px] font-medium text-[#e8eaf0]">
                         Page {page + 1}
                     </span>
 
@@ -94,16 +95,11 @@ export default function ResultTable({
                         disabled={!hasMore}
                         onClick={onNextPage}
                         whileTap={{ scale: 0.96 }}
-                        className="inline-flex h-7 items-center gap-1.5 rounded-[6px] px-2 font-mono text-[10px] text-[#6b7280] transition hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-[6px] border border-[#1c1e24] px-3 font-mono text-[11px] text-[#6b7280] transition hover:border-[rgba(79,255,176,0.3)] hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         Next
-                        <ArrowRight className="size-3.5 shrink-0"/>
+                        <ArrowRight className="size-4 shrink-0"/>
                     </motion.button>
-                </div>
-
-                {/* Action Row */}
-                <div className="flex justify-end">
-                    <ActionRow onExport={onExport} />
                 </div>
             </div>
 

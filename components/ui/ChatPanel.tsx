@@ -5,6 +5,7 @@ import ChatMessage from "@/components/ui/ChatMessages";
 import ResultTable from "@/components/ui/ResultTable";
 import ThinkPanel from "@/components/ui/ThinkPanel";
 import { exportCsv } from "@/lib/export/exportCsv";
+import { fetchAllRows } from "@/lib/export/fetchAllRows";
 import { Message } from "@/types/chat";
 import { updateStoredMessage } from "@/lib/chat/updateMessage";
 
@@ -91,9 +92,11 @@ export default function ChatPanel({
                           newPage,
                         );
                       }}
-                      onExport={() =>
-                        exportCsv(message.queryResult ?? [], "schematic_export")
-                      }
+                      onExport={async () => {
+                        if (!message.generatedSQL) return;
+                        const allRows = await fetchAllRows(message.generatedSQL);
+                        exportCsv(allRows, "schematic_export");
+                      }}
                     />
                   </div>
                 )}
