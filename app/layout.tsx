@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Mono, Geist, Instrument_Serif } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const geist = Geist({
@@ -36,7 +37,10 @@ export default function RootLayout({
       lang="en"
       className={`${geist.variable} ${dmMono.variable} ${instrumentSerif.variable} h-full dark antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">{children}</body>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
