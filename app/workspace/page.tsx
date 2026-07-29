@@ -104,12 +104,13 @@ export default function Home() {
     };
   }, []);
 
-  const showToast = (type: ToastItem["type"], message: string) => {
+  const showToast = (type: ToastItem["type"], message: string, title?: string) => {
     setToasts((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
         type,
+        title,
         message,
       },
     ]);

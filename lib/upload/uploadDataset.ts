@@ -16,7 +16,8 @@ type UploadCSVArgs = {
     guard?: () => boolean
     showToast: (
         type: ToastItem["type"], 
-        message: string
+        message: string,
+        title?: string
     ) => void
 }
 
@@ -74,6 +75,12 @@ export const uploadDataset = async ({
                 ...prev,
                 ...nextSchemas
             }))
+
+            showToast(
+                "success",
+                `${file.name} uploaded successfully.`,
+                "Dataset uploaded"
+            )
         } catch (error) {
             if (signal?.aborted) return
 
@@ -83,7 +90,8 @@ export const uploadDataset = async ({
                 "error",
                 error instanceof Error
                     ? error.message
-                    : `Failed to upload ${file.name}`
+                    : `Failed to upload ${file.name}`,
+                "Upload failed"
             )
         } 
     }

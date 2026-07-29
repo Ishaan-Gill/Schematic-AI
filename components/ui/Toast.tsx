@@ -1,7 +1,29 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { CheckCircle, XCircle, Info } from "lucide-react"
 import type { ToastItem } from "@/types/toast"
+
+const iconMap = {
+    success: CheckCircle,
+    error: XCircle,
+    info: Info,
+} as const
+
+const styles = {
+    success: {
+        border: "border-green-500/30",
+        icon: "text-green-400",
+    },
+    error: {
+        border: "border-red-500/30",
+        icon: "text-red-400",
+    },
+    info: {
+        border: "border-blue-500/30",
+        icon: "text-blue-400",
+    },
+} as const
 
 type ToastProps = {
     toast: ToastItem
@@ -10,12 +32,8 @@ type ToastProps = {
 export default function Toast({
     toast,
 }: ToastProps) {
-    const border =
-        toast.type === "success"
-            ? "border-green-500/30"
-            : toast.type === "error"
-                ? "border-red-500/30"
-                : "border-blue-500/30"
+    const Icon = iconMap[toast.type]
+    const style = styles[toast.type]
 
     return (
         <motion.div
@@ -25,17 +43,30 @@ export default function Toast({
             className={`
                 rounded-xl
                 border
-                ${border}
+                ${style.border}
                 bg-[#111318]
                 px-5
                 py-3
                 text-sm
-                text-white
                 shadow-xl
                 backdrop-blur-md
+                min-w-[300px]
+                max-w-[420px]
             `}
         >
-            {toast.message}
+            <div className="flex items-start gap-3">
+                <Icon className={`mt-0.5 size-5 shrink-0 ${style.icon}`} />
+                <div className="min-w-0">
+                    {toast.title && (
+                        <p className="font-semibold text-[#e8eaf0]">
+                            {toast.title}
+                        </p>
+                    )}
+                    <p className={toast.title ? "text-[#9ca3af]" : "text-white"}>
+                        {toast.message}
+                    </p>
+                </div>
+            </div>
         </motion.div>
     )
 }
