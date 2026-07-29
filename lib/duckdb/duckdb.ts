@@ -1,4 +1,5 @@
 import * as duckdb from "@duckdb/duckdb-wasm";
+import { DEBUG } from "@/lib/config/debug";
 
 let db: duckdb.AsyncDuckDB | null = null;
 let conn: duckdb.AsyncDuckDBConnection | null = null;
@@ -21,7 +22,7 @@ export async function getDuckDB() {
   const worker = new Worker(bundle.mainWorker!, {
     type: "module",
   });
-  const logger = new duckdb.ConsoleLogger();
+  const logger = DEBUG ? new duckdb.ConsoleLogger() : new duckdb.VoidLogger();
 
   db = new duckdb.AsyncDuckDB(logger, worker);
 
