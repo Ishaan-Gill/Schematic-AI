@@ -47,7 +47,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   const authRoutes = ["/login", "/signup"];
-  const publicRoutes = ["/", ...authRoutes, "/reset-password"];
+  const publicRoutes = ["/", ...authRoutes, "/reset-password", "/auth/callback"];
 
   // If logged in
   if (user && authRoutes.includes(pathname)) {
