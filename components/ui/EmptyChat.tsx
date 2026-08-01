@@ -1,16 +1,26 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { useSyncExternalStore } from "react"
 
-export default function EmptyChat() {
+const emptySubscribe = () => () => {}
+
+function getGreeting() {
   const hour = new Date().getHours()
 
-  const greeting =
-    hour < 12
-      ? "Good Morning"
-      : hour < 18
-        ? "Good Afternoon"
-        : "Good Evening"
+  return hour < 12
+    ? "Good Morning"
+    : hour < 18
+      ? "Good Afternoon"
+      : "Good Evening"
+}
+
+export default function EmptyChat() {
+  const greeting = useSyncExternalStore(
+    emptySubscribe,
+    getGreeting,
+    () => "Hello",
+  )
 
   return (
     <motion.div
