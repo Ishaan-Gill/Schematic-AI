@@ -104,9 +104,12 @@ export default function Sidebar({
       return;
     }
 
-    await destroyDuckDB();
+    await destroyDuckDB().catch((err) => {
+      console.error("DuckDB cleanup failed:", err);
+    });
 
     router.push("/login");
+    router.refresh();
   };
 
   return (
@@ -205,7 +208,7 @@ export default function Sidebar({
               </button>
             )}
 
-              <DropdownMenu>
+            <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   onClick={(e) => e.stopPropagation()}
@@ -310,7 +313,9 @@ export default function Sidebar({
         />
 
         <motion.button
-          onClick={() => { if (!isUploading) fileInputRef.current?.click(); }}
+          onClick={() => {
+            if (!isUploading) fileInputRef.current?.click();
+          }}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
