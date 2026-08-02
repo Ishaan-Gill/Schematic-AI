@@ -26,6 +26,7 @@ import { Relationship } from "@/lib/ai/context/relationships";
 import { Session } from "@/types/chat";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { destroyDuckDB } from "@/lib/duckdb/duckdb";
 
 type SidebarProps = {
@@ -115,23 +116,25 @@ export default function Sidebar({
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-screen w-[220px] flex-col border-r border-[#1c1e24] bg-[#0a0b0e]">
       {/* Logo */}
-      <motion.div
-        className="flex items-center gap-2.5 px-5 py-5"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-      >
-        <div className="grid h-7 w-7 grid-cols-2 grid-rows-2 gap-1 rounded-[6px] border-[1.5px] border-[#4fffb0] p-1">
-          <div className="rounded-[2px] bg-[#4fffb0]" />
-          <div className="rounded-[2px] bg-[#4fffb0]/60" />
-          <div className="rounded-[2px] bg-[#4fffb0]/40" />
-          <div className="rounded-[2px] bg-[#4fffb0]/20" />
-        </div>
+      <Link href="/" className="block">
+        <motion.div
+          className="flex items-center gap-2.5 px-5 py-5"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+        >
+          <div className="grid h-7 w-7 grid-cols-2 grid-rows-2 gap-1 rounded-[6px] border-[1.5px] border-[#4fffb0] p-1">
+            <div className="rounded-[2px] bg-[#4fffb0]" />
+            <div className="rounded-[2px] bg-[#4fffb0]/60" />
+            <div className="rounded-[2px] bg-[#4fffb0]/40" />
+            <div className="rounded-[2px] bg-[#4fffb0]/20" />
+          </div>
 
-        <span className="font-sans text-[15px] font-medium text-[#e8eaf0]">
-          Schematic<span className="text-[#4fffb0]">.ai</span>
-        </span>
-      </motion.div>
+          <span className="font-sans text-[15px] font-medium text-[#e8eaf0]">
+            Schematic<span className="text-[#4fffb0]">.ai</span>
+          </span>
+        </motion.div>
+      </Link>
 
       {/* New Chat Button */}
       <motion.div
