@@ -131,7 +131,7 @@ export default function Sidebar({
           </div>
 
           <span className="font-sans text-[15px] font-medium text-[#e8eaf0]">
-            Schematic<span className="text-[#4fffb0]">.ai</span>
+            Schematic<span className="text-[#4fffb0]"> AI</span>
           </span>
         </motion.div>
       </Link>
