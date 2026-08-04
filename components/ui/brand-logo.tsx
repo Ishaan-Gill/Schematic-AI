@@ -9,7 +9,7 @@ export function BrandLogo() {
       </div>
 
       <span className="font-sans text-[24px] font-medium text-[#e8eaf0]">
-        Schematic<span className="text-[#4fffb0]">.ai</span>
+        Schematic<span className="text-[#4fffb0]"> AI</span>
       </span>
     </>
   )
