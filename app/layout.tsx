@@ -23,7 +23,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Schematic.ai",
+  title: "Schematic AI",
   description: "AI analyst interface for uploaded datasets",
 };
 

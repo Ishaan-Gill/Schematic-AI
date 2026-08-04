@@ -5,7 +5,7 @@ export default function TermsPage() {
     <LegalPage title="Terms of Service" lastUpdated="July 2026">
       <LegalSection title="Acceptance of Terms">
         <p>
-          By creating an account or using Schematic.ai, you agree to these
+          By creating an account or using Schematic AI, you agree to these
           Terms of Service. If you do not agree, do not use the service.
         </p>
         <p>
@@ -14,15 +14,15 @@ export default function TermsPage() {
         </p>
       </LegalSection>
 
-      <LegalSection title="Using Schematic.ai">
+      <LegalSection title="Using Schematic AI">
         <p>
-          Schematic.ai is an AI-powered data analysis tool. You upload
+          Schematic AI is an AI-powered data analysis tool. You upload
           datasets (CSV or Excel) and ask questions in plain English. The
           system generates SQL queries, executes them against your data, and
           returns results.
         </p>
         <p>
-          You may use Schematic.ai only for lawful purposes and in accordance
+          You may use Schematic AI only for lawful purposes and in accordance
           with these terms. You must not use the service to store, process,
           or transmit illegal or harmful content.
         </p>
@@ -32,7 +32,7 @@ export default function TermsPage() {
         <p>
           You are responsible for the data you upload and the questions you
           ask. You must ensure you have the legal right to upload and process
-          any data you submit to Schematic.ai.
+          any data you submit to Schematic AI.
         </p>
         <p>
           You are responsible for maintaining the confidentiality of your
@@ -49,7 +49,7 @@ export default function TermsPage() {
       <LegalSection title="Uploaded Content">
         <p>
           You retain full ownership of all data and files you upload to
-          Schematic.ai. We do not claim any intellectual property rights over
+          Schematic AI. We do not claim any intellectual property rights over
           your data.
         </p>
         <p>
@@ -66,7 +66,7 @@ export default function TermsPage() {
 
       <LegalSection title="AI-Generated Responses">
         <p>
-          Schematic.ai uses large language models to generate SQL queries
+          Schematic AI uses large language models to generate SQL queries
           based on your questions and table schemas. While we strive for
           accuracy, AI-generated responses may contain mistakes,
           hallucinations, or produce incorrect SQL.
@@ -75,7 +75,7 @@ export default function TermsPage() {
           <strong>
             Always verify important business decisions independently.
           </strong>
-          Schematic.ai is a productivity tool, not a substitute for
+          Schematic AI is a productivity tool, not a substitute for
           professional financial analysis, accounting, or legal advice.
         </p>
         <p>
@@ -86,7 +86,7 @@ export default function TermsPage() {
 
       <LegalSection title="Availability">
         <p>
-          We aim to provide reliable access to Schematic.ai, but we do not
+          We aim to provide reliable access to Schematic AI, but we do not
           guarantee uninterrupted or error-free operation. The service is
           provided &quot;as is&quot; and &quot;as available&quot; without
           warranties of any kind, either express or implied.
@@ -100,8 +100,8 @@ export default function TermsPage() {
 
       <LegalSection title="Intellectual Property">
         <p>
-          Schematic.ai, the Schematic.ai logo, and the application
-          interface are the property of Schematic.ai. You may not copy,
+          Schematic AI, the Schematic AI logo, and the application
+          interface are the property of Schematic AI. You may not copy,
           modify, distribute, or reverse-engineer the service without
           explicit permission.
         </p>
@@ -114,7 +114,7 @@ export default function TermsPage() {
 
       <LegalSection title="Termination">
         <p>
-          You may stop using Schematic.ai at any time and delete your
+          You may stop using Schematic AI at any time and delete your
           account through the application interface.
         </p>
         <p>
@@ -131,14 +131,14 @@ export default function TermsPage() {
 
       <LegalSection title="Limitation of Liability">
         <p>
-          Schematic.ai is provided &quot;as is&quot; without warranty of any
+          Schematic AI is provided &quot;as is&quot; without warranty of any
           kind. To the maximum extent permitted by law, we disclaim all
           warranties, whether express, implied, or statutory, including
           merchantability, fitness for a particular purpose, and
           non-infringement.
         </p>
         <p>
-          In no event shall Schematic.ai be liable for any indirect,
+          In no event shall Schematic AI be liable for any indirect,
           incidental, special, or consequential damages arising from your
           use of the service, including reliance on AI-generated results.
         </p>
@@ -148,7 +148,7 @@ export default function TermsPage() {
         <p>
           We may update these Terms of Service from time to time. Material
           changes will be communicated via email or through the application.
-          Continued use of Schematic.ai after changes take effect
+          Continued use of Schematic AI after changes take effect
           constitutes acceptance of the updated terms.
         </p>
       </LegalSection>

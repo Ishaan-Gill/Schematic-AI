@@ -30,7 +30,7 @@ export function FAQ() {
           </ul>
 
           <p>
-            Schematic.ai handles the analysis so you don&apos;t have to write
+            Schematic AI handles the analysis so you don&apos;t have to write
             formulas or SQL. Replace this closing paragraph.
           </p>
         </>
@@ -41,7 +41,7 @@ export function FAQ() {
       answer: (
         <>
           <p>
-            Schematic.ai supports <strong>CSV and Excel files</strong>, even if
+            Schematic AI supports <strong>CSV and Excel files</strong>, even if
             they are exported from different business tools.
           </p>
 
@@ -70,7 +70,7 @@ export function FAQ() {
           </p>
 
           <p className="font-medium">
-            Schematic.ai is designed to be transparent:
+            Schematic AI is designed to be transparent:
           </p>
 
           <ul className="list-disc pl-6 space-y-1">
@@ -79,7 +79,7 @@ export function FAQ() {
               SQL is used behind the scenes to retrieve the correct information.
             </li>
             <li>
-              If a question can not be answered confidently, Schematic.ai tells
+              If a question can not be answered confidently, Schematic AI tells
               you instead of making something up.
             </li>
           </ul>
@@ -113,11 +113,11 @@ export function FAQ() {
       ),
     },
     {
-      question: "Who is Schematic.ai for?",
+      question: "Who is Schematic AI for?",
       answer: (
         <>
           <p>
-            Schematic.ai is built for{" "}
+            Schematic AI is built for{" "}
             <strong>founders, operators, and small business teams</strong> who
             want answers from their data without hiring an analyst.
           </p>
@@ -131,7 +131,7 @@ export function FAQ() {
           </ul>
 
           <p>
-            If you&apos;ve ever thought: I know the data exists—I just can&apos;t find the answer. Schematic.ai is built for you.
+            If you&apos;ve ever thought: I know the data exists—I just can&apos;t find the answer. Schematic AI is built for you.
           </p>
         </>
       ),
@@ -173,7 +173,7 @@ export function FAQ() {
               Questions?
             </h2>
             <p className="text-xl text-muted-foreground font-light leading-relaxed">
-              We&apos;ve gathered the most common questions about Schematic.ai.
+              We&apos;ve gathered the most common questions about Schematic AI.
               Can&apos;t find what you need? Reach out to our team.
             </p>
           </div>

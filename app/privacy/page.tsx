@@ -9,7 +9,7 @@ export default function PrivacyPage() {
           password (stored securely via Supabase Auth).
         </p>
         <p>
-          When you use Schematic.ai, we collect the datasets you upload (CSV or
+          When you use Schematic AI, we collect the datasets you upload (CSV or
           Excel files), the questions you ask, and the responses generated. This
           information is stored per your account and is not shared with other
           users.
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
         </p>
         <p>
           Your uploaded datasets and questions are processed solely to generate
-          the SQL queries and answers you request. We use your uploaded data solely to provide and improve the functionality of Schematic.ai and as otherwise described in this Privacy Policy.
+          the SQL queries and answers you request. We use your uploaded data solely to provide and improve the functionality of Schematic AI and as otherwise described in this Privacy Policy.
         </p>
       </LegalSection>
 
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
 
       <LegalSection title="AI Processing">
         <p>
-          When you ask a question, Schematic.ai sends your question and the
+          When you ask a question, Schematic AI sends your question and the
           schema of your uploaded tables to Groq (our LLM provider) to generate
           a SQL query. The SQL is then executed locally in your browser via
           DuckDB (WebAssembly). Raw row-level data from your datasets is not
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
 
       <LegalSection title="Cookies &amp; Authentication">
         <p>
-          Schematic.ai uses cookies and local storage tokens necessary for
+          Schematic AI uses cookies and local storage tokens necessary for
           authentication and session management. These are required for the
           service to function and are not used for tracking or advertising.
         </p>
@@ -89,7 +89,7 @@ export default function PrivacyPage() {
       </LegalSection>
 
       <LegalSection title="Third-Party Services">
-        <p>Schematic.ai relies on the following third-party services:</p>
+        <p>Schematic AI relies on the following third-party services:</p>
 
         <ul className="list-disc pl-6 space-y-1">
           <li>
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
 
       <LegalSection title="Your Rights">
         <p>
-          You own the data you upload to Schematic.ai. You may export,
+          You own the data you upload to Schematic AI. You may export,
           modify, or delete your datasets and chat history at any time.
         </p>
         <p>
@@ -130,7 +130,7 @@ export default function PrivacyPage() {
         <p>
           We may update this Privacy Policy from time to time. Material
           changes will be communicated via email or through the application.
-          Continued use of Schematic.ai after changes take effect constitutes
+          Continued use of Schematic AI after changes take effect constitutes
           acceptance of the updated policy.
         </p>
       </LegalSection>

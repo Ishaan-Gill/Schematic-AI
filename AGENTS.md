@@ -12,7 +12,7 @@ This document outlines essential information for OpenCode agents to work effecti
 
 ## Project Overview
 
-**Schematic.ai** is an AI-powered financial analytics SaaS. Users upload messy business datasets (CSV/XLSX, multi-file, multi-sheet), ask questions in plain English, and receive verified, SQL-backed answers — not hallucinated numbers. The core differentiator is reliable multi-table reasoning over messy real-world data, with full transparency into how each answer was derived (SQL used, tables joined, warnings, assumptions).
+**Schematic AI** is an AI-powered financial analytics SaaS. Users upload messy business datasets (CSV/XLSX, multi-file, multi-sheet), ask questions in plain English, and receive verified, SQL-backed answers — not hallucinated numbers. The core differentiator is reliable multi-table reasoning over messy real-world data, with full transparency into how each answer was derived (SQL used, tables joined, warnings, assumptions).
 
 This is not a "chat with your CSV" wrapper. The pipeline does: file parsing → normalization → ingestion into DuckDB → profiling → semantic inference → SQL generation via LLM → validation → execution → (optionally) plain-English summarization of results.
 

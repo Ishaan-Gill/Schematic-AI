@@ -14,7 +14,7 @@ export function Footer() {
                 <div className="rounded-sm bg-primary" />
                 <div className="rounded-sm bg-background" />
               </div>
-              <span>Schematic.ai</span>
+              <span>Schematic AI</span>
             </div>
 
             <p className="text-sm text-muted-foreground leading-6">
@@ -99,7 +99,7 @@ export function Footer() {
 
         <div className="flex flex-col items-center justify-between gap-4 border-t border-border/30 pt-8 md:flex-row">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Schematic.ai. All rights reserved.
+            © {new Date().getFullYear()} Schematic AI. All rights reserved.
           </p>
 
           <p className="text-sm text-muted-foreground">

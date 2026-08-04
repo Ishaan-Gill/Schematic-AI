@@ -11,7 +11,7 @@ interface BrowserWindowProps {
 
 export function BrowserWindow({
   children,
-  url = 'app.schematic.ai',
+  url = 'getschematicai.com',
   showVideo = false,
   videoSrc,
 }: BrowserWindowProps) {
