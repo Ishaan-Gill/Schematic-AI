@@ -10,7 +10,11 @@ type ExplainSQLParams = {
   relevantTables: string[]
   relationships: any[]
   finalDatasetContext: Record<string, any>
+  normalizationNotes?: string[]
+  warnings?: string[]
 }
+
+const ROW_LIMIT = 50
 
 export async function explainSQL({
   query,
@@ -20,6 +24,8 @@ export async function explainSQL({
   relevantTables,
   relationships,
   finalDatasetContext,
+  normalizationNotes = [],
+  warnings = [],
 }: ExplainSQLParams): Promise<string | null> {
   const safeDatasetContext: Record<string, any> = finalDatasetContext ?? {}
 
@@ -49,18 +55,30 @@ export async function explainSQL({
       finalRelevantTables?.includes(r.toTable),
   )
 
-  const resultSummary = {
+  const columns = result.length > 0 ? Object.keys(result[0]) : []
+  const effectiveWarnings = [...warnings]
+
+  if (result.length > ROW_LIMIT) {
+    effectiveWarnings.push(
+      `The result contains ${result.length} rows, but only the first ${ROW_LIMIT} rows were provided for analysis.`,
+    )
+  }
+
+  const resultPayload = {
+    query,
+    sql,
+    columns,
+    rows: result.slice(0, ROW_LIMIT),
     rowCount: result.length,
-    columns: result.length > 0 ? Object.keys(result[0]) : [],
+    normalizationNotes,
+    warnings: effectiveWarnings,
   }
 
   const prompt = ExplainSQLPrompt({
     schemaText,
-    sql,
-    resultSummary,
+    resultPayload,
     filteredRelationships,
     safeDatasetContext,
-    query,
   })
 
   let completion

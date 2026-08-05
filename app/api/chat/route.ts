@@ -153,6 +153,8 @@ export async function POST(req: Request) {
         relationships: p.relationships,
         relevantTables: p.relevantTables ?? [],
         finalDatasetContext: p.datasetContext ?? {},
+        normalizationNotes: p.normalizationNotes ?? [],
+        warnings: p.warnings ?? [],
       });
 
       if (!analysis) {

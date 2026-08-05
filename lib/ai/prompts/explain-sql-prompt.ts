@@ -1,24 +1,25 @@
-type ResultSummary = {
-  rowCount: number;
+export type ResultPayload = {
+  query: string;
+  sql: string;
   columns: string[];
+  rows: Record<string, unknown>[];
+  rowCount: number;
+  normalizationNotes: string[];
+  warnings: string[];
 };
 
 type ExplainSQLPromptParams = {
   schemaText: string;
-  sql: string;
-  resultSummary: ResultSummary;
+  resultPayload: ResultPayload;
   filteredRelationships: any; // can be an array of relationships or a string
   safeDatasetContext: Record<string, any>;
-  query: string;
 };
 
 export function ExplainSQLPrompt({
   schemaText,
-  sql,
-  resultSummary,
+  resultPayload,
   filteredRelationships,
   safeDatasetContext,
-  query,
 }: ExplainSQLPromptParams) {
   return {
     system: `
@@ -59,6 +60,13 @@ export function ExplainSQLPrompt({
         Never invent facts that are not supported by the data.
 
         Never speculate beyond what the result shows.
+
+        Analyze only the returned rows provided in the Returned Data section.
+        Do not reference, infer, or assume any data that is not present in the returned rows.
+
+        If the Warnings list is non-empty, mention any warning that affects how the
+        returned data should be interpreted (for example, a truncated result means
+        the analysis is based on a subset of rows).
 
         If the result is simply a lookup table (customer list, contacts, etc.), briefly explain what was returned instead of inventing analysis.
 
@@ -169,13 +177,19 @@ export function ExplainSQLPrompt({
           .join("\n")}
                                 
         User Request:
-        "${query}"
+        "${resultPayload.query}"
 
-        Returned Result summary:
-        ${JSON.stringify(resultSummary, null, 2)}
+        Returned Data:
+        Columns: ${JSON.stringify(resultPayload.columns)}
+        Row count: ${resultPayload.rowCount}
+        Normalization notes: ${JSON.stringify(resultPayload.normalizationNotes)}
+        Warnings: ${JSON.stringify(resultPayload.warnings)}
+
+        Returned Rows:
+        ${JSON.stringify(resultPayload.rows)}
 
         sql generated:
-        ${sql}
+        ${resultPayload.sql}
     `,
   };
 }

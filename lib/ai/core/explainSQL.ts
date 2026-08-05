@@ -14,6 +14,8 @@ type ExplainSQLArgs = {
   relationships: Relationship[];
   relevantTables: string[];
   finalDatasetContext: Record<string, any>;
+  normalizationNotes?: string[];
+  warnings?: string[];
   signal?: AbortSignal;
   guard?: () => boolean;
 };
@@ -29,6 +31,8 @@ export const explainSQL = async ({
   relationships,
   relevantTables,
   finalDatasetContext,
+  normalizationNotes,
+  warnings,
   signal,
   guard,
 }: ExplainSQLArgs) => {
@@ -54,6 +58,8 @@ export const explainSQL = async ({
       relationships,
       relevantTables,
       finalDatasetContext,
+      normalizationNotes,
+      warnings,
     };
 
     const res = await fetch("/api/chat", {

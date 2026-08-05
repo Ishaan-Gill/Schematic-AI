@@ -19,6 +19,8 @@ export type AnalysisRequest = {
   relationships: Relationship[];
   relevantTables?: string[];
   datasetContext?: Record<string, any>;
+  normalizationNotes?: string[];
+  warnings?: string[];
 };
 
 export type ConversationRequest = {
