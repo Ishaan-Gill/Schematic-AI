@@ -31,8 +31,14 @@ export const cleanValues = async ({
             'na',
             'null',
             'none',
-            '-',
-            '--',
+            'nan',
+            'nil',
+            'undefined',
+            'unknown',
+            'missing',
+            '#n/a',
+            '#ref!',
+            '#value!',
             ''
         )
       `);
