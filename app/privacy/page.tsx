@@ -52,15 +52,13 @@ export default function PrivacyPage() {
           When you ask a question, Schematic AI sends your question and the
           schema of your uploaded tables to Groq (our LLM provider) to generate
           a SQL query. The SQL is then executed locally in your browser via
-          DuckDB (WebAssembly). Raw row-level data from your datasets is not
-          sent to any AI service.
+          DuckDB (WebAssembly). The returned rows for your current query (up to 50) may be sent to Groq solely to produce a plain-English explanation of that answer.
         </p>
         <p>
           <strong>
             Your uploaded data is never used to train or fine-tune AI models.
           </strong>
-          Only the table schema (column names and types) is sent alongside your
-          question to produce the SQL query. The contents of your uploaded datasets are not transmitted to third-party AI providers for SQL generation.
+          Only the table schema (column names and types) is sent alongside your question to generate the SQL query. Full dataset contents are not sent for SQL generation; however, the returned rows of your current query (up to 50) may be sent to a third-party LLM to help explain your results.
         </p>
       </LegalSection>
 
@@ -97,8 +95,7 @@ export default function PrivacyPage() {
             storage
           </li>
           <li>
-            <strong>Groq</strong> — LLM inference for SQL generation (only
-            table schemas and questions are sent)
+            <strong>Groq</strong> — LLM inference (sent: your question, table schemas, generated SQL, and up to 50 returned rows from your current query)
           </li>
           <li>
             <strong>Vercel</strong> — application hosting and deployment

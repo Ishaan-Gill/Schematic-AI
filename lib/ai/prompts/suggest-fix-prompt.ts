@@ -43,7 +43,7 @@ export function suggestFixPrompt({
         - ONLY use existing schema information
 
         Your task:
-        - Suggest likely fixes based ONLY on existing columns and sample values
+        - Suggest likely fixes based ONLY on existing columns
         - Be concise
         - Keep responses under 2 short sentences.
         - Do not repeat the same idea multiple times.
