@@ -1,4 +1,11 @@
 import { LegalPage, LegalSection } from "@/components/legal/legal-page"
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of service | Schematic AI",
+  description:
+    "Read the Terms of Service for using Schematic AI.",
+};
 
 export default function TermsPage() {
   return (

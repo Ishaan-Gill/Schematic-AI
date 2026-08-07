@@ -24,14 +24,15 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: {
-    default: "Schematic AI",
+    default: "Schematic AI | AI Data Analyst for CSV & Excel",
     template: "%s | Schematic AI",
   },
   description:
     "Schematic AI is an AI data analyst that lets businesses upload CSV and Excel files, ask questions in plain English, and get trustworthy insights from their data in seconds.",
   metadataBase: new URL("https://getschematicai.com"),
+  applicationName: "Schematic AI",
   alternates: {
-    canonical: "/",
+    canonical: "https://getschematicai.com",
   },
   openGraph: {
     title: "Schematic AI",

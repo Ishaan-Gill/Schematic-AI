@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { friendlyAuthError } from "@/lib/auth/authErrors";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Log in | Schematic AI",
+  description:
+    "Log in to Schematic AI to access your workspace and analyze your business data.",
+};
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");

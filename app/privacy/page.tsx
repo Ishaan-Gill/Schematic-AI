@@ -1,4 +1,11 @@
 import { LegalPage, LegalSection } from "@/components/legal/legal-page"
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy | Schematic AI",
+  description:
+    "Learn how Schematic AI collects, uses, and protects your data.",
+};
 
 export default function PrivacyPage() {
   return (

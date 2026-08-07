@@ -5,6 +5,13 @@ import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import { friendlyAuthError } from "@/lib/auth/authErrors"
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Create Account | Schematic AI",
+  description:
+    "Create a free Schematic AI account and start analyzing your CSV and Excel data with AI.",
+};
 
 export default function SignupPage() {
   const [email, setEmail] = useState("")
