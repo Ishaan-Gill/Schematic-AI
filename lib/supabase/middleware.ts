@@ -59,6 +59,7 @@ export async function updateSession(request: NextRequest) {
     ...systemRoutes,
     "/reset-password",
     "/auth/callback",
+    "/about",
   ];
 
   // If logged in
