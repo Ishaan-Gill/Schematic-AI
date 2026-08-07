@@ -22,15 +22,16 @@ export function LegalHeader() {
 
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
-            <button
+            <Link
               key={link.id}
+              href={`/#${link.id}`}
               className="relative text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 group cursor-pointer"
             >
               <span className="relative">
                 {link.label}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
               </span>
-            </button>
+            </Link>
           ))}
         </div>
 

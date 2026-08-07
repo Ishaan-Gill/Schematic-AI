@@ -1,10 +1,18 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { BrandLogo } from '@/components/ui/brand-logo'
 
 export function Navbar() {
+  const pathname = usePathname()
+  const router = useRouter()
+
   const scrollToSection = (sectionId: string) => {
+    if (pathname !== '/') {
+      router.push(`/#${sectionId}`)
+      return
+    }
     const element = document.getElementById(sectionId)
     if (element) {
       element.scrollIntoView({
