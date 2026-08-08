@@ -1,5 +1,6 @@
 import { cleanValues } from "../normalization/cleanValues";
 import { inferColumnTypes } from "../normalization/inferColumnTypes";
+import { detectCurrenciesInTable } from "./detectCurrencies";
 import { normalizeHeaders } from "../normalization/normalizeHeaders";
 import { validateTable } from "../validation/validateTable";
 import { createDuckTable } from "../../duckdb/createDuckTable";
@@ -108,6 +109,13 @@ export const ingestParsedTable = async ({
 
   const columns = columnsResult.toArray() as ColumnInfo[];
 
+  // Currency detection runs on raw values before type inference strips symbols
+  const currencyDetections = await detectCurrenciesInTable(
+    conn,
+    tableName,
+    columns,
+  );
+
   // null cleaning
   await cleanValues({
     conn,
@@ -137,6 +145,15 @@ export const ingestParsedTable = async ({
     tableName,
     columns: refreshedColumns,
   });
+
+  // merge currency detection into per-column profile
+  for (const [columnName, detection] of Object.entries(currencyDetections)) {
+    if (profile[columnName]) {
+      profile[columnName].currency = detection.currency;
+      profile[columnName].currencies = detection.currencies;
+      profile[columnName].mixedCurrency = detection.mixedCurrency;
+    }
+  }
 
   // semantic inference
   const semantic = inferSemanticContext(tableName, refreshedColumns, profile);

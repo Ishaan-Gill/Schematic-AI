@@ -10,6 +10,10 @@ export type ColumnProfile = {
     sampleValues?: unknown[]
 
     inferredType?: string
+
+    currency?: string | null
+    currencies?: string[]
+    mixedCurrency?: boolean
 }
 
 export type TableProfile = {

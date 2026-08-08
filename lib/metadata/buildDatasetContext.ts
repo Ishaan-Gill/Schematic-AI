@@ -2,15 +2,18 @@ import { inferSemanticRole } from "./inferSemanticRole"
 import { inferDateFormat } from "./inferDateFormat"
 import { inferMetrics } from "./inferMetrics"
 import { ColumnMetadata } from "./types"
+import type { TableProfile } from "../upload/metadata/profileMemory"
 
 export const buildDatasetContext = (
     schemas: Record<string, any[]>,
-    sampleRowsByTable: Record<string, any[]>
+    sampleRowsByTable: Record<string, any[]>,
+    profilesByTable?: Record<string, TableProfile>,
 ) => {
     const tableContexts: Record<string, any> = {}
 
     for (const [tableName, schema] of Object.entries(schemas)) {
         const sampleRows = sampleRowsByTable[tableName] ?? []
+        const profile = profilesByTable?.[tableName]
 
         const metadata: ColumnMetadata[] = schema.map(column => {
             const samples = sampleRows
@@ -20,6 +23,7 @@ export const buildDatasetContext = (
                     (v): v is string =>
                         typeof v === "string" && v !== null && v !== undefined && v !== "",
                 )
+            const columnProfile = profile?.[column.column_name]
             return {
                 column: column.column_name,
                 type: column.column_type,
@@ -27,6 +31,9 @@ export const buildDatasetContext = (
                 detectedFormat: samples.length > 0
                     ? inferDateFormat(samples) ?? undefined
                     : undefined,
+                currency: columnProfile?.currency ?? null,
+                currencies: columnProfile?.currencies ?? [],
+                mixedCurrency: columnProfile?.mixedCurrency ?? false,
             }
         })
 

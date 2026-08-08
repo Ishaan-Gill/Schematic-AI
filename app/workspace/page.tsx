@@ -29,6 +29,8 @@ import { fetchSessions } from "@/lib/chat/fetchSessions";
 import { updateSession } from "@/lib/chat/updateSession";
 import { deleteSession } from "@/lib/chat/deleteSession";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { datasetMemory } from "@/lib/upload/metadata/datasetMemory";
+import { buildCurrencyNormalizationNotes } from "@/lib/metadata/detectCurrency";
 
 type SchemaMap = Record<string, unknown[]>;
 
@@ -435,6 +437,14 @@ export default function Home() {
 
             if (!rows) return;
 
+            const currencyNotes = buildCurrencyNormalizationNotes(
+              Object.fromEntries(
+                result.relevantTables
+                  .map((table) => [table, datasetMemory[table]?.profile])
+                  .filter(([, profile]) => profile),
+              ),
+              result.relevantTables,
+            );
             const explanation = await explainSQL({
               query,
               sql,
@@ -443,6 +453,8 @@ export default function Home() {
               relationships: getRelationships(),
               relevantTables: result.relevantTables,
               finalDatasetContext: result.finalDatasetContext,
+              normalizationNotes: currencyNotes,
+              warnings: currencyNotes,
               signal: controller.signal,
               guard: () => isControllerActive(controller),
             });

@@ -1,6 +1,7 @@
 import { buildDatasetContext } from "../../metadata/buildDatasetContext";
 import { quoteIdentifier } from "../../utils/sqlHelpers";
 import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh";
+import { datasetMemory } from "@/lib/upload/metadata/datasetMemory";
 
 type BuildSQLContextArgs = {
   conn: any;
@@ -28,9 +29,15 @@ export async function buildSQLContext({
       .map((table) => [table, schemas[table]])
       .filter(([, schema]) => schema),
   );
+  const profilesByTable = Object.fromEntries(
+    tables
+      .map((table) => [table, datasetMemory[table]?.profile])
+      .filter(([, profile]) => profile),
+  );
   const finalDatasetContext = buildDatasetContext(
     relevantSchemas,
     sampleRowsByTable,
+    profilesByTable,
   );
 
   return {

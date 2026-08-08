@@ -19,6 +19,9 @@ export type ColumnMetadata = {
     nullable?: boolean
     uniqueRatio?: number
     detectedFormat?: string
+    currency?: string | null
+    currencies?: string[]
+    mixedCurrency?: boolean
 }
 
 export type DerivedMetric = {
