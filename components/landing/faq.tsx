@@ -18,7 +18,7 @@ export function FAQ() {
         <>
           <p>
             <strong>No.</strong> Upload your business data and ask questions in
-            plain English. Replace this text.
+            plain English.
           </p>
 
           <p className="font-medium">Examples:</p>
@@ -31,7 +31,7 @@ export function FAQ() {
 
           <p>
             Schematic AI handles the analysis so you don&apos;t have to write
-            formulas or SQL. Replace this closing paragraph.
+            formulas or SQL.
           </p>
         </>
       ),

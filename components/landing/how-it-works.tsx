@@ -11,19 +11,19 @@ export function HowItWorks() {
       number: '01',
       title: 'Upload your data',
       description: 'Drag and drop your CSV file or click to browse. We support all standard formats and can handle files with thousands of rows.',
-      features: ['Instant parsing', 'Auto-detection', 'Large file support'],
+      features: ['Instant parsing', 'Auto-detection'],
     },
     {
       number: '02',
       title: 'Ask natural questions',
       description: 'Chat in plain English about your data. No SQL knowledge required. Our AI interprets your intent and generates accurate queries.',
-      features: ['AI-powered', 'Context-aware', 'Instant responses'],
+      features: ['AI-powered', 'Context-aware'],
     },
     {
       number: '03',
       title: 'Get instant insights',
       description: 'Receive verified answers with visualizations and SQL queries. All results are transparent and auditable for complete confidence.',
-      features: ['Live charts', 'SQL output', 'Full transparency'],
+      features: ['SQL output', 'Full transparency'],
     },
   ]
 
