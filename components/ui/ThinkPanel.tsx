@@ -58,7 +58,7 @@ export default function ThinkPanel({
                                 transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                                 className="overflow-hidden"
                             >
-                                <div className="grid gap-3 px-4 pb-4 pt-2 lg:grid-cols-[minmax(0,1fr)_220px]">
+                                <div className="grid gap-3 px-4 pb-4 pt-2">
                                     <pre className="max-h-64 overflow-auto rounded-[8px] bg-[#0d1117] p-4 font-mono text-[11px] leading-[1.6] text-[#e8eaf0]">
                                         {highlightedSQL.map((part, index) => {
                                             const keyword = /^(SELECT|FROM|WHERE|GROUP BY|ORDER BY|LIMIT|JOIN|LEFT|RIGHT|INNER|OUTER|ON|WITH|AS|AND|OR)$/i.test(part)
@@ -76,17 +76,7 @@ export default function ThinkPanel({
                                         })}
                                     </pre>
 
-                                    <div className="flex content-start gap-2 lg:flex-col">
-                                        <span className="inline-flex rounded-[4px] border border-[rgba(56,189,248,0.2)] bg-[rgba(56,189,248,0.1)] px-2 py-1 font-mono text-[9px] text-[#38bdf8]">
-                                            SQL ready
-                                        </span>
-                                        <span className="inline-flex rounded-[4px] border border-[rgba(79,255,176,0.2)] bg-[rgba(79,255,176,0.1)] px-2 py-1 font-mono text-[9px] text-[#4fffb0]">
-                                            Verified syntax pending
-                                        </span>
-                                        <span className="inline-flex rounded-[4px] border border-[rgba(245,158,11,0.2)] bg-[rgba(245,158,11,0.1)] px-2 py-1 font-mono text-[9px] text-[#f59e0b]">
-                                            Review before export
-                                        </span>
-                                    </div>
+
                                 </div>
                             </motion.div>
                         )}
