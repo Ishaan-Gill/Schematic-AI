@@ -42,12 +42,21 @@ export const metadata: Metadata = {
     siteName: "Schematic AI",
     locale: "en_US",
     type: "website",
+    images: [
+      {
+        url: "/images/og-image.png",
+        width: 1200,
+        height: 628,
+        alt: "Schematic AI — AI Data Analyst for CSV & Excel",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Schematic AI",
     description:
       "Schematic AI is an AI data analyst that lets businesses upload CSV and Excel files, ask questions in plain English, and get trustworthy insights from their data in seconds.",
+    images: ["/images/og-image.png"],
   },
   robots: {
     index: true,
