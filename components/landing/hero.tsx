@@ -46,16 +46,6 @@ export function Hero() {
 
             {/* Social proof */}
             <div className="flex items-center gap-4 pt-6 border-t border-border/30">
-              <div className="flex -space-x-3">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/40 to-primary/10 border-2 border-background flex items-center justify-center text-xs font-semibold text-primary"
-                  >
-                    {i}
-                  </div>
-                ))}
-              </div>
               <p className="text-sm text-muted-foreground">
                 Built for{" "}
                 <span className="font-medium text-foreground">CSVs</span> &
