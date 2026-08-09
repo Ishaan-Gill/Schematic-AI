@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { BrowserWindow } from "./browser-window";
 
@@ -17,7 +18,7 @@ export function Hero() {
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start lg:items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-8 lg:gap-12 items-start lg:items-center">
           {/* Left side - Content */}
           <div className="space-y-6 md:space-y-8 pt-0 lg:pt-8">
             {/* Headline */}
@@ -49,7 +50,7 @@ export function Hero() {
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/40 to-primary/10 border 2 border-background flex items-center justify-center text-xs font-semibold text-primary"
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/40 to-primary/10 border-2 border-background flex items-center justify-center text-xs font-semibold text-primary"
                   >
                     {i}
                   </div>
@@ -66,8 +67,10 @@ export function Hero() {
           </div>
 
           {/* Right side - Browser window with demo */}
-          <div className="relative h-96 md:h-[450px] lg:h-[550px] w-full">
+          <div className="relative w-full aspect-[1.9/1] lg:aspect-[1.6/1] min-h-[330px]">
             <BrowserWindow>
+              {/* Fake dashboard (commented out) */}
+              {/*
               <div className="w-full h-full space-y-4 text-center flex flex-col items-center justify-center px-6">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-2">
                   <svg
@@ -160,6 +163,14 @@ export function Hero() {
                   </div>
                 </div>
               </div>
+              */}
+              <Image
+                src="/images/schematic-dashboard.png"
+                alt="Schematic dashboard"
+                fill
+                priority
+                className="object-cover rounded-b-xl"
+              />
             </BrowserWindow>
           </div>
         </div>

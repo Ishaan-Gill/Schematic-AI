@@ -11,6 +11,6 @@ export const config = {
      * Run middleware on everything
      * except static assets.
      */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|gif|webp|svg|ico|css|js|woff2?|ttf|otf|mp4|webm|pdf)).*)",
   ],
 };

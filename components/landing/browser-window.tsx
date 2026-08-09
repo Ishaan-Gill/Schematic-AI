@@ -49,7 +49,7 @@ export function BrowserWindow({
               <source src={videoSrc} type="video/mp4" />
             </video>
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="relative w-full h-full flex items-center justify-center">
               {children}
             </div>
           )}
