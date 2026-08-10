@@ -17,5 +17,7 @@ export type Message = {
   error?: string
   page?: number
   hasMore?: boolean
+  warnings?: string[]
+  normalizationNotes?: string[]
   timestamp: string
 }

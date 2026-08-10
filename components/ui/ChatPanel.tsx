@@ -42,6 +42,8 @@ export default function ChatPanel({
                       loading={message.loading ?? false}
                       loadingStage={message.loadingStage}
                       generatedSQL={message.generatedSQL ?? ""}
+                      warnings={message.warnings ?? []}
+                      normalizationNotes={message.normalizationNotes ?? []}
                     />
 
                     {message.error && (

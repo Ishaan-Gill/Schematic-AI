@@ -445,6 +445,14 @@ export default function Home() {
               ),
               result.relevantTables,
             );
+            updateMessage(
+              assistantMessage.id,
+              {
+                warnings: currencyNotes,
+                normalizationNotes: currencyNotes,
+              },
+              sessionId,
+            );
             const explanation = await explainSQL({
               query,
               sql,

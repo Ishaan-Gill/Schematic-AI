@@ -4,18 +4,23 @@ import { AnimatePresence, motion } from "framer-motion"
 import { ChevronDown } from "lucide-react"
 import { useState } from "react"
 import AssistantLoading from "@/components/ui/AssistantLoading"
+import DataNotes from "@/components/ui/DataNotes"
 import { type LoadingStage } from "@/lib/chat/loadingStages"
 
 type ThinkPanelProps = {
     loading: boolean
     loadingStage?: LoadingStage
     generatedSQL: string
+    warnings?: string[]
+    normalizationNotes?: string[]
 }
 
 export default function ThinkPanel({
     loading,
     loadingStage,
-    generatedSQL
+    generatedSQL,
+    warnings,
+    normalizationNotes
 }: ThinkPanelProps) {
     const [open, setOpen] = useState(false)
 
@@ -58,7 +63,7 @@ export default function ThinkPanel({
                                 transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                                 className="overflow-hidden"
                             >
-                                <div className="grid gap-3 px-4 pb-4 pt-2">
+                                <div className="grid gap-3 px-4 pb-4 pt-2 lg:grid-cols-[minmax(0,1fr)_220px]">
                                     <pre className="max-h-64 overflow-auto rounded-[8px] bg-[#0d1117] p-4 font-mono text-[11px] leading-[1.6] text-[#e8eaf0]">
                                         {highlightedSQL.map((part, index) => {
                                             const keyword = /^(SELECT|FROM|WHERE|GROUP BY|ORDER BY|LIMIT|JOIN|LEFT|RIGHT|INNER|OUTER|ON|WITH|AS|AND|OR)$/i.test(part)
@@ -76,7 +81,10 @@ export default function ThinkPanel({
                                         })}
                                     </pre>
 
-
+                                    <DataNotes
+                                        warnings={warnings ?? []}
+                                        normalizationNotes={normalizationNotes ?? []}
+                                    />
                                 </div>
                             </motion.div>
                         )}
