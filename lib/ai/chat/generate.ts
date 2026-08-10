@@ -1,6 +1,7 @@
 import { generateSQLPrompt } from "@/lib/ai/prompts/generate-sql-prompt"
 import { groq } from "@/lib/ai/client"
 import { DEBUG } from "@/lib/config/debug"
+import { quoteIdentifier } from "@/lib/utils/sqlHelpers"
 import type { ConversationEntry } from "@/lib/ai/context/buildConversationContext"
 
 
@@ -43,7 +44,10 @@ export async function generateSQL(
     .map(([tableName, cols]) => {
       const colText = (cols as any[])
         .slice(0, 30)
-        .map((col: any) => `${col.column_name} (${col.column_type})`)
+        .map(
+          (col: any) =>
+            `${quoteIdentifier(col.column_name)} (${col.column_type})`,
+        )
         .join(", ")
       return `${tableName}: ${colText}`
     })

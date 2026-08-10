@@ -1,7 +1,6 @@
 import { cleanValues } from "../normalization/cleanValues";
 import { inferColumnTypes } from "../normalization/inferColumnTypes";
 import { detectCurrenciesInTable } from "./detectCurrencies";
-import { normalizeHeaders } from "../normalization/normalizeHeaders";
 import { validateTable } from "../validation/validateTable";
 import { createDuckTable } from "../../duckdb/createDuckTable";
 import { profileTable } from "./profileTable";
@@ -71,28 +70,6 @@ export const ingestParsedTable = async ({
   });
 
   if (!isActive()) return null;
-
-  // get parsed schema
-  const parsedColumnsResult = await conn.query(`
-        DESCRIBE ${quoteIdentifier(tableName)}
-    `);
-
-  const parsedColumns = parsedColumnsResult.toArray() as ColumnInfo[];
-
-  // clean headers after duckdb parsing:
-  for (const column of parsedColumns) {
-    const cleanedHeader = normalizeHeaders([column.column_name])[0];
-    if (!cleanedHeader || column.column_name === cleanedHeader) {
-      continue;
-    }
-    await conn.query(`
-        ALTER TABLE ${quoteIdentifier(tableName)}
-        RENAME COLUMN
-        ${quoteIdentifier(column.column_name)}
-        TO
-        ${quoteIdentifier(cleanedHeader)}
-    `);
-  }
 
   // row count
   const rowCountResult = await conn.query(`

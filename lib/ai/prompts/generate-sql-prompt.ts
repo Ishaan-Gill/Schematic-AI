@@ -43,6 +43,13 @@ export function generateSQLPrompt({
             
         Use ONLY tables and columns from the provided schema.
         Do not use information_schema unless the user explicitly asks for system metadata.
+
+        Column naming rules (CRITICAL):
+        - Column names in the schema are the EXACT physical column names stored in the database.
+        - They may contain spaces, punctuation, currency symbols ($, ₹, €, £), %, #, parentheses, etc.
+        - ALWAYS wrap every table and column identifier in double quotes in your SQL, exactly as shown.
+        - NEVER generate or use simplified, normalized, or alias names (use "Customer ID", not customer_id).
+        - NEVER strip symbols or casing when referencing column names.
             
         Never invent tables such as:
         - Metadata

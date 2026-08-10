@@ -28,6 +28,12 @@ export function fixSQLPrompt({
         - NEVER invent tables
         - ONLY use provided schema
         - Return ONLY executable SQL
+
+        Column naming rules:
+        - Column names in the schema are the EXACT physical column names.
+        - They may contain spaces, punctuation, currency symbols, %, #, parentheses, etc.
+        - ALWAYS wrap every table and column identifier in double quotes, exactly as shown.
+        - NEVER rename columns to simplified or normalized aliases.
     `,
     user: `
         Relationships:

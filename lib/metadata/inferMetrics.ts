@@ -1,4 +1,5 @@
 import { ColumnMetadata, DerivedMetric } from "./types"
+import { quoteIdentifier } from "@/lib/utils/sqlHelpers"
 
 export const inferMetrics = (
     metadata: ColumnMetadata[]
@@ -21,7 +22,7 @@ export const inferMetrics = (
     ) {
         metrics.push({
             name: "revenue",
-            expression: `${quantityColumn.column} * ${currencyColumn.column}`,
+            expression: `${quoteIdentifier(quantityColumn.column)} * ${quoteIdentifier(currencyColumn.column)}`,
             confidence: 0.9
         })
     }
