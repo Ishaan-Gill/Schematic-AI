@@ -1,10 +1,11 @@
+import { DuckConnection } from "@/types/duckdb";
 import { buildDatasetContext } from "../../metadata/buildDatasetContext";
 import { quoteIdentifier } from "../../utils/sqlHelpers";
 import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh";
 import { datasetMemory } from "@/lib/upload/metadata/datasetMemory";
 
 type BuildSQLContextArgs = {
-  conn: any;
+  conn: DuckConnection;
   tables: string[];
   schemas: Record<string, any[]>;
 };
