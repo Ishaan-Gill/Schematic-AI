@@ -2,6 +2,7 @@ import { ExplainSQLPrompt } from "@/lib/ai/prompts/explain-sql-prompt"
 import { groq } from "@/lib/ai/client"
 import { DEBUG } from "@/lib/config/debug"
 import { quoteIdentifier } from "@/lib/utils/sqlHelpers"
+import type { Relationship } from "../context/relationships"
 
 type ExplainSQLParams = {
   query: string
@@ -9,7 +10,7 @@ type ExplainSQLParams = {
   result: Record<string, unknown>[]
   schemas: Record<string, any[]>
   relevantTables: string[]
-  relationships: any[]
+  relationships: Relationship[]
   finalDatasetContext: Record<string, any>
   normalizationNotes?: string[]
   warnings?: string[]

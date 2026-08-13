@@ -3,13 +3,14 @@ import { groq } from "@/lib/ai/client"
 import { DEBUG } from "@/lib/config/debug"
 import { quoteIdentifier } from "@/lib/utils/sqlHelpers"
 import type { ConversationEntry } from "@/lib/ai/context/buildConversationContext"
+import type { Relationship } from "../context/relationships"
 
 
 type GenerateSQLParams = {
   query: string
   schemas: Record<string, any[]>
   relevantTables: string[]
-  relationships: any[]
+  relationships: Relationship[]
   finalDatasetContext: Record<string, any>
   timeHint?: string
   conversationContext: ConversationEntry[]
