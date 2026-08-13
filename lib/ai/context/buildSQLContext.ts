@@ -20,7 +20,7 @@ export async function buildSQLContext({
 
   for (const tableName of tables) {
     const sampleRows = await conn.query(
-      `SELECT * FROM ${quoteIdentifier(tableName)} LIMIT 3`,
+      `SELECT * FROM ${quoteIdentifier(tableName)} LIMIT 10`,
     );
     sampleRowsByTable[tableName] = sampleRows.toArray();
   }
