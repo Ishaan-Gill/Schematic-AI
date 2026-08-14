@@ -19,14 +19,21 @@ export type TurnRuntime = {
   attempts: number;
 };
 
-export type ToolResult<T = unknown> = {
-  tool: string;
-  ok: boolean;
-  data?: T;
-  meta?: Record<string, unknown>;
-  action?: "continue" | "retry" | "stop";
-  error?: {
-    code: string;
-    message: string;
-  };
-};
+export type ToolResult<T> =
+  | {
+      ok: true;
+      tool: string;
+      data: T;
+      action?: "continue" | "retry" | "stop";
+      meta?: Record<string, unknown>;
+    }
+  | {
+      ok: false;
+      tool: string;
+      action: "retry" | "stop";
+      error: {
+        code: string;
+        message: string;
+      };
+      meta?: Record<string, unknown>;
+    };
