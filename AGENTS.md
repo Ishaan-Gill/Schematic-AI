@@ -23,7 +23,7 @@ This is not a "chat with your CSV" wrapper. The pipeline does: file parsing → 
 - Tailwind CSS version `^4`
 - TypeScript throughout
 - DuckDB (WASM) for local, in-browser query execution
-- Groq SDK (`llama-3.3-70b-versatile`) for SQL generation
+- Groq SDK (`openai/gpt-oss-120b`) for SQL generation
 - Supabase for auth, Postgres metadata, and file storage
 
 ## Core Developer Commands

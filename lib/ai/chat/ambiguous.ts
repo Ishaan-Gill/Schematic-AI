@@ -15,7 +15,7 @@ export async function ambiguous({
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       completion = await groq.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         temperature: 0.5,
         messages: [
           {
