@@ -3,10 +3,15 @@ import { buildContextTool } from "../tools/buildContext";
 import { selectTables } from "../tools/selectTables";
 import { TurnContext, TurnRuntime } from "./types";
 import { generateSQL } from "../chat/generate";
+import { verifySQL } from "../tools/verifySQL";
+import { executeSQL } from "../tools/executeSQL";
+import { fixSQL } from "../tools/fixSQL";
 
 export const orchestrate = async (
   context: TurnContext,
   runtime: TurnRuntime,
+  signal?: AbortSignal,
+  guard?: () => boolean,
 ) => {
   const conn = await getDuckConnection();
 
@@ -35,8 +40,50 @@ export const orchestrate = async (
   if (!sqlResult.ok) {
     return sqlResult;
   }
-
   runtime.sql = sqlResult.data.sql;
 
-  return sqlResult;
+  // 4. Verify SQL:
+  const verifyResult = await verifySQL(runtime);
+  if (!verifyResult.ok) {
+    return verifyResult;
+  }
+
+  // 5. Execute SQL
+  const executeResult = await executeSQL({
+    runtime,
+    signal,
+    guard,
+  });
+
+  if (executeResult.ok) {
+    return executeResult;
+  }
+
+  // 6. Execution failed → fix SQL
+  const fixResult = await fixSQL({
+    context,
+    runtime,
+    error: executeResult.error.message,
+  });
+
+  if (!fixResult.ok) {
+    return fixResult;
+  }
+
+  // 7. Use fixed SQL
+  runtime.sql = fixResult.data.sql;
+
+  // 8. Verify fixed SQL
+  const fixedVerifyResult = await verifySQL(runtime);
+
+  if (!fixedVerifyResult.ok) {
+    return fixedVerifyResult;
+  }
+
+  // 9. Execute fixed SQL
+  return await executeSQL({
+    runtime,
+    signal,
+    guard,
+  });
 };
