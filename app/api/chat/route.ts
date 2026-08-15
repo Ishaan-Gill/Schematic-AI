@@ -191,15 +191,16 @@ export async function POST(req: Request) {
       }
 
       if ("error" in result) {
+        const status = result.error.code === "INVALID_QUERY" ? 400 : 500;
         return NextResponse.json(
           { error: result.error },
-          { status: result.status },
+          { status },
         );
       }
 
       return NextResponse.json({
         type: "DATA_QUERY",
-        sql: result.sql,
+        sql: result.data.sql,
         relevantTables: p.relevantTables,
         datasetContext: p.finalDatasetContext,
       });

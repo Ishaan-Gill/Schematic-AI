@@ -5,7 +5,7 @@ import { DuckConnection } from "@/types/duckdb";
 export async function buildContextTool(
   context: TurnContext,
   conn: DuckConnection,
-): Promise<ToolResult> {
+): Promise<ToolResult<unknown>> {
   try {
     const result = await buildSQLContext({
       conn,
