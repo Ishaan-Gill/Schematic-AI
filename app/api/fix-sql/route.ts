@@ -6,9 +6,6 @@ import { authorizeAIRequest } from "@/lib/api/authorizeAIRequest"
 import { fixSQLPrompt } from "@/lib/ai/prompts/fix-sql-prompt"
 
 export async function POST(req: Request) {
-    const auth = await authorizeAIRequest(req, "fix-sql", 5, 60000, "Too many AI fix attempts.")
-    if (!auth.authorized) return auth.response
-
     let body
     try {
         body = await req.json()
@@ -26,9 +23,12 @@ export async function POST(req: Request) {
         )
     }
 
-    const { query, error, schemas, relationships } = body
+    const { userQuery, failedSql, error, rawError, schemas, relationships, turnId } = body
 
-    if (!query || !error || !schemas) {
+    const auth = await authorizeAIRequest(req, "fix-sql", 5, 60000, "Too many AI fix attempts.", { turnId })
+    if (!auth.authorized) return auth.response
+
+    if (!userQuery || !failedSql || !error || !schemas) {
         return NextResponse.json(
             { error: "Missing required fields" },
             { status: 400 }
@@ -36,8 +36,9 @@ export async function POST(req: Request) {
     }
 
     const prompt = fixSQLPrompt({
-        query,
-        error,
+        userQuery,
+        failedSql,
+        error: typeof rawError === "string" && rawError.trim() ? rawError : error,
         schemas,
         relationships
     })
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
                         content: prompt.user
                     }
                 ]
-            })
+            }, { signal: req.signal })
             break
 
         } catch (err) {

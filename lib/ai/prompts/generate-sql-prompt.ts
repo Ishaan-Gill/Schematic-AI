@@ -70,7 +70,20 @@ export function generateSQLPrompt({
         - Use regexp_matches()
         - Prefer DATE_TRUNC and EXTRACT
         - Use LOWER() for string comparisons
-            
+
+        CATALOG RULES (CRITICAL):
+        - Every uploaded dataset is a DuckDB VIEW in the "main" schema.
+        - information_schema.tables lists these views with table_type = 'VIEW'
+          and table_schema = 'main'. They are NOT base tables.
+        - NEVER filter by table_type = 'BASE TABLE' or table_schema = 'public'.
+          That matches zero tables and returns an empty result.
+        - When the user explicitly asks for system metadata (e.g. "list my
+          tables", "how many tables", "what columns does X have"), query
+          information_schema.tables or duckdb_views() WITHOUT any schema or
+          table_type filter, and do not assume a 'public' schema.
+        - When asking for the columns of a specific table, use DESCRIBE
+          exactly that table name.
+
         IMPORTANT:
             
         Only generate DESCRIBE queries when the user explicitly asks:

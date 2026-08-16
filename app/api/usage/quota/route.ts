@@ -14,12 +14,11 @@ export async function GET() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const { data: usage, error: usageError } = await supabase
-    .from("daily_usage")
-    .select("query_count")
+  const { count, error: usageError } = await supabase
+    .from("usage_turns")
+    .select("turn_id", { count: "exact", head: true })
     .eq("user_id", user.id)
-    .eq("usage_date", today)
-    .maybeSingle();
+    .eq("usage_date", today);
 
   if (usageError) {
     console.error("Failed to fetch quota usage:", usageError);
@@ -40,7 +39,7 @@ export async function GET() {
   tomorrow.setUTCHours(0, 0, 0, 0);
 
   return NextResponse.json({
-    used: usage?.query_count ?? 0,
+    used: count ?? 0,
     limit: 20,
     resetsAt: tomorrow.toISOString(),
   });

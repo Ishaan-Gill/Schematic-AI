@@ -37,3 +37,18 @@ export type ToolResult<T> =
       };
       meta?: Record<string, unknown>;
     };
+
+export type CoreResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; cancelled: true; code: "REQUEST_CANCELLED" }
+  | { ok: false; cancelled: false; code: string; error: string };
+
+export type OrchestratorData = {
+  sql: string;
+  rows: Record<string, unknown>[];
+  hasMore: boolean;
+  relevantTables: string[];
+  finalDatasetContext: Record<string, any>;
+  warnings: string[];
+  normalizationNotes: string[];
+};

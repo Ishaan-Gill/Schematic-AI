@@ -11,18 +11,6 @@ export type GenerateRequest = {
   timeHint: string;
 };
 
-export type AnalysisRequest = {
-  query: string;
-  sql: string;
-  result: Record<string, unknown>[];
-  schemas: Record<string, any[]>;
-  relationships: Relationship[];
-  relevantTables?: string[];
-  datasetContext?: Record<string, any>;
-  normalizationNotes?: string[];
-  warnings?: string[];
-};
-
 export type ConversationRequest = {
   query: string;
 };
@@ -34,23 +22,31 @@ export type ReasoningRequest = {
   finalDatasetContext: Record<string, any>;
 };
 
-export type AmbiguousRequest = {
+export type LLMOrchestrateRequest = {
   query: string;
+  schemas: Record<string, unknown[]>;
+  conversationContext: ConversationEntry[];
 };
 
-export type ClassifyIntentRequest = {
+export type DataAnalysisRequest = {
   query: string;
-  schemas: Record<string, any[]>;
+  sql: string;
+  result: Record<string, unknown>[];
+  displayedRowCount: number;
+  hasMore: boolean;
+  schemas: Record<string, unknown[]>;
+  relevantTables: string[];
+  relationships: Relationship[];
+  datasetContext: Record<string, unknown>;
+  conversationContext: ConversationEntry[];
+  warnings?: string[];
+  normalizationNotes?: string[];
 };
 
-export type ChatRequest =
+export type ChatRequest = (
   | {
       type: "generate";
       payload: GenerateRequest;
-    }
-  | {
-      type: "analysis";
-      payload: AnalysisRequest;
     }
   | {
       type: "conversation";
@@ -61,13 +57,21 @@ export type ChatRequest =
       payload: ReasoningRequest;
     }
   | {
-      type: "ambiguous";
-      payload: AmbiguousRequest;
+      type: "llm-orchestrate";
+      payload: LLMOrchestrateRequest;
     }
   | {
-      type: "classify-intent";
-      payload: ClassifyIntentRequest;
-    };
+      type: "data-analysis";
+      payload: DataAnalysisRequest;
+    }
+) & {
+  turnId?: string;
+};
+
+export type LLMOrchestrateResponse = {
+  intent: "CONVERSATIONAL" | "REASONING" | "DATA_QUERY";
+  needsAnalysis: boolean;
+};
 
 export type DataQueryResponse = {
   type: "DATA_QUERY";
@@ -78,4 +82,6 @@ export type DataQueryResponse = {
 
 export type ChatResponse =
   | DataQueryResponse
-  | { response: string };
+  | LLMOrchestrateResponse
+  | { response: string }
+  | { analysis: string };

@@ -1,36 +1,63 @@
+import type { CoreResult } from "./types";
+
 type conversationalArgs = {
   query: string;
+  turnId: string;
   signal?: AbortSignal;
   guard?: () => boolean;
 };
 
 export const conversational = async ({
   query,
+  turnId,
   signal,
   guard,
-}: conversationalArgs) => {
-  try {
-    if (signal?.aborted || !(guard?.() ?? true)) return;
+}: conversationalArgs): Promise<CoreResult<string>> => {
+  if (signal?.aborted || !(guard?.() ?? true)) {
+    return { ok: false, cancelled: true, code: "REQUEST_CANCELLED" };
+  }
 
+  try {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal,
       body: JSON.stringify({
         type: "conversation",
-        payload: {query},
+        payload: { query },
+        turnId,
       }),
     });
     const data = await res.json();
-    if (signal?.aborted || !(guard?.() ?? true)) return;
-
-    if (!res.ok) {
-      throw new Error(data.error ?? "Conversational failed");
+    if (signal?.aborted || !(guard?.() ?? true)) {
+      return { ok: false, cancelled: true, code: "REQUEST_CANCELLED" };
     }
 
-    return data.response as string;
+    if (!res.ok) {
+      return {
+        ok: false,
+        cancelled: false,
+        code: "CONVERSATIONAL_FAILED",
+        error:
+          typeof data.error === "string"
+            ? data.error
+            : "Something went wrong answering your request. Please try again.",
+      };
+    }
+
+    return { ok: true, data: data.response as string };
   } catch (err) {
-    if (signal?.aborted) return;
+    if (signal?.aborted) {
+      return { ok: false, cancelled: true, code: "REQUEST_CANCELLED" };
+    }
     console.error("Conversational failed:", err);
+
+    return {
+      ok: false,
+      cancelled: false,
+      code: "CONVERSATIONAL_ERROR",
+      error:
+        "Something went wrong answering your request. Please try again.",
+    };
   }
 };

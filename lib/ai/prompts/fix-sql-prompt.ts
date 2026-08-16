@@ -2,14 +2,16 @@ import { Relationship } from "../context/relationships";
 import { formatRelationshipText, formatSchemaText } from "./shared";
 
 type FixSQLPromptParams = {
-  query: string;
+  userQuery: string;
+  failedSql: string;
   error: string;
   schemas: Record<string, any[]>;
   relationships: Relationship[];
 };
 
 export function fixSQLPrompt({
-  query,
+  userQuery,
+  failedSql,
   error,
   schemas,
   relationships,
@@ -42,8 +44,11 @@ export function fixSQLPrompt({
         Tables:
         ${schemaText}
 
+        User's Question:
+        ${userQuery}
+
         Broken SQL:
-        ${query}
+        ${failedSql}
 
         Database Error:
         ${error}

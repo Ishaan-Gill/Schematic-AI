@@ -1,5 +1,5 @@
 import { getDuckConnection } from "@/lib/duckdb/duckdb";
-import type { TurnRuntime, ToolResult } from "../orchestrator/types";
+import type { TurnRuntime, ToolResult } from "../core/types";
 import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh";
 
 export async function verifySQL(

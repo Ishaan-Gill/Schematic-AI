@@ -17,6 +17,9 @@ export type Message = {
   error?: string
   page?: number
   hasMore?: boolean
+  displayedRowCount?: number
+  relevantTables?: string[]
+  finalDatasetContext?: Record<string, unknown>
   warnings?: string[]
   normalizationNotes?: string[]
   timestamp: string

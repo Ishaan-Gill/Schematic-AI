@@ -1,5 +1,5 @@
 import { buildSQLContext } from "@/lib/ai/context/buildSQLContext";
-import type { TurnContext, ToolResult } from "../orchestrator/types";
+import type { TurnContext, ToolResult } from "../core/types";
 import { DuckConnection } from "@/types/duckdb";
 
 export async function buildContextTool(

@@ -5,20 +5,20 @@ import Sidebar from "@/components/ui/Sidebar";
 import ChatPanel from "@/components/ui/ChatPanel";
 import EmptyChat from "@/components/ui/EmptyChat";
 import { getRelationships } from "@/lib/ai/context/rebuildRelationshipMemory";
-import { generateSQL } from "@/lib/sql/generateSQL";
-import { runQuery } from "@/lib/sql/runQuery";
+import { dataQuery } from "@/lib/ai/core/dataQuery";
+import { executePage } from "@/lib/ai/core/executePage";
 import { handleFile, uploadDataset } from "@/lib/upload/uploadDataset";
 import React from "react";
 import { Message, Session } from "@/types/chat";
 import type { StoredDataset } from "@/types/datasets";
 import { ToastItem } from "@/types/toast";
 import ToastContainer from "@/components/ui/ToastContainer";
-import { classifyIntent } from "@/lib/ai/core/classifyIntent";
 import { conversational } from "@/lib/ai/core/conversational";
 import { reasoning } from "@/lib/ai/core/reasoning";
-import { explainSQL } from "@/lib/ai/core/explainSQL";
 import { buildConversationContext } from "@/lib/ai/context/buildConversationContext";
-import { ambiguous } from "@/lib/ai/core/ambiguous";
+import { llmOrchestrate } from "@/lib/ai/core/llmOrchestrate";
+import { answerDatasetMetadata } from "@/lib/ai/core/datasetMetadata";
+import { dataAnalysis } from "@/lib/ai/core/dataAnalysis";
 import { rehydrateDuckDB } from "@/lib/duckdb/rehydrateDuckDB";
 import { deleteDataset } from "@/lib/upload/deleteDataset";
 import { deleteWorkspaceDataset } from "@/lib/workspace/deleteWorkspaceDataset";
@@ -50,7 +50,6 @@ export default function Home() {
   const uploadControllerRef = useRef<AbortController | null>(null);
   const queryControllerRef = useRef<AbortController | null>(null);
   const generateControllerRef = useRef<AbortController | null>(null);
-  const fixAttemptsRef = useRef(0);
   const isMountedRef = useRef(true);
 
   const startController = (
@@ -72,21 +71,17 @@ export default function Home() {
   ): Promise<Record<string, unknown>[] | undefined> => {
     if (!workspaceReady) return;
     const controller = startController(queryControllerRef);
-    fixAttemptsRef.current = 0;
 
     if (!sql) return;
 
-    return await runQuery({
+    return await executePage({
       sql: sql.trim(),
-      query,
-      schemas,
-      relationships: getRelationships(),
       page: page,
       PAGE_SIZE,
       signal: controller.signal,
       guard: () => isControllerActive(controller),
-      fixAttemptsRef,
       assistantMessageId: assistantMessageId!,
+      sessionId,
       updateMessage: (messageId, updates) =>
         updateMessage(messageId, updates, sessionId),
     });
@@ -202,6 +197,24 @@ export default function Home() {
               ),
             },
       ),
+    );
+  };
+
+  const completeFailedRequest = (
+    messageId: string,
+    sessionId: string,
+    controller: AbortController,
+    error: string,
+  ) => {
+    if (!isMountedRef.current) return;
+
+    updateMessage(
+      messageId,
+      {
+        error: controller.signal.aborted ? "Request cancelled." : error,
+        loading: false,
+      },
+      sessionId,
     );
   };
 
@@ -324,26 +337,68 @@ export default function Home() {
         },
         sessionId,
       );
-      const intent = await classifyIntent({
+      const conversationContext = buildConversationContext(
+        activeSession?.messages ?? [],
+      );
+      const turnId = crypto.randomUUID();
+
+      const metadataAnswer = answerDatasetMetadata({ query, schemas });
+      if (metadataAnswer) {
+        updateMessage(
+          assistantMessage.id,
+          { content: metadataAnswer, loading: false },
+          sessionId,
+        );
+        await updateStoredMessage({
+          id: assistantMessage.id,
+          updates: { content: metadataAnswer },
+        });
+        return;
+      }
+
+      const decision = await llmOrchestrate({
         query,
+        conversationContext,
         schemas,
+        turnId,
         signal: controller.signal,
         guard: () => isControllerActive(controller),
       });
+
+      if (!decision.ok) {
+        completeFailedRequest(
+          assistantMessage.id,
+          sessionId,
+          controller,
+          decision.cancelled ? "Request cancelled." : decision.error,
+        );
+        return;
+      }
+
+      const { intent, needsAnalysis } = decision.data;
 
       switch (intent) {
         case "CONVERSATIONAL":
           {
             const response = await conversational({
               query,
+              turnId,
               signal: controller.signal,
               guard: () => isControllerActive(controller),
             });
-            if (!response) return;
+            if (!response.ok) {
+              completeFailedRequest(
+                assistantMessage.id,
+                sessionId,
+                controller,
+                response.cancelled ? "Request cancelled." : response.error,
+              );
+              return;
+            }
             updateMessage(
               assistantMessage.id,
               {
-                content: response,
+                content: response.data,
                 loading: false,
               },
               sessionId,
@@ -351,7 +406,7 @@ export default function Home() {
             await updateStoredMessage({
               id: assistantMessage.id,
               updates: {
-                content: response,
+                content: response.data,
               },
             });
           }
@@ -363,14 +418,23 @@ export default function Home() {
               query,
               schemas,
               relationships: getRelationships(),
+              turnId,
               signal: controller.signal,
               guard: () => isControllerActive(controller),
             });
-            if (!response) return;
+            if (!response.ok) {
+              completeFailedRequest(
+                assistantMessage.id,
+                sessionId,
+                controller,
+                response.cancelled ? "Request cancelled." : response.error,
+              );
+              return;
+            }
             updateMessage(
               assistantMessage.id,
               {
-                content: response,
+                content: response.data,
                 loading: false,
               },
               sessionId,
@@ -378,7 +442,7 @@ export default function Home() {
             await updateStoredMessage({
               id: assistantMessage.id,
               updates: {
-                content: response,
+                content: response.data,
               },
             });
           }
@@ -386,18 +450,18 @@ export default function Home() {
 
         case "DATA_QUERY":
           {
-            const conversationContext = buildConversationContext(
-              activeSession?.messages ?? [],
-            );
             updateMessage(
               assistantMessage.id,
               { loadingStage: "checking" },
               sessionId,
             );
-            const result = await generateSQL({
+            const result = await dataQuery({
               query,
               schemas,
+              relationships: getRelationships(),
               conversationContext,
+              turnId,
+              finalDatasetContext: {},
               signal: controller.signal,
               guard: () => isControllerActive(controller),
             });
@@ -405,7 +469,7 @@ export default function Home() {
               updateMessage(
                 assistantMessage.id,
                 {
-                  error: result.error,
+                  error: result.error.message,
                   loading: false,
                 },
                 sessionId,
@@ -413,11 +477,23 @@ export default function Home() {
               return;
             }
 
-            const sql = result.sql;
+            const {
+              sql,
+              rows,
+              displayedRowCount,
+              hasMore,
+              relevantTables,
+              finalDatasetContext,
+            } = result.data;
             updateMessage(
               assistantMessage.id,
               {
                 generatedSQL: sql,
+                queryResult: rows,
+                hasMore,
+                displayedRowCount,
+                relevantTables,
+                finalDatasetContext,
                 loadingStage: "analyzing",
               },
               sessionId,
@@ -426,87 +502,81 @@ export default function Home() {
               id: assistantMessage.id,
               updates: {
                 generatedSQL: sql,
+                queryResult: rows,
+                hasMore,
+                displayedRowCount,
+                relevantTables,
+                finalDatasetContext,
               },
             });
-            const rows = await executeQuery(
-              sql,
-              assistantMessage.id,
-              0,
-              sessionId,
-            );
 
             if (!rows) return;
 
             const currencyNotes = buildCurrencyNormalizationNotes(
               Object.fromEntries(
-                result.relevantTables
+                relevantTables
                   .map((table) => [table, datasetMemory[table]?.profile])
                   .filter(([, profile]) => profile),
               ),
-              result.relevantTables,
+              relevantTables,
             );
             updateMessage(
               assistantMessage.id,
               {
-                warnings: currencyNotes,
                 normalizationNotes: currencyNotes,
               },
               sessionId,
             );
-            const explanation = await explainSQL({
-              query,
-              sql,
-              result: rows ?? [],
-              schemas,
-              relationships: getRelationships(),
-              relevantTables: result.relevantTables,
-              finalDatasetContext: result.finalDatasetContext,
-              normalizationNotes: currencyNotes,
-              warnings: currencyNotes,
-              signal: controller.signal,
-              guard: () => isControllerActive(controller),
-            });
-            if (!explanation) return;
+            if (needsAnalysis) {
+              const answer = await dataAnalysis({
+                query,
+                sql,
+                rows,
+                displayedRowCount,
+                hasMore,
+                schemas,
+                relevantTables,
+                relationships: getRelationships(),
+                finalDatasetContext,
+                conversationContext,
+                turnId,
+                normalizationNotes: currencyNotes,
+                signal: controller.signal,
+                guard: () => isControllerActive(controller),
+              });
+              if (!answer.ok) {
+                completeFailedRequest(
+                  assistantMessage.id,
+                  sessionId,
+                  controller,
+                  answer.cancelled ? "Request cancelled." : answer.error,
+                );
+                return;
+              }
 
-            updateMessage(
-              assistantMessage.id,
-              {
-                content: explanation,
-                loading: false,
-              },
-              sessionId,
-            );
-            await updateStoredMessage({
-              id: assistantMessage.id,
-              updates: {
-                content: explanation,
-              },
-            });
-          }
-          break;
-
-        case "AMBIGUOUS":
-          {
-            const response = await ambiguous({
-              query,
-              signal: controller.signal,
-              guard: () => isControllerActive(controller),
-            });
-            if (!response) return;
-            updateMessage(
-              assistantMessage.id,
-              {
-                content: response,
-                loading: false,
-              },
-              sessionId,
-            );
-            await updateStoredMessage({
-              id: assistantMessage.id,
-              updates: {
-                content: response,
-              },
-            });
+              updateMessage(
+                assistantMessage.id,
+                {
+                  content: answer.data,
+                  loading: false,
+                },
+                sessionId,
+              );
+              await updateStoredMessage({
+                id: assistantMessage.id,
+                updates: {
+                  content: answer.data,
+                },
+              });
+            } else {
+              updateMessage(
+                assistantMessage.id,
+                {
+                  loading: false,
+                },
+                sessionId,
+              );
+            }
           }
           break;
       }

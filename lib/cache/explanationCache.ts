@@ -12,9 +12,10 @@ const supabase = createClient();
 export async function buildExplanationCacheKey(
   sql: string,
   schemaHashValue: string,
+  context = "",
 ): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(sql + schemaHashValue);
+  const data = encoder.encode(sql + schemaHashValue + context);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))

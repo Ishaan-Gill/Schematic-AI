@@ -52,6 +52,9 @@ export async function fetchSessions(): Promise<Session[]> {
       queryResult: message.query_result ?? [],
       page: message.page ?? 0,
       hasMore: message.has_more ?? false,
+      displayedRowCount: message.displayed_row_count ?? undefined,
+      relevantTables: message.relevant_tables ?? undefined,
+      finalDatasetContext: message.final_dataset_context ?? undefined,
       timestamp: message.timestamp,
     });
 

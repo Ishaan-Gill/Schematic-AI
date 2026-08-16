@@ -1,10 +1,38 @@
 import { createClient } from "@/lib/supabase/client";
+import { toJsonSafe } from "@/lib/chat/toJsonSafe";
 import type { Message } from "@/types/chat";
+
+const NEW_COLUMNS = [
+  "displayed_row_count",
+  "relevant_tables",
+  "final_dataset_context",
+] as const;
 
 type AppendMessageArgs = {
   sessionId: string;
   message: Message;
 };
+
+const buildPayload = (message: Message, sessionId: string) => ({
+  id: message.id,
+  session_id: sessionId,
+  role: message.role,
+  content: message.content,
+  generated_sql: message.generatedSQL || null,
+  query_result: message.queryResult ? toJsonSafe(message.queryResult) : [],
+  page: message.page ?? 0,
+  has_more: message.hasMore ?? false,
+  displayed_row_count: message.displayedRowCount ?? null,
+  relevant_tables:
+    message.relevantTables !== undefined
+      ? toJsonSafe(message.relevantTables)
+      : null,
+  final_dataset_context:
+    message.finalDatasetContext !== undefined
+      ? toJsonSafe(message.finalDatasetContext)
+      : null,
+  timestamp: message.timestamp,
+});
 
 export async function appendMessage({
   sessionId,
@@ -31,25 +59,17 @@ export async function appendMessage({
     throw new Error("Session does not belong to the current user.");
   }
 
-  const { error } = await supabase.from("chat_messages").insert({
-    id: message.id,
+  const payload = buildPayload(message, sessionId);
 
-    session_id: sessionId,
+  let { error } = await supabase.from("chat_messages").insert(payload);
 
-    role: message.role,
+  if (error && NEW_COLUMNS.some((column) => column in payload)) {
+    const legacyPayload = Object.fromEntries(
+      Object.entries(payload).filter(([column]) => !NEW_COLUMNS.includes(column as never)),
+    );
 
-    content: message.content,
-
-    generated_sql: message.generatedSQL || null,
-
-    query_result: message.queryResult ?? [],
-
-    page: message.page ?? 0,
-
-    has_more: message.hasMore ?? false,
-
-    timestamp: message.timestamp,
-  });
+    ({ error } = await supabase.from("chat_messages").insert(legacyPayload));
+  }
 
   if (error) {
     throw error;

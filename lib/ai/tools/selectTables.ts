@@ -2,7 +2,7 @@ import {
   detectTableRelevance,
   expandRelevantTables,
 } from "@/lib/ai/context/detectTableRelevance";
-import type { TurnContext, ToolResult } from "../orchestrator/types";
+import type { TurnContext, ToolResult } from "../core/types";
 
 export const selectTables = (context: TurnContext): ToolResult<string[]> => {
   const relevantTables = detectTableRelevance(context.query, context.schemas);

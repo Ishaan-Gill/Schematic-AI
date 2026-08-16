@@ -8,6 +8,7 @@ type ReasoningParams = {
   schemas: Record<string, any[]>
   relationships: Relationship[]
   finalDatasetContext: Record<string, any>
+  signal?: AbortSignal
 }
 
 export async function reasoning({
@@ -15,6 +16,7 @@ export async function reasoning({
   schemas,
   relationships,
   finalDatasetContext,
+  signal,
 }: ReasoningParams): Promise<string | null> {
   const safeDatasetContext: Record<string, any> = finalDatasetContext ?? {}
 
@@ -40,10 +42,12 @@ export async function reasoning({
             role: "user",
             content: prompt.user,
           },
-        ],
-      })
+],
+        }, { signal })
       break
     } catch (err) {
+      if (signal?.aborted) break
+
       console.error(`Groq attempt (reasoning) ${attempt} failed: `, err)
 
       if (attempt < 2) {

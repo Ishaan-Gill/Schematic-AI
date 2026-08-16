@@ -4,10 +4,12 @@ import { DEBUG } from "@/lib/config/debug";
 
 type ConversationalParams = {
   query: string;
+  signal?: AbortSignal;
 };
 
 export async function conversational({
   query,
+  signal,
 }: ConversationalParams): Promise<string | null> {
   const prompt = conversationalPrompt({ query });
 
@@ -26,10 +28,12 @@ export async function conversational({
             role: "user",
             content: prompt.user,
           },
-        ],
-      });
+],
+        }, { signal });
       break;
     } catch (err) {
+      if (signal?.aborted) break;
+
       console.error(`Groq attempt (conversational) ${attempt} failed: `, err);
 
       if (attempt < 2) {

@@ -1,5 +1,5 @@
 import { DEBUG } from "@/lib/config/debug";
-import type { ToolResult, TurnRuntime } from "../orchestrator/types";
+import type { ToolResult, TurnRuntime } from "../core/types";
 
 import { getDuckConnection, resetDuckConnection } from "@/lib/duckdb/duckdb";
 import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh";
@@ -257,6 +257,7 @@ export async function executeSQL({
         code: "SQL_EXECUTION_FAILED",
         message: "Failed to execute SQL query.",
       },
+      meta: { rawError: errorMessage },
     };
   } finally {
     if (timeoutId) {

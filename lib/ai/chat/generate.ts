@@ -4,7 +4,7 @@ import { DEBUG } from "@/lib/config/debug";
 import { quoteIdentifier } from "@/lib/utils/sqlHelpers";
 import type { ConversationEntry } from "@/lib/ai/context/buildConversationContext";
 import type { Relationship } from "../context/relationships";
-import { ToolResult } from "../orchestrator/types";
+import { ToolResult } from "../core/types";
 
 type GenerateSQLParams = {
   query: string;
@@ -14,6 +14,7 @@ type GenerateSQLParams = {
   finalDatasetContext: Record<string, any>;
   timeHint?: string;
   conversationContext: ConversationEntry[];
+  signal?: AbortSignal;
 };
 
 export async function generateSQL(
@@ -28,6 +29,7 @@ export async function generateSQL(
       finalDatasetContext,
       timeHint,
       conversationContext,
+      signal,
     } = params;
 
     const safeDatasetContext: Record<string, any> = finalDatasetContext ?? {};
@@ -86,9 +88,11 @@ export async function generateSQL(
               content: prompt.user,
             },
           ],
-        });
+        }, { signal });
         break;
       } catch (err) {
+        if (signal?.aborted) break;
+
         console.error(`Groq attempt (generate-sql) ${attempt} failed:`, err);
 
         if (attempt < 2) {
