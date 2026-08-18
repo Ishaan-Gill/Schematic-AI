@@ -29,11 +29,6 @@ export async function GET(request: NextRequest) {
     );
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    console.log("Callback URL:", request.url);
-    console.log("Code:", code);
-    console.log("Session:", data.session);
-    console.log("Error:", error);
-
     if (error) {
       return NextResponse.json(
         {
