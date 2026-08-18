@@ -8,6 +8,10 @@ import { verifySQL } from "@/lib/ai/tools/verifySQL";
 import { executeSQL } from "@/lib/ai/tools/executeSQL";
 import { createTurnContext } from "@/lib/ai/core/createTurnContext";
 import type { ToolResult, TurnRuntime } from "@/lib/ai/core/types";
+import { normalizeQuery } from "@/lib/cache/normalizeQuery";
+import { schemaHash } from "@/lib/cache/schemaHash";
+import { buildCacheKey } from "@/lib/cache/buildCacheKey";
+import { getCachedSQL, saveCachedSQL } from "@/lib/cache/queryCache";
 
 export type DataQueryResult = {
   sql: string;
@@ -101,90 +105,106 @@ export const dataQuery = async ({
   const contextResult = await buildContextTool(context, conn);
   if (!contextResult.ok) return contextResult;
 
-  // 3. Generate SQL via HTTP:
+  // 3. Generate SQL via HTTP (query cache short-circuits the LLM):
   if (!isActive(guard, signal)) return cancelled;
 
-  const finalTimeHint =
-    timeHint ?? (isTimeQuery(query) ? TIME_HINT_TEMPLATE : "");
+  const normalizedQuery = normalizeQuery(query);
+  const relevantSchemas = Object.fromEntries(
+    Object.entries(schemas).filter(([tableName]) =>
+      context.relevantTables.includes(tableName),
+    ),
+  );
+  const hash = await schemaHash(relevantSchemas);
+  const cacheKey = buildCacheKey({ normalizedQuery, schemaHash: hash });
 
-  let data: GenerateAPIResponse;
+  const cachedSQL = await getCachedSQL(cacheKey);
+  if (!isActive(guard, signal)) return cancelled;
 
-  try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal,
-      body: JSON.stringify({
-        type: "generate",
-        payload: {
-          query,
-          schemas,
-          relevantTables: context.relevantTables,
-          relationships,
-          finalDatasetContext: context.finalDatasetContext,
-          conversationContext,
-          timeHint: finalTimeHint,
-        },
-        turnId,
-      }),
-    });
+  if (cachedSQL) {
+    runtime.sql = cachedSQL;
+  } else {
+    const finalTimeHint =
+      timeHint ?? (isTimeQuery(query) ? TIME_HINT_TEMPLATE : "");
 
-    data = (await res.json()) as GenerateAPIResponse;
+    let data: GenerateAPIResponse;
 
-    if (!isActive(guard, signal)) return cancelled;
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal,
+        body: JSON.stringify({
+          type: "generate",
+          payload: {
+            query,
+            schemas,
+            relevantTables: context.relevantTables,
+            relationships,
+            finalDatasetContext: context.finalDatasetContext,
+            conversationContext,
+            timeHint: finalTimeHint,
+          },
+          turnId,
+        }),
+      });
 
-    if (!res.ok) {
-      const code =
-        typeof data.error === "object" &&
-        data.error !== null &&
-        typeof data.error.code === "string"
-          ? data.error.code
-          : "SQL_GENERATION_FAILED";
-      const message =
-        typeof data.error === "object" &&
-        data.error !== null &&
-        typeof data.error.message === "string"
-          ? data.error.message
-          : typeof data.error === "string"
-            ? data.error
-            : "Something went wrong generating your query. Please try again.";
+      data = (await res.json()) as GenerateAPIResponse;
 
-      return {
-        tool: "generate-sql",
-        ok: false,
-        action: code === "INVALID_QUERY" ? "stop" : "retry",
-        error: { code, message },
-      };
-    }
+      if (!isActive(guard, signal)) return cancelled;
 
-    if (typeof data.sql !== "string" || !data.sql.trim()) {
+      if (!res.ok) {
+        const code =
+          typeof data.error === "object" &&
+          data.error !== null &&
+          typeof data.error.code === "string"
+            ? data.error.code
+            : "SQL_GENERATION_FAILED";
+        const message =
+          typeof data.error === "object" &&
+          data.error !== null &&
+          typeof data.error.message === "string"
+            ? data.error.message
+            : typeof data.error === "string"
+              ? data.error
+              : "Something went wrong generating your query. Please try again.";
+
+        return {
+          tool: "generate-sql",
+          ok: false,
+          action: code === "INVALID_QUERY" ? "stop" : "retry",
+          error: { code, message },
+        };
+      }
+
+      if (typeof data.sql !== "string" || !data.sql.trim()) {
+        return {
+          tool: "generate-sql",
+          ok: false,
+          action: "retry",
+          error: {
+            code: "SQL_GENERATION_FAILED",
+            message:
+              "Something went wrong generating your query. Please try again.",
+          },
+        };
+      }
+
+      runtime.sql = data.sql.trim();
+    } catch (err) {
+      if (signal?.aborted) return cancelled;
+      console.error("data-query generate failed:", err);
+
       return {
         tool: "generate-sql",
         ok: false,
         action: "retry",
         error: {
-          code: "SQL_GENERATION_FAILED",
+          code: "GENERATE_SQL_ERROR",
           message:
             "Something went wrong generating your query. Please try again.",
         },
       };
     }
-
-    runtime.sql = data.sql.trim();
-  } catch (err) {
-    if (signal?.aborted) return cancelled;
-    console.error("data-query generate failed:", err);
-
-    return {
-      tool: "generate-sql",
-      ok: false,
-      action: "retry",
-      error: {
-        code: "GENERATE_SQL_ERROR",
-        message:
-          "Something went wrong generating your query. Please try again.",
-      },
-    };
   }
 
   // 4. Verify SQL:
@@ -196,6 +216,12 @@ export const dataQuery = async ({
   // 5. Execute SQL:
   const executeResult = await executeSQL({ runtime, signal, guard });
   if (executeResult.ok) {
+    await saveCachedSQL({
+      cacheKey,
+      normalizedQuery,
+      schemaHash: hash,
+      sql: runtime.sql!,
+    });
     return {
       tool: "data-query",
       ok: true,
@@ -291,6 +317,13 @@ export const dataQuery = async ({
   // 9. Execute fixed SQL:
   const fixedExecuteResult = await executeSQL({ runtime, signal, guard });
   if (!fixedExecuteResult.ok) return fixedExecuteResult;
+
+  await saveCachedSQL({
+    cacheKey,
+    normalizedQuery,
+    schemaHash: hash,
+    sql: runtime.sql!,
+  });
 
   return {
     tool: "data-query",
