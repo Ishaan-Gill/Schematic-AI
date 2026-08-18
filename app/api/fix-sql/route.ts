@@ -1,5 +1,4 @@
 import { groq } from "@/lib/ai/client";
-import { DEBUG } from "@/lib/config/debug";
 import { NextResponse } from "next/server"
 import { isPayloadTooLarge } from "@/lib/api/validateRequestSize"
 import { authorizeAIRequest } from "@/lib/api/authorizeAIRequest"
