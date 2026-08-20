@@ -2,6 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
+import { FadeIn } from "./fade-in";
 
 export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -160,14 +161,9 @@ export function FAQ() {
 
   return (
     <section id="faq" className="relative py-24 md:py-40 overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl"></div>
-      </div>
-
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-2xl mx-auto">
-          {/* Header */}
+          <FadeIn>
           <div className="mb-20 space-y-6 text-center">
             <h2 className="text-5xl md:text-6xl font-bold text-balance leading-tight">
               Questions?
@@ -177,6 +173,7 @@ export function FAQ() {
               Can&apos;t find what you need? Reach out to our team.
             </p>
           </div>
+          </FadeIn>
 
           {/* Accordion */}
           <div className="space-y-4 mb-16">

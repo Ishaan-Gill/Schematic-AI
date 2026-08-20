@@ -5,7 +5,6 @@ export function Footer() {
     <footer className="border-t border-border/30 bg-card/20 py-12">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4 mb-10">
-          {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 font-semibold">
               <div className="grid h-6 w-6 grid-cols-2 gap-0.5 rounded bg-primary p-1">
@@ -24,9 +23,8 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Product */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h3 className="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
               Product
             </h3>
 
@@ -57,9 +55,8 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Resources */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h3 className="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
               Resources
             </h3>
 
@@ -78,9 +75,8 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Connect */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h3 className="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
               Connect
             </h3>
 

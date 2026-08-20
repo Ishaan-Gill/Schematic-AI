@@ -29,9 +29,8 @@ export function Navbar() {
   ]
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border/30 bg-background/80 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 border-b border-border/30 bg-background">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Logo */}
         <button
           onClick={() => scrollToSection('hero')}
           className="flex items-center gap-2 font-semibold text-lg group cursor-pointer"
@@ -39,7 +38,6 @@ export function Navbar() {
           <BrandLogo />
         </button>
 
-        {/* Links */}
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
             <button
@@ -55,7 +53,6 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* CTA */}
         <div className="flex items-center gap-4">
           <Link
             href="/login"
@@ -65,10 +62,9 @@ export function Navbar() {
           </Link>
           <Link
             href="/signup"
-            className="group relative overflow-hidden rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground transition-all duration-300 hover:shadow-lg hover:shadow-primary/30"
+            className="group relative overflow-hidden rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
           >
             <span className="relative z-10">Start Free</span>
-            <span className="absolute inset-0 origin-left scale-x-0 bg-primary/80 transition-transform duration-300 group-hover:scale-x-100"></span>
           </Link>
         </div>
       </div>

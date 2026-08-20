@@ -1,3 +1,5 @@
+import { FadeIn } from './fade-in'
+
 export function Trust() {
   const trustItems = [
     {
@@ -40,45 +42,34 @@ export function Trust() {
 
   return (
     <section className="relative py-20 md:py-28 overflow-hidden">
-      {/* Subtle background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-1/3 w-72 h-72 bg-primary/4 rounded-full blur-3xl"></div>
-      </div>
-
       <div className="container mx-auto px-4 relative z-10">
-        {/* Header */}
-        <div className="text-center mb-16 space-y-3">
-          <h2 className="text-4xl md:text-5xl font-bold text-balance leading-tight">
-            Built on trust
-          </h2>
-          <p className="text-base md:text-lg text-muted-foreground font-light max-w-xl mx-auto">
-            Your data security and analysis transparency come first
-          </p>
-        </div>
+        <FadeIn>
+          <div className="text-center mb-16 space-y-3">
+            <h2 className="text-4xl md:text-5xl font-bold text-balance leading-tight">
+              Built on trust
+            </h2>
+            <p className="text-base md:text-lg text-muted-foreground font-light max-w-xl mx-auto">
+              Your data security and analysis transparency come first
+            </p>
+          </div>
+        </FadeIn>
 
-        {/* Cards grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {trustItems.map((item, index) => (
-            <div
-              key={index}
-              className="group relative bg-card/40 border border-border/40 rounded-xl p-6 hover:border-primary/30 hover:bg-card/60 transition-all duration-300"
-            >
-              {/* Icon */}
-              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                {item.icon}
+            <FadeIn key={index} delay={index * 0.06}>
+              <div className="group relative bg-card/40 border border-border/40 rounded-xl p-6 hover:border-primary/30 hover:bg-card/60 transition-all duration-150">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                  {item.icon}
+                </div>
+
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {item.description}
+                </p>
               </div>
-
-              {/* Content */}
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                {item.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {item.description}
-              </p>
-
-              {/* Accent line on hover */}
-              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </div>
+            </FadeIn>
           ))}
         </div>
       </div>
