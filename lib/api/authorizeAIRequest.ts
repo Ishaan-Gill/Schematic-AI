@@ -16,6 +16,11 @@ const QUOTA_LIMIT = 20;
 const TURN_LIMIT = 5;
 const TURN_WINDOW_MS = 60000;
 
+// Verified max fan-out per turn is 4 HTTP calls (orchestrate + generate +
+// fix-sql + analysis); 8 gives 2x headroom while bounding replay abuse.
+// Must match p_max_calls passed to increment_turn_calls() in Supabase.
+const TURN_CALL_LIMIT = 8;
+
 export async function authorizeAIRequest(
   req: Request,
   bucket: string,
@@ -66,7 +71,43 @@ export async function authorizeAIRequest(
 
     // Internal calls within an already-claimed turn are not new turns,
     // so they skip the short-term limiter and the daily quota check.
+    // A durable per-turn call budget still applies so a captured turnId
+    // cannot be replayed for unlimited LLM calls.
     if (turn) {
+      const { data: withinBudget, error: rpcError } = await supabase.rpc(
+        "increment_turn_calls",
+        {
+          p_user_id: user.id,
+          p_turn_id: options.turnId,
+          p_max_calls: TURN_CALL_LIMIT,
+        },
+      );
+
+      if (rpcError) {
+        console.error("Turn call count failed:", rpcError);
+
+        return {
+          authorized: false,
+          response: NextResponse.json(
+            { error: "Unable to verify your request. Please try again." },
+            { status: 503 },
+          ),
+        };
+      }
+
+      if (!withinBudget) {
+        return {
+          authorized: false,
+          response: NextResponse.json(
+            {
+              error:
+                "Too many requests for this turn. Please start a new message.",
+            },
+            { status: 429 },
+          ),
+        };
+      }
+
       return {
         authorized: true,
         user,
