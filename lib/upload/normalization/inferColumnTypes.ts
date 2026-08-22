@@ -24,30 +24,53 @@ export const inferColumnTypes = async (
         }
 
         const columnName = col.column_name
+        const quotedColumn = quoteIdentifier(columnName)
+
+        // Strip $ , % — correct for US thousands separators and plain numbers
+        const usNumericExpr = `REPLACE(REPLACE(REPLACE(${quotedColumn}, '$', ''), ',', ''), '%', '')`
+        // EU format: strip $ %, drop '.' thousands, convert ',' decimal to '.'
+        const euNumericExpr = `REPLACE(REPLACE(REPLACE(REPLACE(${quotedColumn}, '$', ''), '%', ''), '.', ''), ',', '.')`
+
         const numericCheck = await conn.query(`
             SELECT
-                COUNT(CASE WHEN ${quoteIdentifier(columnName)} IS NOT NULL THEN 1 END) AS total_rows,
+                COUNT(CASE WHEN ${quotedColumn} IS NOT NULL THEN 1 END) AS total_rows,
                 COUNT(
-                    TRY_CAST(
-                        REPLACE(REPLACE(REPLACE(${quoteIdentifier(columnName)}, '$', ''), ',', ''), '%', '') AS DOUBLE
-                    )
-                ) AS numeric_rows
+                    CASE
+                        WHEN ${quotedColumn} IS NOT NULL
+                         AND TRY_CAST(${usNumericExpr} AS DOUBLE) IS NOT NULL
+                        THEN 1
+                    END
+                ) AS us_plain_rows,
+                COUNT(
+                    CASE WHEN regexp_full_match(
+                        TRIM(${quotedColumn}),
+                        '[+-]?[0-9]{1,3}(\\.[0-9]{3})+,[0-9]+'
+                    ) = true
+                    AND TRY_CAST(${euNumericExpr} AS DOUBLE) IS NOT NULL THEN 1 END
+                ) AS eu_rows
             FROM ${quoteIdentifier(tableName)}
         `)
 
         const stats = numericCheck.toArray()[0] ?? {}
         const totalRows = Number(stats.total_rows ?? 0)
-        const numericRows = Number(stats.numeric_rows ?? 0)
-        const ratio = totalRows === 0 ? 0 : numericRows / totalRows
+        const usPlainRows = Number(stats.us_plain_rows ?? 0)
+        const euRows = Number(stats.eu_rows ?? 0)
+        const ratio = totalRows === 0 ? 0 : usPlainRows / totalRows
+        const euRatio = totalRows === 0 ? 0 : euRows / totalRows
 
-        if (ratio > 0.8) {
+        if (euRatio > 0.8) {
             await conn.query(`
                 ALTER TABLE ${quoteIdentifier(tableName)}
-                ALTER COLUMN ${quoteIdentifier(columnName)}
+                ALTER COLUMN ${quotedColumn}
                 TYPE DOUBLE
-                USING TRY_CAST(
-                    REPLACE(REPLACE(REPLACE(${quoteIdentifier(columnName)}, '$', ''), ',', ''), '%', '') AS DOUBLE
-                )
+                USING TRY_CAST(${euNumericExpr} AS DOUBLE)
+            `)
+        } else if (ratio > 0.8 && euRows === 0) {
+            await conn.query(`
+                ALTER TABLE ${quoteIdentifier(tableName)}
+                ALTER COLUMN ${quotedColumn}
+                TYPE DOUBLE
+                USING TRY_CAST(${usNumericExpr} AS DOUBLE)
             `)
         }
     }
