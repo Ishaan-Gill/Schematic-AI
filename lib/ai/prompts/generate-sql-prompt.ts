@@ -148,7 +148,7 @@ export function generateSQLPrompt({
               .slice(0, 30)
               .map(
                 (item: any) =>
-                  `  - ${item.column} → ${item.semanticRole}${item.detectedFormat ? ` (${item.detectedFormat})` : ""}`,
+                  `  - ${item.column} → ${item.semanticRole}${item.detectedFormat ? ` (${item.detectedFormat})` : ""}${item.coercionNote ? ` — ${item.coercionNote}` : ""}`,
               )
               .join("\n");
             return `${tableName}:\n${hints}`;

@@ -101,7 +101,7 @@ export const ingestParsedTable = async ({
   });
 
   // type inference
-  await inferColumnTypes(conn, tableName);
+  const coercionWarnings = await inferColumnTypes(conn, tableName);
 
   // refreshed schema
   const refreshedColumnsResult = await conn.query(`
@@ -129,6 +129,14 @@ export const ingestParsedTable = async ({
       profile[columnName].currency = detection.currency;
       profile[columnName].currencies = detection.currencies;
       profile[columnName].mixedCurrency = detection.mixedCurrency;
+    }
+  }
+
+  // merge coercion warnings into per-column profile
+  for (const warning of coercionWarnings) {
+    if (profile[warning.column]) {
+      profile[warning.column].coercionFailedRows = warning.failedRows;
+      profile[warning.column].coercionTargetType = warning.targetType;
     }
   }
 
@@ -207,6 +215,7 @@ export const ingestParsedTable = async ({
     tableName,
     columns: refreshedColumns,
     profile,
+    coercionWarnings,
     dataset: datasetRecord,
   };
 };

@@ -85,7 +85,9 @@ const formatSemanticHints = (
           const format = item.detectedFormat
             ? ` (${item.detectedFormat})`
             : "";
-          return `  - ${item.column ?? ""} → ${item.semanticRole ?? "unknown"}${format}`;
+          const coercionNote = (item as { coercionNote?: string }).coercionNote;
+          const coercion = coercionNote ? ` — ${coercionNote}` : "";
+          return `  - ${item.column ?? ""} → ${item.semanticRole ?? "unknown"}${format}${coercion}`;
         })
         .join("\n");
       return `${tableName}:\n${hints}`;

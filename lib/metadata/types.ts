@@ -22,6 +22,7 @@ export type ColumnMetadata = {
     currency?: string | null
     currencies?: string[]
     mixedCurrency?: boolean
+    coercionNote?: string
 }
 
 export type DerivedMetric = {

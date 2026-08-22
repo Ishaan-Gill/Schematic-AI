@@ -14,6 +14,9 @@ export type ColumnProfile = {
     currency?: string | null
     currencies?: string[]
     mixedCurrency?: boolean
+
+    coercionFailedRows?: number
+    coercionTargetType?: string
 }
 
 export type TableProfile = {

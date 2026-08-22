@@ -7,6 +7,13 @@ type ColumnInfo = {
 
 type QueryResultRow = Record<string, unknown>
 
+export type CoercionWarning = {
+    column: string
+    targetType: "DOUBLE" | "DATE"
+    totalRows: number
+    failedRows: number
+}
+
 type DuckConnection = {
     query: (sql: string) => Promise<{ toArray: () => QueryResultRow[] }>
 }
@@ -14,9 +21,11 @@ type DuckConnection = {
 export const inferColumnTypes = async (
     conn: DuckConnection,
     tableName: string
-) => {
+): Promise<CoercionWarning[]> => {
     const schemaResult = await conn.query(`DESCRIBE ${quoteIdentifier(tableName)}`)
     const columns = schemaResult.toArray() as ColumnInfo[]
+
+    const coercionWarnings: CoercionWarning[] = []
 
     for (const col of columns) {
         if (col.column_type !== "VARCHAR") {
@@ -74,6 +83,14 @@ export const inferColumnTypes = async (
                 TYPE DOUBLE
                 USING ${euCastExpr}
             `)
+            if (totalRows > euRows) {
+                coercionWarnings.push({
+                    column: columnName,
+                    targetType: "DOUBLE",
+                    totalRows,
+                    failedRows: totalRows - euRows,
+                })
+            }
         } else if (ratio > 0.8 && euRows === 0) {
             await conn.query(`
                 ALTER TABLE ${quoteIdentifier(tableName)}
@@ -81,6 +98,14 @@ export const inferColumnTypes = async (
                 TYPE DOUBLE
                 USING ${usCastExpr}
             `)
+            if (totalRows > usPlainRows) {
+                coercionWarnings.push({
+                    column: columnName,
+                    targetType: "DOUBLE",
+                    totalRows,
+                    failedRows: totalRows - usPlainRows,
+                })
+            }
         }
     }
 
@@ -124,6 +149,16 @@ export const inferColumnTypes = async (
                     TRY_CAST(${quoteIdentifier(columnName)} AS DATE)
                 )
             `)
+            if (totalRows > dateRows) {
+                coercionWarnings.push({
+                    column: columnName,
+                    targetType: "DATE",
+                    totalRows,
+                    failedRows: totalRows - dateRows,
+                })
+            }
         }
     }
+
+    return coercionWarnings
 }

@@ -24,6 +24,7 @@ export const buildDatasetContext = (
                         typeof v === "string" && v !== null && v !== undefined && v !== "",
                 )
             const columnProfile = profile?.[column.column_name]
+            const coercionFailedRows = columnProfile?.coercionFailedRows ?? 0
             return {
                 column: column.column_name,
                 type: column.column_type,
@@ -36,6 +37,9 @@ export const buildDatasetContext = (
                 currency: columnProfile?.currency ?? null,
                 currencies: columnProfile?.currencies ?? [],
                 mixedCurrency: columnProfile?.mixedCurrency ?? false,
+                coercionNote: coercionFailedRows > 0
+                    ? `${coercionFailedRows} of ${columnProfile?.rowCount ?? "unknown"} values could not be parsed and were stored as NULL`
+                    : undefined,
             }
         })
 
