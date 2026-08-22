@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Mono, Geist, Instrument_Serif } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
 const geist = Geist({
@@ -101,6 +102,7 @@ export default function RootLayout({
         />
         <Analytics />
       </body>
+      <GoogleAnalytics gaId="G-ZJQ184TCL6" />
     </html>
   );
 }
