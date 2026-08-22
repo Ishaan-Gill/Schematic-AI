@@ -34,8 +34,9 @@ export const detectRelationships = (schemas: TableSchemas): Relationship[] => {
 
             // Layer 1: exact cross-match (orders.customer_id = customers.customer_id)
             for (const colA of colsA) {
+                if (colA === "id") continue
                 if (colsB.includes(colA) && (
-                    colA.endsWith("_id") || colA.endsWith("_code") || colA.endsWith("_no") || colA === "id"
+                    colA.endsWith("_id") || colA.endsWith("_code") || colA.endsWith("_no")
                 )) {
                     relations.push({ fromTable: tableA, fromColumn: colA, toTable: tableB, toColumn: colA })
                 }
