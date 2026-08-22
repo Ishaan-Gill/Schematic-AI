@@ -29,7 +29,9 @@ export const buildDatasetContext = (
                 type: column.column_type,
                 semanticRole: inferSemanticRole(column.column_name, column.column_type),
                 detectedFormat: samples.length > 0
-                    ? inferDateFormat(samples) ?? undefined
+                    ? samples.filter(v => v.includes("%")).length / samples.length >= 0.5
+                        ? "percent (stored as fraction 0-1)"
+                        : inferDateFormat(samples) ?? undefined
                     : undefined,
                 currency: columnProfile?.currency ?? null,
                 currencies: columnProfile?.currencies ?? [],

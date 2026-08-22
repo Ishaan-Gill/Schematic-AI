@@ -31,13 +31,22 @@ export const inferColumnTypes = async (
         // EU format: strip $ %, drop '.' thousands, convert ',' decimal to '.'
         const euNumericExpr = `REPLACE(REPLACE(REPLACE(REPLACE(${quotedColumn}, '$', ''), '%', ''), '.', ''), ',', '.')`
 
+        // Percent-suffixed rows are stored as fractions (45% -> 0.45), per-row
+        // so columns mixing "45%" and bare "45" stay internally consistent
+        const usCastExpr = `CASE WHEN contains(${quotedColumn}, '%')
+            THEN TRY_CAST(${usNumericExpr} AS DOUBLE) / 100.0
+            ELSE TRY_CAST(${usNumericExpr} AS DOUBLE) END`
+        const euCastExpr = `CASE WHEN contains(${quotedColumn}, '%')
+            THEN TRY_CAST(${euNumericExpr} AS DOUBLE) / 100.0
+            ELSE TRY_CAST(${euNumericExpr} AS DOUBLE) END`
+
         const numericCheck = await conn.query(`
             SELECT
                 COUNT(CASE WHEN ${quotedColumn} IS NOT NULL THEN 1 END) AS total_rows,
                 COUNT(
                     CASE
                         WHEN ${quotedColumn} IS NOT NULL
-                         AND TRY_CAST(${usNumericExpr} AS DOUBLE) IS NOT NULL
+                         AND ${usCastExpr} IS NOT NULL
                         THEN 1
                     END
                 ) AS us_plain_rows,
@@ -46,7 +55,7 @@ export const inferColumnTypes = async (
                         TRIM(${quotedColumn}),
                         '[+-]?[0-9]{1,3}(\\.[0-9]{3})+,[0-9]+'
                     ) = true
-                    AND TRY_CAST(${euNumericExpr} AS DOUBLE) IS NOT NULL THEN 1 END
+                    AND ${euCastExpr} IS NOT NULL THEN 1 END
                 ) AS eu_rows
             FROM ${quoteIdentifier(tableName)}
         `)
@@ -63,14 +72,14 @@ export const inferColumnTypes = async (
                 ALTER TABLE ${quoteIdentifier(tableName)}
                 ALTER COLUMN ${quotedColumn}
                 TYPE DOUBLE
-                USING TRY_CAST(${euNumericExpr} AS DOUBLE)
+                USING ${euCastExpr}
             `)
         } else if (ratio > 0.8 && euRows === 0) {
             await conn.query(`
                 ALTER TABLE ${quoteIdentifier(tableName)}
                 ALTER COLUMN ${quotedColumn}
                 TYPE DOUBLE
-                USING TRY_CAST(${usNumericExpr} AS DOUBLE)
+                USING ${usCastExpr}
             `)
         }
     }
