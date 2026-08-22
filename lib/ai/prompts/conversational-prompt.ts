@@ -1,10 +1,40 @@
+import type { ConversationEntry } from "../context/buildConversationContext";
+
 type ConversationalPromptParams = {
   query: string;
+  conversationContext: ConversationEntry[];
+};
+
+const formatConversationContext = (
+  conversationContext: ConversationEntry[],
+): string => {
+  if (conversationContext.length === 0) {
+    return "None.";
+  }
+
+  return conversationContext
+    .map((entry) => {
+      const parts = [`Previous question: ${entry.query}`];
+
+      if (entry.sql?.trim()) {
+        parts.push(`SQL used: ${entry.sql.trim()}`);
+      }
+
+      if (entry.explanation?.trim()) {
+        parts.push(`Answer: ${entry.explanation.trim()}`);
+      }
+
+      return parts.join("\n");
+    })
+    .join("\n\n");
 };
 
 export function conversationalPrompt({
   query,
+  conversationContext,
 }: ConversationalPromptParams) {
+  const conversationText = formatConversationContext(conversationContext);
+
   return {
     system: `
         You are Schematic, an AI data analyst assistant.
@@ -23,6 +53,9 @@ export function conversationalPrompt({
         - Do not invent features or capabilities.
         - Do not answer data-analysis questions.
         - If the user accidentally asks a data question, politely tell them to ask a data-related question so you can analyze their uploaded datasets.
+        - If Recent Conversation is not "None.", treat this message as part of an
+          ongoing conversation: resolve references like "it", "that", "them",
+          "also", or "why" against the recent conversation before replying.
         - Never generate SQL.
         - Never explain database schemas.
         - Never hallucinate information.
@@ -45,6 +78,9 @@ export function conversationalPrompt({
         Assistant: I'd be happy to help with that. Please ask your data question normally, and I'll analyze your uploaded datasets.
     `,
     user: `
+        Recent Conversation:
+        ${conversationText}
+
         User:
         ${query}
     `,

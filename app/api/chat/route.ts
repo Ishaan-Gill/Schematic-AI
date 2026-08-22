@@ -139,7 +139,11 @@ export async function POST(req: Request) {
     case "conversation": {
       const p = body.payload;
 
-      const response = await conversational({ query: p.query, signal: req.signal });
+      const response = await conversational({
+        query: p.query,
+        conversationContext: p.conversationContext ?? [],
+        signal: req.signal,
+      });
 
       if (!response) {
         return NextResponse.json(
@@ -162,6 +166,7 @@ export async function POST(req: Request) {
         schemas: p.schemas,
         relationships: p.relationships,
         finalDatasetContext: p.finalDatasetContext,
+        conversationContext: p.conversationContext ?? [],
         signal: req.signal,
       });
 

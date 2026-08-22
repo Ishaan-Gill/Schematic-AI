@@ -1,5 +1,6 @@
 import { getDuckConnection } from "@/lib/duckdb/duckdb";
 import { buildSQLContext } from "../context/buildSQLContext";
+import type { ConversationEntry } from "../context/buildConversationContext";
 import type { Relationship } from "../context/relationships";
 import type { CoreResult } from "./types";
 
@@ -7,6 +8,7 @@ type ReasoningArgs = {
   query: string;
   schemas: Record<string, any[]>;
   relationships: Relationship[];
+  conversationContext?: ConversationEntry[];
   turnId: string;
   signal?: AbortSignal;
   guard?: () => boolean;
@@ -16,6 +18,7 @@ export const reasoning = async ({
   query,
   schemas,
   relationships,
+  conversationContext,
   turnId,
   signal,
   guard,
@@ -48,6 +51,7 @@ export const reasoning = async ({
           schemas,
           relationships,
           finalDatasetContext,
+          conversationContext: conversationContext ?? [],
         },
         turnId,
       }),

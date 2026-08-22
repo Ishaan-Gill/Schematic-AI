@@ -2,12 +2,14 @@ import { reasoningPrompt } from "@/lib/ai/prompts/reasoning-prompt"
 import { groq } from "@/lib/ai/client"
 import { DEBUG } from "@/lib/config/debug"
 import type { Relationship } from "@/lib/ai/context/relationships"
+import type { ConversationEntry } from "../context/buildConversationContext"
 
 type ReasoningParams = {
   query: string
   schemas: Record<string, any[]>
   relationships: Relationship[]
   finalDatasetContext: Record<string, any>
+  conversationContext?: ConversationEntry[]
   signal?: AbortSignal
 }
 
@@ -16,6 +18,7 @@ export async function reasoning({
   schemas,
   relationships,
   finalDatasetContext,
+  conversationContext,
   signal,
 }: ReasoningParams): Promise<string | null> {
   const safeDatasetContext: Record<string, any> = finalDatasetContext ?? {}
@@ -25,6 +28,7 @@ export async function reasoning({
     schemas,
     relationships,
     safeDatasetContext,
+    conversationContext: conversationContext ?? [],
   })
 
   let completion

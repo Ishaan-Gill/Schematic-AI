@@ -13,6 +13,7 @@ export type GenerateRequest = {
 
 export type ConversationRequest = {
   query: string;
+  conversationContext?: ConversationEntry[];
 };
 
 export type ReasoningRequest = {
@@ -20,6 +21,7 @@ export type ReasoningRequest = {
   schemas: Record<string, any[]>;
   relationships: Relationship[];
   finalDatasetContext: Record<string, any>;
+  conversationContext?: ConversationEntry[];
 };
 
 export type LLMOrchestrateRequest = {

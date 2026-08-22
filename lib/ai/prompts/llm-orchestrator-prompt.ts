@@ -82,7 +82,14 @@ it is NEVER CONVERSATIONAL — choose between REASONING and DATA_QUERY
 instead. When still uncertain between REASONING and DATA_QUERY, prefer
 DATA_QUERY — it is safer to attempt a data-aware response than to
 under-classify a genuine data question.
- 
+
+FOLLOW-UP RULE: if Recent Conversation is not "None." and the message is
+short or references prior topics using words like "it", "that", "them",
+"why", "also", "and March?", treat it as a CONTINUATION of the previous
+conversation — classify it as REASONING or DATA_QUERY based on what the
+prior topic was. NEVER classify an obvious follow-up as CONVERSATIONAL,
+even if on its own it would look like small talk.
+
 If a message contains both conversational language and a data request
 (e.g. "thanks — can you also check April numbers?"), classify it as
 DATA_QUERY. The data request always wins.
@@ -134,6 +141,21 @@ AMBIGUOUS EXAMPLES — these clarify the boundary. Study these carefully:
 "thanks — can you also check April numbers?"
 → {"intent":"DATA_QUERY","needsAnalysis":false}
 (conversational opener + data request — the data request wins)
+
+FOLLOW-UP EXAMPLES — Recent Conversation contains a revenue question:
+
+"what about February?"
+→ {"intent":"DATA_QUERY","needsAnalysis":false}
+(continuation of the prior data question, not small talk)
+
+"why?"
+→ {"intent":"DATA_QUERY","needsAnalysis":true}
+(follow-up asking for explanation of the previous result)
+
+FOLLOW-UP EXAMPLE — Recent Conversation contains a schema/structure answer:
+
+"tell me more"
+→ {"intent":"REASONING","needsAnalysis":false}
  
 "What was revenue in April?"
 → {"intent":"DATA_QUERY","needsAnalysis":false}

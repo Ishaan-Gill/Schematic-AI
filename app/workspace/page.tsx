@@ -382,6 +382,7 @@ export default function Home() {
           {
             const response = await conversational({
               query,
+              conversationContext,
               turnId,
               signal: controller.signal,
               guard: () => isControllerActive(controller),
@@ -418,6 +419,7 @@ export default function Home() {
               query,
               schemas,
               relationships: getRelationships(),
+              conversationContext,
               turnId,
               signal: controller.signal,
               guard: () => isControllerActive(controller),

@@ -1,17 +1,23 @@
 import { conversationalPrompt } from "@/lib/ai/prompts/conversational-prompt";
 import { groq } from "@/lib/ai/client";
 import { DEBUG } from "@/lib/config/debug";
+import type { ConversationEntry } from "../context/buildConversationContext";
 
 type ConversationalParams = {
   query: string;
+  conversationContext?: ConversationEntry[];
   signal?: AbortSignal;
 };
 
 export async function conversational({
   query,
+  conversationContext,
   signal,
 }: ConversationalParams): Promise<string | null> {
-  const prompt = conversationalPrompt({ query });
+  const prompt = conversationalPrompt({
+    query,
+    conversationContext: conversationContext ?? [],
+  });
 
   let completion;
   for (let attempt = 1; attempt <= 2; attempt++) {

@@ -171,9 +171,13 @@ export function generateSQLPrompt({
 
           
         ${
-          conversationContext.length > 0
-            ? `Recent SQL Context:
-          ${conversationContext
+          (() => {
+            const sqlContext = conversationContext.filter(
+              (ctx) => ctx.sql?.trim(),
+            );
+            return sqlContext.length > 0
+              ? `Recent SQL Context:
+          ${sqlContext
             .map(
               (ctx) =>
                 `Q:\n${ctx.query}\n\nSQL:\n${ctx.sql}\n\nExplanation:\n${ctx.explanation}`,
@@ -185,7 +189,8 @@ export function generateSQLPrompt({
           If it is unrelated, completely ignore previous context.
           Never force previous context if it does not apply.
           `
-            : ""
+              : "";
+          })()
         }
                                 
         User Request:

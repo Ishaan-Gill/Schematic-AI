@@ -1,4 +1,5 @@
 import { Relationship } from "../context/relationships";
+import type { ConversationEntry } from "../context/buildConversationContext";
 import { formatRelationshipText, formatSchemaText } from "./shared";
 
 type ReasoningPromptParams = {
@@ -6,6 +7,31 @@ type ReasoningPromptParams = {
   schemas: Record<string, any[]>;
   relationships: Relationship[];
   safeDatasetContext: Record<string, any>;
+  conversationContext: ConversationEntry[];
+};
+
+const formatConversationContext = (
+  conversationContext: ConversationEntry[],
+): string => {
+  if (conversationContext.length === 0) {
+    return "None.";
+  }
+
+  return conversationContext
+    .map((entry) => {
+      const parts = [`Previous question: ${entry.query}`];
+
+      if (entry.sql?.trim()) {
+        parts.push(`SQL used: ${entry.sql.trim()}`);
+      }
+
+      if (entry.explanation?.trim()) {
+        parts.push(`Answer: ${entry.explanation.trim()}`);
+      }
+
+      return parts.join("\n");
+    })
+    .join("\n\n");
 };
 
 export function reasoningPrompt({
@@ -13,9 +39,11 @@ export function reasoningPrompt({
   schemas,
   relationships,
   safeDatasetContext,
+  conversationContext,
 }: ReasoningPromptParams) {
   const schemaText = formatSchemaText(schemas);
   const relationshipText = formatRelationshipText(relationships);
+  const conversationText = formatConversationContext(conversationContext);
 
   return {
     system: `
@@ -40,6 +68,9 @@ export function reasoningPrompt({
         - Never estimate values from sample data.
         - Never answer questions that require inspecting the actual data values.
         - Instead, politely explain that those require executing a SQL query.
+        - If Recent Conversation is not "None.", treat this message as part of an
+          ongoing conversation: resolve references like "it", "that", "them",
+          "also", or "why" against the recent conversation before answering.
         - If the information is unavailable, clearly say so.
         - Keep responses concise (2 to 5 sentences).
         - Be professional and helpful.
@@ -95,6 +126,9 @@ export function reasoningPrompt({
 
         User request:
         "${query}"
+
+        Recent Conversation:
+        ${conversationText}
     `,
   };
 }

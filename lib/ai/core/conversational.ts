@@ -1,7 +1,9 @@
+import type { ConversationEntry } from "../context/buildConversationContext";
 import type { CoreResult } from "./types";
 
 type conversationalArgs = {
   query: string;
+  conversationContext?: ConversationEntry[];
   turnId: string;
   signal?: AbortSignal;
   guard?: () => boolean;
@@ -9,6 +11,7 @@ type conversationalArgs = {
 
 export const conversational = async ({
   query,
+  conversationContext,
   turnId,
   signal,
   guard,
@@ -24,7 +27,7 @@ export const conversational = async ({
       signal,
       body: JSON.stringify({
         type: "conversation",
-        payload: { query },
+        payload: { query, conversationContext: conversationContext ?? [] },
         turnId,
       }),
     });
