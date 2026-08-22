@@ -1,5 +1,10 @@
 import { getDuckConnection } from "@/lib/duckdb/duckdb";
-import { isTimeQuery } from "@/lib/ai/timeQuery";
+import {
+  getCurrentDateHint,
+  getLocalDateString,
+  getRelativeWindowHint,
+  isTimeQuery,
+} from "@/lib/ai/timeQuery";
 import type { ConversationEntry } from "@/lib/ai/context/buildConversationContext";
 import type { Relationship } from "@/lib/ai/context/relationships";
 import { buildContextTool } from "@/lib/ai/tools/buildContext";
@@ -115,7 +120,11 @@ export const dataQuery = async ({
     ),
   );
   const hash = await schemaHash(relevantSchemas);
-  const cacheKey = buildCacheKey({ normalizedQuery, schemaHash: hash });
+  const cacheKey = buildCacheKey({
+    normalizedQuery,
+    schemaHash: hash,
+    dateBucket: isTimeQuery(query) ? getLocalDateString() : undefined,
+  });
 
   const cachedSQL = await getCachedSQL(cacheKey);
   if (!isActive(guard, signal)) return cancelled;
@@ -124,7 +133,14 @@ export const dataQuery = async ({
     runtime.sql = cachedSQL;
   } else {
     const finalTimeHint =
-      timeHint ?? (isTimeQuery(query) ? TIME_HINT_TEMPLATE : "");
+      timeHint ??
+      [
+        getCurrentDateHint(),
+        ...(isTimeQuery(query) ? [TIME_HINT_TEMPLATE] : []),
+        getRelativeWindowHint(query),
+      ]
+        .filter(Boolean)
+        .join("\n");
 
     let data: GenerateAPIResponse;
 
@@ -254,6 +270,7 @@ export const dataQuery = async ({
         rawError: rawError(executeResult),
         schemas,
         relationships,
+        currentDateHint: getCurrentDateHint(),
         turnId,
       }),
     });

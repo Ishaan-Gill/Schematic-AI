@@ -1,3 +1,4 @@
+import { getCurrentDateHint } from "../timeQuery";
 import type { ConversationEntry } from "../context/buildConversationContext";
 
 type ConversationalPromptParams = {
@@ -80,6 +81,9 @@ export function conversationalPrompt({
     user: `
         Recent Conversation:
         ${conversationText}
+
+        Current Date:
+        ${getCurrentDateHint()}
 
         User:
         ${query}

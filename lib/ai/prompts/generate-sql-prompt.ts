@@ -71,6 +71,15 @@ export function generateSQLPrompt({
         - Prefer DATE_TRUNC and EXTRACT
         - Use LOWER() for string comparisons
 
+        DATE RULES (CRITICAL):
+        - Today's date is provided in the TIME HINTS section below.
+        - For relative periods ("this month", "last week", "ytd", etc.),
+          prefer CURRENT_DATE arithmetic over hardcoded literal dates,
+          e.g. DATE_TRUNC('month', CURRENT_DATE),
+          CURRENT_DATE - INTERVAL '30' DAY, or explicit bounds derived from it.
+          This keeps queries correct regardless of when they are re-executed.
+        - Never guess the current date; use only the date provided in TIME HINTS.
+
         CATALOG RULES (CRITICAL):
         - Every uploaded dataset is a DuckDB VIEW in the "main" schema.
         - information_schema.tables lists these views with table_type = 'VIEW'

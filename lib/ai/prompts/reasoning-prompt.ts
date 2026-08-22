@@ -1,5 +1,6 @@
 import { Relationship } from "../context/relationships";
 import type { ConversationEntry } from "../context/buildConversationContext";
+import { getCurrentDateHint } from "../timeQuery";
 import { formatRelationshipText, formatSchemaText } from "./shared";
 
 type ReasoningPromptParams = {
@@ -129,6 +130,9 @@ export function reasoningPrompt({
 
         Recent Conversation:
         ${conversationText}
+
+        Current Date:
+        ${getCurrentDateHint()}
     `,
   };
 }

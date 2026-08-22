@@ -1,4 +1,5 @@
 import { formatSchemaText } from "./shared";
+import { getCurrentDateHint } from "../timeQuery";
 import type { ConversationEntry } from "../context/buildConversationContext";
 
 type LLMOrchestratorPromptParams = {
@@ -182,6 +183,9 @@ needsAnalysis must be a boolean (true or false).
 
         Recent Conversation:
         ${conversationText}
+
+        Current Date:
+        ${getCurrentDateHint()}
 
         User:
         ${query}

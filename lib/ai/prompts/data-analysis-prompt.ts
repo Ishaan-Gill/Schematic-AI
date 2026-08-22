@@ -1,6 +1,7 @@
 import { quoteIdentifier } from "@/lib/utils/sqlHelpers";
 import type { ConversationEntry } from "../context/buildConversationContext";
 import type { Relationship } from "../context/relationships";
+import { getCurrentDateHint } from "../timeQuery";
 
 export type AnalysisResultPayload = {
   query: string;
@@ -230,6 +231,9 @@ export function dataAnalysisPrompt({
 
         Recent Conversation:
         ${formatConversationContext(conversationContext)}
+
+        Current Date:
+        ${getCurrentDateHint()}
 
         User Request:
         "${resultPayload.query}"

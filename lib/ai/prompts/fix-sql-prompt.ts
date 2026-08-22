@@ -7,6 +7,7 @@ type FixSQLPromptParams = {
   error: string;
   schemas: Record<string, any[]>;
   relationships: Relationship[];
+  currentDateHint?: string;
 };
 
 export function fixSQLPrompt({
@@ -15,6 +16,7 @@ export function fixSQLPrompt({
   error,
   schemas,
   relationships,
+  currentDateHint,
 }: FixSQLPromptParams) {
   const schemaText = formatSchemaText(schemas);
   const relationshipText = formatRelationshipText(relationships);
@@ -38,6 +40,7 @@ export function fixSQLPrompt({
         - NEVER rename columns to simplified or normalized aliases.
     `,
     user: `
+        ${currentDateHint ? `Current Date:\n        ${currentDateHint}\n` : ""}
         Relationships:
         ${relationshipText}
 

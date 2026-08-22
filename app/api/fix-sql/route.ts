@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         )
     }
 
-    const { userQuery, failedSql, error, rawError, schemas, relationships, turnId } = body
+    const { userQuery, failedSql, error, rawError, schemas, relationships, currentDateHint, turnId } = body
 
     const auth = await authorizeAIRequest(req, "fix-sql", 5, 60000, "Too many AI fix attempts.", { turnId })
     if (!auth.authorized) return auth.response
@@ -39,7 +39,8 @@ export async function POST(req: Request) {
         failedSql,
         error: typeof rawError === "string" && rawError.trim() ? rawError : error,
         schemas,
-        relationships
+        relationships,
+        currentDateHint: typeof currentDateHint === "string" ? currentDateHint : ""
     })
 
     let completion
