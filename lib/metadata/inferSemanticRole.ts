@@ -34,17 +34,17 @@ export const inferSemanticRole = (
 
     // Temporal
     if (includesAny(name, DATE_KEYWORDS)) return normalizedType === "varchar" ? "datetime" : "date"
+    
+    // Percentage
+    if (
+        name.includes("%") || name.includes("percent") || name.includes("pct") ||
+        name.includes("growth") || name.includes("rate") ||
+        name.includes("ratio") || name.includes("margin")
+    ) return "percentage"
 
     // Currency / Financial metric
     if (includesAny(name, REVENUE_KEYWORDS)) return "currency"
-
-    // Percentage
-    if (
-        name.includes("%") || name.includes("percent") ||
-        name.includes("growth") || name.includes("rate") ||
-        name.includes("ratio")
-    ) return "percentage"
-
+    
     // Quantity / Operational
     if (includesAny(name, QUANTITY_KEYWORDS)) return "quantity"
 
