@@ -60,6 +60,8 @@ export async function updateSession(request: NextRequest) {
     "/reset-password",
     "/auth/callback",
     "/about",
+    "/privacy",
+    "/terms",
   ];
 
   // If logged in
