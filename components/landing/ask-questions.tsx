@@ -1,103 +1,145 @@
-'use client'
+"use client";
 
-import { TrendingDown, BarChart3, CalendarDays, Target, Users, MessageCircle } from 'lucide-react'
-import Link from 'next/link'
-import { FadeIn } from './fade-in'
+import { useState } from "react";
+import { ArrowRight, CircleCheck, MoveUpRight } from "lucide-react";
+import { AnchorLink, EvidenceStamp, useReveal } from "./landing-shared";
 
 const questions = [
-  {
-    question: 'Why did sales drop last month?',
-    category: 'Sales Analysis',
-    Icon: TrendingDown,
-  },
-  {
-    question: 'Which Meta Ads campaign has the lowest ROI?',
-    category: 'Marketing',
-    Icon: BarChart3,
-  },
-  {
-    question: 'Compare June vs July revenue',
-    category: 'Comparison',
-    Icon: CalendarDays,
-  },
-  {
-    question: 'Which products generate the highest profit?',
-    category: 'Product',
-    Icon: Target,
-  },
-  {
-    question: 'Which customers drive most of our revenue?',
-    category: 'Customers',
-    Icon: Users,
-  },
-]
+  "Which products held margin as ad spend rose?",
+  "Where did repeat revenue change this quarter?",
+  "What changed before conversions dropped?",
+];
+
+function InsightPane({ selectedQuestion }: { selectedQuestion: number }) {
+  const headline =
+    selectedQuestion === 0
+      ? "Margin held because repeat purchase did."
+      : selectedQuestion === 1
+        ? "Cadence, not discounting, changed repeat revenue."
+        : "The conversion decline began before checkout.";
+
+  return (
+    <div
+      className="insight-pane"
+      aria-label="Example data insight product interface"
+    >
+      <aside className="insight-pane__nav">
+        <p>DATASETS</p>
+        <span>orders.csv</span>
+        <span>campaigns.csv</span>
+        <span>products.xlsx</span>
+      </aside>
+      <div className="insight-pane__body">
+        <div className="insight-pane__prompt">
+          <span>{questions[selectedQuestion]}</span>
+          <b>verified</b>
+        </div>
+        <div className="insight-pane__result">
+          <div className="insight-pane__summary">
+            <span>ANSWER</span>
+            <strong>{headline}</strong>
+            <p>Connected from spend, orders, and product tables.</p>
+          </div>
+          <div
+            className="insight-pane__matrix"
+            aria-label="Result bar chart"
+          >
+            <b />
+            <b />
+            <b />
+            <b />
+          </div>
+        </div>
+        <div className="insight-pane__table">
+          <div>
+            <span>PRODUCT</span>
+            <span>REPEAT</span>
+            <span>MARGIN</span>
+          </div>
+          <div>
+            <span>Core</span>
+            <span>42%</span>
+            <b>+18%</b>
+          </div>
+          <div>
+            <span>Plus</span>
+            <span>38%</span>
+            <b>+11%</b>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AskQuestions() {
+  const [selectedQuestion, setSelectedQuestion] = useState(0);
+  const ref = useReveal<HTMLElement>();
+
   return (
-    <section id="examples" className="relative py-24 md:py-32 overflow-hidden">
-      <div className="container mx-auto px-4 relative z-10">
-        <FadeIn>
-          <div className="text-center mb-16 space-y-4">
-            <p className="font-mono text-[10px] font-medium text-primary uppercase tracking-[0.12em]">Examples</p>
-            <h2 className="text-4xl md:text-5xl font-bold text-balance leading-tight">
-              Ask questions like...
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-light leading-relaxed">
-              Schematic handles any business question. No SQL needed.
-            </p>
+    <section ref={ref} className="scenario-section">
+      <div className="scenario-heading" data-reveal>
+        <p className="kicker">
+          <span>03</span> Built for the question behind the report
+        </p>
+        <h2>
+          Start where
+          <br />
+          the <i>uncertainty</i> is.
+        </h2>
+      </div>
+      <div className="scenario-cards" data-reveal data-reveal-delay="1">
+        {questions.map((question, index) => (
+          <button
+            className={`scenario-card ${selectedQuestion === index ? "scenario-card--active" : ""}`}
+            key={question}
+            onClick={() => setSelectedQuestion(index)}
+          >
+            <span className="scenario-card__meta">
+              <span>0{index + 1}</span>
+              <span>
+                {index === 0 ? "Margin" : index === 1 ? "Retention" : "Conversion"}
+              </span>
+            </span>
+            <span className="scenario-card__question">{question}</span>
+            <span className="scenario-card__footer">
+              <span>
+                {selectedQuestion === index ? "Inspect evidence" : "Follow trail"}
+              </span>
+              <ArrowRight size={17} />
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="scenario-detail" data-reveal data-reveal-delay="1">
+        <div className="scenario-detail__copy">
+          <EvidenceStamp>Shown with its work</EvidenceStamp>
+          <h3>
+            {selectedQuestion === 0
+              ? "Margin held because repeat purchase did."
+              : selectedQuestion === 1
+                ? "A change in cadence shifted repeat revenue."
+                : "The drop started upstream of the checkout."}
+          </h3>
+          <p>
+            {selectedQuestion === 0
+              ? "Schematic relates spend data to product-level contribution, then surfaces the condition that explains the pattern."
+              : selectedQuestion === 1
+                ? "Schematic looks across customer and order data to isolate the most meaningful shift—without asking you to build the join."
+                : "Schematic traces the conversion signal back through the relevant campaign and order data, rather than offering a confident guess."}
+          </p>
+          <AnchorLink id="proof" className="quiet-link">
+            See the source trail <MoveUpRight size={15} />
+          </AnchorLink>
+        </div>
+        <div className="scenario-detail__pane">
+          <InsightPane selectedQuestion={selectedQuestion} />
+          <div className="pane-callout">
+            <CircleCheck size={18} />
+            <span>Every answer has an audit path.</span>
           </div>
-        </FadeIn>
-
-        <FadeIn>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
-            {questions.map((item, index) => {
-              const { Icon } = item
-              return (
-                <div
-                  key={index}
-                  className="group relative h-full"
-                >
-                  <div className="relative h-full flex flex-col bg-card/50 border border-border/40 rounded-xl p-6 transition-all duration-150 hover:border-primary/50 hover:bg-card/70 cursor-pointer">
-                    <div className="relative z-10 flex flex-col h-full space-y-4">
-                      <div className="flex items-start justify-between">
-                        <Icon className="w-5 h-5 text-muted-foreground" />
-                        <div className="px-2 py-1 rounded-full bg-primary/10 border border-primary/20 opacity-0 group-hover:opacity-100 transition-all duration-150">
-                          <span className="font-mono text-[9px] font-medium text-primary uppercase tracking-[0.1em]">{item.category}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex-grow">
-                        <p className="text-base md:text-sm lg:text-base font-medium text-foreground leading-snug">
-                          {item.question}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 pt-2">
-                        <MessageCircle className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                        <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors font-medium">
-                          Try it
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </FadeIn>
-
-        <FadeIn>
-          <div className="mt-16 text-center">
-            <p className="text-muted-foreground mb-6 text-lg">
-              Or ask your own question — Schematic joins across tables and shows the SQL behind every answer.
-            </p>
-            <Link href="/signup" className="group mx-auto flex items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-8 py-4 font-medium text-primary transition-all duration-150 hover:border-primary/50 hover:bg-primary/20">
-              <MessageCircle className="w-5 h-5" />
-              <span>Start asking questions</span>
-            </Link>
-          </div>
-        </FadeIn>
+        </div>
       </div>
     </section>
-  )
+  );
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { friendlyAuthError } from "@/lib/auth/authErrors";
+import { AuthShell } from "./AuthShell";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -57,18 +58,18 @@ export default function LoginPage() {
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#0a0b0e] px-4">
-      <div className="w-full max-w-sm">
-        <form
-          onSubmit={handleLogin}
-          className="rounded-[8px] border border-[#1c1e24] bg-[#0d0f12] p-8"
-        >
-          <h1 className="text-xl font-medium text-[#e8eaf0]">Log in</h1>
-          <p className="mt-1.5 text-[13px] text-[#6b7280]">
+    <AuthShell>
+      <div className="auth-col">
+        <form onSubmit={handleLogin} className="auth-card">
+          <p className="auth-kicker">Schematic AI / Welcome back</p>
+          <h1 className="auth-title">
+            Log <i>in.</i>
+          </h1>
+          <p className="auth-sub">
             Welcome back. Enter your credentials to continue.
           </p>
 
-          <div className="mt-6 space-y-4">
+          <div className="auth-fields">
             <div>
               <input
                 ref={emailRef}
@@ -80,11 +81,11 @@ export default function LoginPage() {
                 autoCapitalize="none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-[8px] border border-[#1c1e24] bg-[#0a0b0e] px-3 py-2.5 text-[13px] text-[#e8eaf0] placeholder:text-[#6b7280] outline-none transition-colors focus:border-[#4fffb0]"
+                className="auth-input"
               />
             </div>
 
-            <div className="relative">
+            <div className="auth-field--relative">
               <input
                 ref={passwordRef}
                 type={showPassword ? "text" : "password"}
@@ -92,13 +93,14 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-[8px] border border-[#1c1e24] bg-[#0a0b0e] px-3 py-2.5 pr-10 text-[13px] text-[#e8eaf0] placeholder:text-[#6b7280] outline-none transition-colors focus:border-[#4fffb0]"
+                className="auth-input"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 tabIndex={-1}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6b7280] transition-colors hover:text-[#e8eaf0]"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="auth-toggle"
               >
                 {showPassword ? (
                   <EyeOff className="size-4" />
@@ -108,41 +110,29 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <div className="flex justify-end">
-              <Link
-                href="/reset-password"
-                className="text-[12px] text-[#6b7280] transition-colors hover:text-[#e8eaf0]"
-              >
+            <div className="auth-row-end">
+              <Link href="/reset-password" className="auth-quiet-link">
                 Forgot password?
               </Link>
             </div>
           </div>
 
           {error && (
-            <p className="mt-4 text-[13px] leading-relaxed text-[#ef4444]">
+            <p role="alert" className="auth-error">
               {error}
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="mt-6 w-full rounded-[8px] bg-[#4fffb0] px-3 py-2.5 text-[13px] font-medium text-[#030405] transition-opacity hover:opacity-90 disabled:opacity-30"
-          >
+          <button type="submit" disabled={!canSubmit} className="auth-button">
             {loading ? "Logging in\u2026" : "Log in"}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-[13px] text-[#6b7280]">
+        <p className="auth-swap">
           Don&apos;t have an account?{" "}
-          <Link
-            href="/signup"
-            className="text-[#e8eaf0] transition-colors hover:text-[#4fffb0]"
-          >
-            Create one
-          </Link>
+          <Link href="/signup">Create one</Link>
         </p>
       </div>
-    </main>
+    </AuthShell>
   );
 }

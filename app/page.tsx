@@ -1,3 +1,4 @@
+import "@/components/landing/landing.css";
 import { AskQuestions } from "@/components/landing/ask-questions";
 import { FAQ } from "@/components/landing/faq";
 import { Footer } from "@/components/landing/footer";
@@ -8,11 +9,11 @@ import { Trust } from "@/components/landing/trust";
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-background">
+    <main id="top" className="launch-site min-h-screen">
       <Navbar />
       <Hero />
-      <AskQuestions />
       <HowItWorks />
+      <AskQuestions />
       <Trust />
       <FAQ />
       <Footer />

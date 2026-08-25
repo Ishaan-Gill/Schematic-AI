@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Mono, Geist, Instrument_Serif } from "next/font/google";
+import { DM_Mono, Geist, Instrument_Sans, Instrument_Serif } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
@@ -14,6 +14,11 @@ const dmMono = DM_Mono({
   subsets: ["latin"],
   variable: "--font-dm-mono",
   weight: ["300", "400", "500"],
+});
+
+const instrumentSans = Instrument_Sans({
+  subsets: ["latin"],
+  variable: "--font-instrument-sans",
 });
 
 const instrumentSerif = Instrument_Serif({
@@ -89,7 +94,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geist.variable} ${dmMono.variable} ${instrumentSerif.variable} h-full dark antialiased`}
+      className={`${geist.variable} ${dmMono.variable} ${instrumentSans.variable} ${instrumentSerif.variable} h-full dark antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
