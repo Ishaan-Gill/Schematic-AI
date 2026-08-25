@@ -66,12 +66,43 @@ export function generateSQLPrompt({
         <sql>INVALID_QUERY</sql>
             
         DuckDB rules:
-        - Use TRY_STRPTIME instead of STRPTIME
+        - Use TRY_STRPTIME instead of STRPTIME (TRY_ variants only, so
+          unparseable values become NULL instead of erroring)
         - Use regexp_matches()
         - Prefer DATE_TRUNC and EXTRACT
         - Use LOWER() for string comparisons
 
-        DATE RULES (CRITICAL):
+        DATE & COLUMN TYPE RULES (CRITICAL):
+        - The Schema section lists every column's physical type in
+          parentheses, e.g. "Order Date" (DATE), "Created at" (VARCHAR).
+          These types are authoritative. Trust them over column names
+          and semantic hints.
+        - If a column's type is DATE or TIMESTAMP:
+            use the column DIRECTLY in comparisons, DATE_TRUNC,
+            EXTRACT, GROUP BY, etc.
+            NEVER wrap it in TRY_STRPTIME or any other string parsing.
+            Example (correct):
+              WHERE "Created at" >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1' MONTH
+            Example (WRONG — silently drops every row):
+              WHERE TRY_STRPTIME("Created at", '%Y-%m-%d %H:%M:%S')::DATE >= ...
+        - Only when a column's physical type is VARCHAR may you parse
+          it as a date. In that case:
+            - If SEMANTIC HINTS list a detectedFormat for that column,
+              try that format first.
+            - Never rely on a single hardcoded format. Combine several
+              TRY_STRPTIME variants in a COALESCE so mixed-format rows
+              still parse. Put 2-digit-year (%y) variants BEFORE their
+              4-digit (%Y) counterparts, because DuckDB strptime %Y also
+              accepts 2-digit years ('04/12/24' would become year 0024), e.g.
+              COALESCE(
+                TRY_STRPTIME("Col", '%y-%m-%d'),
+                TRY_STRPTIME("Col", '%Y-%m-%d'),
+                TRY_STRPTIME("Col", '%Y-%m-%d %H:%M:%S'),
+                TRY_STRPTIME(REPLACE("Col", 'T', ' '), '%Y-%m-%d %H:%M:%S'),
+                TRY_STRPTIME("Col", '%m/%d/%y'),
+                TRY_STRPTIME("Col", '%m/%d/%Y'),
+                TRY_STRPTIME("Col", '%m/%d/%Y %H:%M:%S')
+              )::DATE
         - Today's date is provided in the TIME HINTS section below.
         - For relative periods ("this month", "last week", "ytd", etc.),
           prefer CURRENT_DATE arithmetic over hardcoded literal dates,

@@ -118,16 +118,28 @@ export const inferColumnTypes = async (
         }
 
         const columnName = col.column_name
+        const quotedColumn = quoteIdentifier(columnName)
+        // Order matters: DuckDB strptime %Y also accepts 2-digit years
+        // (e.g. '04/12/24' -> year 0024), so %y variants must run first.
+        const dateParseExpr = `
+            COALESCE(
+                TRY_STRPTIME(${quotedColumn}, '%y-%m-%d'),
+                TRY_STRPTIME(${quotedColumn}, '%Y-%m-%d'),
+                TRY_STRPTIME(${quotedColumn}, '%Y-%m-%d %H:%M:%S'),
+                TRY_STRPTIME(REPLACE(${quotedColumn}, 'T', ' '), '%Y-%m-%d %H:%M:%S'),
+                TRY_STRPTIME(${quotedColumn}, '%m/%d/%y'),
+                TRY_STRPTIME(${quotedColumn}, '%m/%d/%Y'),
+                TRY_STRPTIME(${quotedColumn}, '%m/%d/%Y %H:%M:%S'),
+                TRY_STRPTIME(${quotedColumn}, '%B %d %Y'),
+                TRY_CAST(${quotedColumn} AS DATE),
+                TRY_CAST(${quotedColumn} AS TIMESTAMPTZ)
+            )
+        `
         const dateCheck = await conn.query(`
             SELECT
                 COUNT(*) AS total_rows,
                 COUNT(
-                    COALESCE(
-                        TRY_STRPTIME(${quoteIdentifier(columnName)}, '%Y-%m-%d'),
-                        TRY_STRPTIME(${quoteIdentifier(columnName)}, '%m/%d/%Y'),
-                        TRY_STRPTIME(${quoteIdentifier(columnName)}, '%B %d %Y'),
-                        TRY_CAST(${quoteIdentifier(columnName)} AS DATE)
-                    )
+                    ${dateParseExpr}
                 ) AS date_rows
             FROM ${quoteIdentifier(tableName)}
         `)
@@ -142,12 +154,7 @@ export const inferColumnTypes = async (
                 ALTER TABLE ${quoteIdentifier(tableName)}
                 ALTER COLUMN ${quoteIdentifier(columnName)}
                 TYPE DATE
-                USING COALESCE(
-                    TRY_STRPTIME(${quoteIdentifier(columnName)}, '%Y-%m-%d'),
-                    TRY_STRPTIME(${quoteIdentifier(columnName)}, '%m/%d/%Y'),
-                    TRY_STRPTIME(${quoteIdentifier(columnName)}, '%B %d %Y'),
-                    TRY_CAST(${quoteIdentifier(columnName)} AS DATE)
-                )
+                USING ${dateParseExpr}
             `)
             if (totalRows > dateRows) {
                 coercionWarnings.push({
