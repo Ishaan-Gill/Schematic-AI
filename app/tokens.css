@@ -1,0 +1,57 @@
+/* Schematic Design Tokens — shared across landing, auth, and workspace */
+
+@layer tokens {
+  :root {
+    /* Surface */
+    --paper: #f5f5f0;
+    --paper-bright: #fbfbf8;
+    --paper-soft: #ecefe9;
+
+    /* Typography */
+    --ink: #17201a;
+    --ink-soft: #526056;
+    --ink-faint: #849087;
+
+    /* Accent */
+    --green: #157347;
+    --green-dark: #0e5735;
+    --green-soft: #e8f0e9;
+    --mint: #c9e5d2;
+
+    /* Borders */
+    --line: rgba(23, 32, 26, 0.15);
+    --line-faint: rgba(23, 32, 26, 0.08);
+    --line-strong: rgba(23, 32, 26, 0.25);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(23, 32, 26, 0.06);
+    --shadow-md: 0 2px 8px rgba(23, 32, 26, 0.08);
+    --shadow-lg: 0 4px 16px rgba(23, 32, 26, 0.10);
+    --shadow-offset: 4px 4px 0 rgba(23, 32, 26, 0.08);
+    --shadow-offset-green: 4px 4px 0 rgba(21, 115, 71, 0.12);
+
+    /* Semantic — Workspace */
+    --workspace-bg: var(--paper);
+    --workspace-surface: var(--paper-bright);
+    --workspace-surface-raised: #ffffff;
+    --workspace-surface-sunken: var(--paper-soft);
+    --workspace-sidebar-bg: var(--paper-soft);
+    --workspace-border: var(--line);
+    --workspace-border-strong: var(--line-strong);
+    --workspace-text: var(--ink);
+    --workspace-text-secondary: var(--ink-soft);
+    --workspace-text-muted: var(--ink-faint);
+    --workspace-accent: var(--green);
+    --workspace-accent-dark: var(--green-dark);
+    --workspace-accent-soft: var(--green-soft);
+    --workspace-accent-mint: var(--mint);
+    --workspace-warning: #92400e;
+    --workspace-warning-soft: #fef3c7;
+    --workspace-warning-border: rgba(146, 64, 14, 0.2);
+    --workspace-danger: #991b1b;
+    --workspace-danger-soft: #fee4e2;
+    --workspace-danger-border: rgba(153, 27, 27, 0.2);
+    --workspace-code-bg: var(--paper-soft);
+    --workspace-selection: rgba(21, 115, 71, 0.12);
+  }
+}

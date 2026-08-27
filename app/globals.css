@@ -1,13 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "./tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist), "Geist Fallback", system-ui, sans-serif;
+  --font-sans: var(--font-instrument-sans), "Instrument Sans", system-ui, sans-serif;
   --font-mono: var(--font-dm-mono), "DM Mono", monospace;
   --font-heading: var(--font-instrument-serif), "Instrument Serif", serif;
   --font-serif: var(--font-instrument-serif), "Instrument Serif", serif;
@@ -50,6 +51,28 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* Workspace color tokens — required for text-workspace-*, bg-workspace-*, etc. */
+  --color-workspace-bg: var(--workspace-bg);
+  --color-workspace-surface: var(--workspace-surface);
+  --color-workspace-surface-raised: var(--workspace-surface-raised);
+  --color-workspace-surface-sunken: var(--workspace-surface-sunken);
+  --color-workspace-text: var(--workspace-text);
+  --color-workspace-text-secondary: var(--workspace-text-secondary);
+  --color-workspace-text-muted: var(--workspace-text-muted);
+  --color-workspace-accent: var(--workspace-accent);
+  --color-workspace-accent-dark: var(--workspace-accent-dark);
+  --color-workspace-accent-soft: var(--workspace-accent-soft);
+  --color-workspace-accent-mint: var(--workspace-accent-mint);
+  --color-workspace-accent-blue: var(--accent-blue);
+  --color-workspace-border: var(--workspace-border);
+  --color-workspace-border-strong: var(--workspace-border-strong);
+  --color-workspace-warning: var(--workspace-warning);
+  --color-workspace-warning-soft: var(--workspace-warning-soft);
+  --color-workspace-warning-border: var(--workspace-warning-border);
+  --color-workspace-danger: var(--workspace-danger);
+  --color-workspace-danger-soft: var(--workspace-danger-soft);
+  --color-workspace-danger-border: var(--workspace-danger-border);
+  --color-workspace-code-bg: var(--workspace-code-bg);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -60,21 +83,21 @@
 }
 
 :root {
-  --bg: #0a0b0e;
-  --surface: #111215;
-  --border: #1c1e24;
-  --border-2: #2a2d35;
-  --text: #e8eaf0;
-  --text-2: #6b7280;
-  --text-muted: #374151;
-  --accent: #4fffb0;
-  --accent-dim: rgba(79, 255, 176, 0.1);
-  --accent-blue: #38bdf8;
-  --warning: #f59e0b;
-  --warning-dim: rgba(245, 158, 11, 0.1);
-  --danger: #ef4444;
-  --selection: rgba(79, 255, 176, 0.2);
-  --code-bg: #0d1117;
+  --bg: #f6f6f1;
+  --surface: #fbfbf8;
+  --border: rgba(23, 32, 26, 0.15);
+  --border-2: rgba(23, 32, 26, 0.22);
+  --text: #17201a;
+  --text-2: #526056;
+  --text-muted: #849087;
+  --accent: #157347;
+  --accent-dim: rgba(21, 115, 71, 0.08);
+  --accent-blue: #1d4ed8;
+  --warning: #92400e;
+  --warning-dim: rgba(146, 64, 14, 0.08);
+  --danger: #991b1b;
+  --selection: rgba(21, 115, 71, 0.12);
+  --code-bg: #f0f2ee;
   --background: var(--bg);
   --foreground: var(--text);
   --card: var(--surface);
@@ -82,27 +105,27 @@
   --popover: var(--surface);
   --popover-foreground: var(--text);
   --primary: var(--accent);
-  --primary-foreground: var(--bg);
+  --primary-foreground: #ffffff;
   --secondary: var(--surface);
   --secondary-foreground: var(--text);
   --muted: var(--border);
   --muted-foreground: var(--text-2);
-  --accent-foreground: var(--bg);
+  --accent-foreground: #ffffff;
   --destructive: var(--danger);
   --input: var(--border);
   --ring: var(--accent);
   --chart-1: var(--accent);
   --chart-2: var(--accent-blue);
   --chart-3: var(--warning);
-  --chart-4: #a78bfa;
+  --chart-4: #7c3aed;
   --chart-5: var(--text-2);
   --radius: 6px;
   --radius-large: 10px;
-  --sidebar: var(--bg);
+  --sidebar: var(--surface);
   --sidebar-foreground: var(--text);
   --sidebar-primary: var(--accent);
-  --sidebar-primary-foreground: var(--bg);
-  --sidebar-accent: var(--surface);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--accent-dim);
   --sidebar-accent-foreground: var(--text);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--accent);
@@ -116,20 +139,20 @@
   --popover: var(--surface);
   --popover-foreground: var(--text);
   --primary: var(--accent);
-  --primary-foreground: var(--bg);
+  --primary-foreground: #ffffff;
   --secondary: var(--surface);
   --secondary-foreground: var(--text);
   --muted: var(--border);
   --muted-foreground: var(--text-2);
-  --accent-foreground: var(--bg);
+  --accent-foreground: #ffffff;
   --destructive: var(--danger);
   --input: var(--border);
   --ring: var(--accent);
-  --sidebar: var(--bg);
+  --sidebar: var(--surface);
   --sidebar-foreground: var(--text);
   --sidebar-primary: var(--accent);
-  --sidebar-primary-foreground: var(--bg);
-  --sidebar-accent: var(--surface);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--accent-dim);
   --sidebar-accent-foreground: var(--text);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--accent);
@@ -171,7 +194,7 @@ body::before {
   inset: 0;
   z-index: 1000;
   pointer-events: none;
-  opacity: 0.02;
+  opacity: 0.015;
   content: "";
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
@@ -230,4 +253,75 @@ body::before {
 
 .animate-pulse-dot {
   animation: pulse 2s ease-in-out infinite;
+}
+
+/* Workspace brand — same as landing page */
+.workspace-shell .brand > div:first-child {
+  border-color: var(--ink);
+}
+.workspace-shell .brand > div:first-child > div:nth-child(1) {
+  background: var(--green);
+}
+.workspace-shell .brand > div:first-child > div:nth-child(2) {
+  background: color-mix(in srgb, var(--green) 60%, var(--paper));
+}
+.workspace-shell .brand > div:first-child > div:nth-child(3) {
+  background: color-mix(in srgb, var(--green) 40%, var(--paper));
+}
+.workspace-shell .brand > div:first-child > div:nth-child(4) {
+  background: color-mix(in srgb, var(--green) 20%, var(--paper));
+}
+.workspace-shell .brand > span {
+  color: var(--ink);
+  font-family: var(--font-instrument-sans), "Instrument Sans", Arial, sans-serif;
+  font-size: 1.08rem;
+}
+.workspace-shell .brand > span > span {
+  color: var(--green);
+}
+
+/* Workspace content area — subtle grid texture matching landing page */
+.workspace-shell > div:last-child {
+  background-image:
+    linear-gradient(to right, rgba(23, 32, 26, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(23, 32, 26, 0.04) 1px, transparent 1px);
+  background-size: 4rem 4rem;
+  background-color: var(--workspace-bg);
+}
+
+/* Workspace surface utilities */
+.ws-bg { background-color: var(--workspace-bg); }
+.ws-surface { background-color: var(--workspace-surface); }
+.ws-raised { background-color: var(--workspace-surface-raised); }
+.ws-sunken { background-color: var(--workspace-surface-sunken); }
+.ws-sidebar { background-color: var(--workspace-sidebar-bg); }
+.ws-code { background-color: var(--workspace-code-bg); }
+
+/* Shadow utilities */
+.ws-shadow-sm { box-shadow: var(--shadow-sm); }
+.ws-shadow-md { box-shadow: var(--shadow-md); }
+.ws-shadow-lg { box-shadow: var(--shadow-lg); }
+.ws-shadow-offset { box-shadow: var(--shadow-offset); }
+.ws-shadow-offset-green { box-shadow: var(--shadow-offset-green); }
+
+/* Border utilities */
+.ws-border { border-color: var(--workspace-border); }
+.ws-border-strong { border-color: var(--workspace-border-strong); }
+
+/* Green glow on hover */
+.glow-green:hover {
+  border-color: var(--green) !important;
+  background-color: var(--green-soft) !important;
+  color: var(--green) !important;
+  box-shadow: 0 0 0 3px rgba(21, 115, 71, 0.15), 0 0 12px rgba(21, 115, 71, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

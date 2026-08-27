@@ -21,16 +21,31 @@ export default function ChatMessage({
             className={`mx-auto w-full max-w-[860px] flex ${isUser ? "justify-end" : "justify-start"}`}
         >
             {isUser ? (
-                <div className="max-w-[80%] whitespace-pre-wrap rounded-[16px_16px_4px_16px] border border-[#2a2d35] bg-[#1a1d24] px-4 py-3 font-sans text-[14px] leading-[1.7] text-[#e8eaf0]">
+                <div
+                    className="max-w-[70%] whitespace-pre-wrap rounded-2xl rounded-br-md px-4 py-2.5 text-[13px] leading-[1.6]"
+                    style={{
+                        background: "#e8f0e9",
+                        border: "1px solid rgba(21,115,71,0.2)",
+                        color: "var(--ink)",
+                        boxShadow: "2px 2px 0 rgba(21,115,71,0.08)",
+                    }}
+                >
                     {content}
                 </div>
             ) : (
                 <div className="flex w-full items-start gap-3">
-                    <div className="mt-1 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[5px] border border-[rgba(79,255,176,0.25)] bg-[rgba(79,255,176,0.1)] font-mono text-[10px] text-[rgba(79,255,176,0.8)]">
+                    <div
+                        className="mt-0.5 flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-lg text-[12px] font-bold"
+                        style={{
+                            background: "#157347",
+                            color: "#ffffff",
+                            boxShadow: "2px 2px 0 rgba(21,115,71,0.2)",
+                        }}
+                    >
                         S
                     </div>
 
-                    <div className="min-w-0 flex-1 whitespace-pre-wrap font-sans text-[14px] leading-[1.8] text-[#e8eaf0]">
+                    <div className="min-w-0 flex-1 whitespace-pre-wrap pt-0.5 text-[14px] leading-[1.75]" style={{ color: "var(--ink)" }}>
                         {content}
                     </div>
                 </div>

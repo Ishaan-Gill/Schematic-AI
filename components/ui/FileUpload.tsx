@@ -76,20 +76,21 @@ export default function FileUpload({
                     onDragEnter={handleDragEnter}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
-                    className={`relative flex items-end gap-3 rounded-[12px] border px-4 py-3 transition-all duration-200 focus-within:border-[rgba(79,255,176,0.4)] focus-within:shadow-[0_0_0_3px_rgba(79,255,176,0.06)] ${isDragOver
-                        ? "border-[#4fffb0] bg-[rgba(79,255,176,0.04)] shadow-[0_0_0_3px_rgba(79,255,176,0.10)]"
-                        : "border-[#1c1e24] bg-[#111215]"
+                    className={`relative flex items-end gap-3 rounded-xl border-2 px-4 py-3 transition-all duration-150 ${
+                        isDragOver
+                            ? "border-workspace-accent bg-workspace-accent-soft/40 shadow-[0_0_0_4px_rgba(21,115,71,0.12)]"
+                            : "border-workspace-border-strong bg-workspace-surface-raised shadow-[4px_4px_0_rgba(23,32,26,0.08)] focus-within:border-workspace-accent/50 focus-within:shadow-[4px_4px_0_rgba(21,115,71,0.12),0_0_0_3px_rgba(21,115,71,0.08)]"
                     }`}
                 >
                     {isDragOver && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[12px] bg-[rgba(17,18,21,0.85)]">
-                            <span className="text-[15px] font-medium text-[#4fffb0]">
+                        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-workspace-surface-raised/90">
+                            <span className="text-[14px] font-medium text-workspace-accent">
                                 Drop your file here
                             </span>
                         </div>
                     )}
-                    <label className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-[7px] text-[#6b7280] transition-colors duration-150 hover:text-[#e8eaf0] ${isUploading ? "pointer-events-none opacity-40" : ""}`}>
-                        <Paperclip className="h-[18px] w-[18px]" aria-hidden="true" />
+                    <label className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-workspace-text-muted transition-colors duration-150 hover:bg-workspace-surface-sunken hover:text-workspace-accent ${isUploading ? "pointer-events-none opacity-40" : ""}`}>
+                        <Paperclip className="h-4 w-4" aria-hidden="true" />
                         <input
                             type="file"
                             multiple
@@ -141,18 +142,18 @@ export default function FileUpload({
                                 py-1
                                 text-[14px]
                                 leading-6
-                                text-[#e8eaf0]
-                                placeholder:text-[#6b7280]
+                                text-workspace-text
+                                placeholder:text-workspace-text-muted
                                 focus:outline-none
                             "
                         />
-                        <div className="mt-3 flex items-center justify-between">
+                        <div className="mt-2 flex items-center justify-between">
                             <motion.button
                                 type="submit"
                                 disabled={isSending || isUploading || !query.trim()}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.96 }}
-                                className="flex h-8 w-8 items-center justify-center rounded-[7px] bg-[#4fffb0] text-[#0a0b0e] disabled:opacity-40"
+                                className="flex h-9 w-9 items-center justify-center rounded-lg bg-workspace-accent text-white shadow-[2px_2px_0_rgba(23,32,26,0.15)] transition-all duration-150 hover:bg-workspace-accent-dark hover:shadow-[3px_3px_0_rgba(23,32,26,0.18)] disabled:opacity-40 disabled:hover:bg-workspace-accent disabled:hover:shadow-[2px_2px_0_rgba(23,32,26,0.15)]"
                             >
                                 {isSending || isUploading
                                     ? <Sparkles className="size-4 animate-pulse" />

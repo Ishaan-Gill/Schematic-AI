@@ -18,27 +18,41 @@ export default function ActionRow({ onExport }: ActionRowProps) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      {/* Comment in when add their functionality */}
-      {/* <button disabled className="flex items-center gap-1.5 px-2 py-1 font-mono text-[10px] text-[#6b7280] transition hover:text-[#4fffb0]">
-                ✓ Verify
-            </button> */}
-
+    <div style={{ display: "flex", flexShrink: 0, alignItems: "center" }}>
       <button
         onClick={handleExport}
         disabled={isExporting}
-        className="flex items-center gap-2 rounded-md border border-[#4fffb0]/30 px-4 py-2 text-sm font-medium text-[#4fffb0] transition-all hover:border-[#4fffb0] hover:bg-[#4fffb0]/10 disabled:cursor-not-allowed disabled:opacity-40"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          flexShrink: 0,
+          borderRadius: "8px",
+          background: "#157347",
+          color: "#ffffff",
+          padding: "6px 14px",
+          fontSize: "11px",
+          fontFamily: "var(--font-dm-mono), 'DM Mono', monospace",
+          fontWeight: 600,
+          border: "none",
+          boxShadow: "2px 2px 0 rgba(21,115,71,0.25)",
+          cursor: isExporting ? "not-allowed" : "pointer",
+          opacity: isExporting ? 0.4 : 1,
+          transition: "all 150ms",
+        }}
+        onMouseEnter={(e) => {
+          if (!isExporting) {
+            e.currentTarget.style.background = "#0e5735";
+            e.currentTarget.style.boxShadow = "3px 3px 0 rgba(21,115,71,0.3)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "#157347";
+          e.currentTarget.style.boxShadow = "2px 2px 0 rgba(21,115,71,0.25)";
+        }}
       >
-        {isExporting ? "Exporting..." : "↓ Export CSV"}
+        {isExporting ? "Exporting..." : "\u2193 Export CSV"}
       </button>
-
-      {/* <button disabled className="flex items-center gap-1.5 px-2 py-1 font-mono text-[10px] text-[#6b7280] transition hover:text-[#4fffb0]">
-                📌 Save
-            </button>
-
-            <button disabled className="flex items-center gap-1.5 px-2 py-1 font-mono text-[10px] text-[#6b7280] transition hover:text-[#4fffb0]">
-                📊 Chart
-            </button> */}
     </div>
   );
 }

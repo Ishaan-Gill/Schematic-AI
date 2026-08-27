@@ -67,7 +67,7 @@ export default function UserMenu({ user, onLogout }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex h-7 w-7 items-center justify-center rounded-full border border-[rgba(79,255,176,0.2)] bg-[rgba(79,255,176,0.1)] font-sans text-[12px] font-medium text-[#4fffb0] transition-all duration-200 hover:border-[rgba(79,255,176,0.4)] hover:bg-[rgba(79,255,176,0.15)]">
+        <button className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-workspace-accent/25 bg-workspace-accent/10 text-[12px] font-semibold text-workspace-accent shadow-[1px_1px_0_rgba(21,115,71,0.10)] transition-all duration-150 hover:border-workspace-accent/40 hover:bg-workspace-accent/15">
           {initial}
         </button>
       </DropdownMenuTrigger>
@@ -77,15 +77,15 @@ export default function UserMenu({ user, onLogout }: UserMenuProps) {
         className="w-[336px] p-1.5"
       >
         <div className="flex items-center gap-4 px-4 py-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[rgba(79,255,176,0.2)] bg-[rgba(79,255,176,0.1)] font-sans text-[18px] font-medium text-[#4fffb0]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-workspace-accent/25 bg-workspace-accent/10 text-[18px] font-semibold text-workspace-accent">
             {initial}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[16px] font-semibold text-[#e8eaf0]">
+            <div className="truncate text-[16px] font-semibold text-workspace-text">
               {displayName}
             </div>
             {user?.email && (
-              <div className="truncate text-[13px] text-[#9ca3af]">
+              <div className="truncate text-[13px] text-workspace-text-secondary">
                 {user.email}
               </div>
             )}
@@ -95,45 +95,45 @@ export default function UserMenu({ user, onLogout }: UserMenuProps) {
         <DropdownMenuSeparator />
 
         <div className="px-4 py-3">
-          <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
+          <div className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-workspace-text-secondary">
             Daily quota
           </div>
-          <div className="h-[6px] w-full overflow-hidden rounded-full bg-[#1c1e24]">
+          <div className="h-[6px] w-full overflow-hidden rounded-full bg-workspace-border">
             <div
-              className="h-full rounded-full bg-[#4fffb0] transition-all duration-300"
+              className="h-full rounded-full bg-workspace-accent transition-all duration-300"
               style={{ width: `${progressPct}%` }}
             />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-[15px] font-medium text-[#e8eaf0]">
-              {quota ? `${quota.used} / ${quota.limit}` : "—"}
+            <span className="text-[15px] font-medium text-workspace-text">
+              {quota ? `${quota.used} / ${quota.limit}` : "\u2014"}
             </span>
-            <span className="text-[13px] text-[#6b7280]">queries</span>
+            <span className="text-[13px] text-workspace-text-muted">queries</span>
           </div>
           {quota && (
             <div className="mt-0.5 space-y-0.5">
-              <p className="text-[13px] text-[#9ca3af]">
+              <p className="text-[13px] text-workspace-text-secondary">
                 {remaining} remaining
               </p>
-              <p className="text-[11px] text-[#4b5563]">
+              <p className="font-mono text-[11px] text-workspace-text-muted">
                 {formatResetRemaining(quota.resetsAt)}
               </p>
             </div>
           )}
           {!quota && (
-            <p className="mt-1 text-[13px] text-[#6b7280]">Loading...</p>
+            <p className="mt-1 text-[13px] text-workspace-text-muted">Loading...</p>
           )}
         </div>
 
         <DropdownMenuSeparator />
 
         <div className="px-1">
-          <DropdownMenuItem disabled className="text-[#6b7280] opacity-100 data-disabled:opacity-100">
-            <Settings className="h-4 w-4 text-[#6b7280]" />
+          <DropdownMenuItem disabled className="text-workspace-text-muted opacity-100 data-disabled:opacity-100">
+            <Settings className="h-4 w-4 text-workspace-text-muted" />
             Settings
           </DropdownMenuItem>
-          <DropdownMenuItem disabled className="text-[#6b7280] opacity-100 data-disabled:opacity-100">
-            <CreditCard className="h-4 w-4 text-[#6b7280]" />
+          <DropdownMenuItem disabled className="text-workspace-text-muted opacity-100 data-disabled:opacity-100">
+            <CreditCard className="h-4 w-4 text-workspace-text-muted" />
             Billing
           </DropdownMenuItem>
         </div>

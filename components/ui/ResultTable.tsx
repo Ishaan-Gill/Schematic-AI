@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion"
 import { ArrowLeft, ArrowRight } from "lucide-react"
-import { cn } from "@/lib/utils"
 import ActionRow from "./ActionRow"
 
 type ResultTableProps = {
@@ -48,9 +47,24 @@ export default function ResultTable({
         )
     }
     const isFinancialColumn = (header: string) => {
-        return /(revenue|sales|amount|price|cost|profit|margin|value|total|spend|budget|income|expense|aov|arpu)/i.test(header)
+        return /(revenue|sales|amount|price|cost|profit|margin|value|total|spend|budget|income|expense|aov|arpu|count|orders|quantity)/i.test(header)
     }
-    
+
+    // Find the first headline answer: first numeric value from a financial column in the first row
+    let headlineValue: string | null = null
+    let headlineLabel: string | null = null
+    const firstRow = rows[0]
+    if (firstRow) {
+        for (const header of headers) {
+            const val = firstRow[header]
+            if (isNumeric(val) && isFinancialColumn(header)) {
+                headlineValue = formatValue(val)
+                headlineLabel = header
+                break
+            }
+        }
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -62,14 +76,42 @@ export default function ResultTable({
             className="w-full"
         >
 
+            {/* Headline answer */}
+            {headlineValue && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                    className="mb-5 flex items-baseline gap-3"
+                >
+                    <span
+                        className="font-mono text-[2.5rem] font-bold leading-none tracking-[-0.04em]"
+                        style={{ color: "var(--green)" }}
+                    >
+                        {headlineValue}
+                    </span>
+                    <span className="font-mono text-[11px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--ink-faint)" }}>
+                        {headlineLabel}
+                    </span>
+                </motion.div>
+            )}
+
             {/* Header */}
             <div className="mb-4 space-y-3">
 
                 {/* Row 1: row count + export */}
                 <div className="flex items-center justify-between">
-                    <p className="font-mono text-[11px] text-[#6b7280]">
-                        {rows.length} rows returned
-                    </p>
+                    <div className="flex items-center gap-2">
+                        <span
+                            className="inline-flex h-5 items-center rounded-full px-2.5 font-mono text-[10px] font-semibold"
+                            style={{ background: "rgba(21,115,71,0.1)", border: "1px solid rgba(21,115,71,0.2)", color: "var(--green)" }}
+                        >
+                            {rows.length} rows
+                        </span>
+                        <span className="font-mono text-[11px]" style={{ color: "var(--ink-faint)" }}>
+                            returned
+                        </span>
+                    </div>
                     <ActionRow onExport={onExport} />
                 </div>
 
@@ -80,13 +122,13 @@ export default function ResultTable({
                         disabled={page === 0}
                         onClick={onPrevPage}
                         whileTap={{ scale: 0.96 }}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-[6px] border border-[#1c1e24] px-3 font-mono text-[11px] text-[#6b7280] transition hover:border-[rgba(79,255,176,0.3)] hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-workspace-border-strong bg-workspace-surface-raised px-3 font-mono text-[11px] text-workspace-text-secondary shadow-[1px_1px_0_rgba(23,32,26,0.06)] transition-all duration-150 hover:border-workspace-accent/30 hover:bg-workspace-accent-soft/30 hover:text-workspace-accent disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         <ArrowLeft className="size-4 shrink-0"/>
                         Previous
                     </motion.button>
 
-                    <span className="flex h-8 items-center rounded-[6px] border border-[#1c1e24] bg-[#111215] px-4 font-mono text-[11px] font-medium text-[#e8eaf0]">
+                    <span className="flex h-8 items-center rounded-lg border border-workspace-border-strong bg-workspace-surface-sunken px-4 font-mono text-[11px] font-medium text-workspace-text">
                         Page {page + 1}
                     </span>
 
@@ -95,7 +137,7 @@ export default function ResultTable({
                         disabled={!hasMore}
                         onClick={onNextPage}
                         whileTap={{ scale: 0.96 }}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-[6px] border border-[#1c1e24] px-3 font-mono text-[11px] text-[#6b7280] transition hover:border-[rgba(79,255,176,0.3)] hover:bg-[rgba(79,255,176,0.06)] hover:text-[#4fffb0] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-workspace-border-strong bg-workspace-surface-raised px-3 font-mono text-[11px] text-workspace-text-secondary shadow-[1px_1px_0_rgba(23,32,26,0.06)] transition-all duration-150 hover:border-workspace-accent/30 hover:bg-workspace-accent-soft/30 hover:text-workspace-accent disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         Next
                         <ArrowRight className="size-4 shrink-0"/>
@@ -104,14 +146,14 @@ export default function ResultTable({
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border-2 border-workspace-border-strong bg-workspace-surface-raised shadow-[3px_3px_0_rgba(23,32,26,0.10)]">
                 <table className="w-full border-collapse">
                     <thead>
-                        <tr>
+                        <tr className="bg-workspace-surface-sunken border-b-2 border-workspace-border-strong">
                             {headers.map((header, i) => (
                                 <th
                                     key={i}
-                                    className="border-b border-[#2a2d35] px-4 pb-2 text-left font-mono text-[9px] font-normal uppercase tracking-[0.1em] text-[#6b7280]"
+                                    className="px-4 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-workspace-text border-r border-workspace-border last:border-r-0"
                                 >
                                     {header}
                                 </th>
@@ -130,25 +172,30 @@ export default function ResultTable({
                                     duration: 0.25,
                                     ease: [0.16, 1, 0.3, 1]
                                 }}
-                                className={cn(
-                                    "border-b border-white/[0.03] transition-colors duration-150 hover:bg-[#111215]"
-                                )}
+                                className="border-b border-workspace-border/60 transition-colors duration-150 last:border-b-0"
+                                style={{ ["--tw-bg-opacity" as string]: undefined }}
                             >
-                                {Object.entries(row).map(([header, cell], cellIndex) => (
-                                    <td
-                                        key={cellIndex}
-                                        className={cn(
-                                            "px-4 py-2.5 text-[13px]",
-                                            isNumeric(cell) && isFinancialColumn(header)
-                                                ? "font-mono text-[#4fffb0]"
-                                                : isNumeric(cell)
-                                                    ? "font-mono text-[#e8eaf0]"
-                                                : "font-sans text-[#e5e7eb]"
-                                        )}
-                                    >
-                                        {formatValue(cell)}
-                                    </td>
-                                ))}
+                                {Object.entries(row).map(([header, cell], cellIndex) => {
+                                    const isFinCol = isFinancialColumn(header)
+                                    const isNum = isNumeric(cell)
+                                    let cellStyle: React.CSSProperties = { fontSize: "13px" }
+                                    if (isNum && isFinCol) {
+                                        cellStyle = { ...cellStyle, fontFamily: "var(--font-dm-mono), 'DM Mono', monospace", fontWeight: 600, color: "var(--green)" }
+                                    } else if (isNum) {
+                                        cellStyle = { ...cellStyle, fontFamily: "var(--font-dm-mono), 'DM Mono', monospace", color: "var(--ink)" }
+                                    } else {
+                                        cellStyle = { ...cellStyle, color: "var(--ink-soft)" }
+                                    }
+                                    return (
+                                        <td
+                                            key={cellIndex}
+                                            className="px-4 py-2.5 border-r border-workspace-border/40 last:border-r-0"
+                                            style={cellStyle}
+                                        >
+                                            {formatValue(cell)}
+                                        </td>
+                                    )
+                                })}
                             </motion.tr>
                         ))}
                     </tbody>

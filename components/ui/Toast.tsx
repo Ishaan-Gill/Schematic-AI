@@ -12,16 +12,19 @@ const iconMap = {
 
 const styles = {
     success: {
-        border: "border-green-500/30",
-        icon: "text-green-400",
+        border: "border-green-500/25",
+        icon: "text-green-600",
+        bg: "bg-green-50",
     },
     error: {
-        border: "border-red-500/30",
-        icon: "text-red-400",
+        border: "border-red-500/25",
+        icon: "text-red-600",
+        bg: "bg-red-50",
     },
     info: {
-        border: "border-blue-500/30",
-        icon: "text-blue-400",
+        border: "border-blue-500/25",
+        icon: "text-blue-600",
+        bg: "bg-blue-50",
     },
 } as const
 
@@ -44,12 +47,12 @@ export default function Toast({
                 rounded-xl
                 border
                 ${style.border}
-                bg-[#111318]
+                ${style.bg}
+                bg-workspace-surface-raised
                 px-5
                 py-3
                 text-sm
-                shadow-xl
-                backdrop-blur-md
+                shadow-[4px_4px_0_rgba(23,32,26,0.08)]
                 min-w-[300px]
                 max-w-[420px]
             `}
@@ -58,11 +61,11 @@ export default function Toast({
                 <Icon className={`mt-0.5 size-5 shrink-0 ${style.icon}`} />
                 <div className="min-w-0">
                     {toast.title && (
-                        <p className="font-semibold text-[#e8eaf0]">
+                        <p className="font-semibold text-workspace-text">
                             {toast.title}
                         </p>
                     )}
-                    <p className={toast.title ? "text-[#9ca3af]" : "text-white"}>
+                    <p className={toast.title ? "text-workspace-text-secondary" : "text-workspace-text"}>
                         {toast.message}
                     </p>
                 </div>

@@ -699,15 +699,11 @@ export default function Home() {
   const isEmptyChat = (activeSession?.messages?.length ?? 0) === 0;
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#030405] text-zinc-100 md:h-screen md:flex-row">
+    <div className="workspace-shell relative flex min-h-screen flex-col overflow-hidden bg-workspace-bg text-workspace-text md:h-screen md:flex-row">
       <ToastContainer toasts={toasts} setToasts={setToasts} />
-
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_55%_-10%,rgba(34,211,238,0.14),transparent_34rem),radial-gradient(circle_at_95%_20%,rgba(255,255,255,0.055),transparent_26rem),linear-gradient(180deg,#030405_0%,#06080a_48%,#020303_100%)]" />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.16] [background-image:linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] [background-size:72px_72px]" />
 
       <Sidebar
         datasets={datasets}
-        relationships={getRelationships()}
         sessions={sessions}
         activeSessionId={activeSessionId}
         setActiveSessionId={setActiveSessionId}
@@ -722,8 +718,8 @@ export default function Home() {
 
       <div className="relative flex min-h-0 flex-1 flex-col md:ml-[220px] md:overflow-y-auto">
         {isEmptyChat ? (
-          <div className="flex flex-1 flex-col items-center justify-center px-6">
-            <EmptyChat />
+          <div className="flex flex-1 flex-col items-center justify-center px-6 pb-24">
+            <EmptyChat onExampleClick={(q) => setQuery(q)} />
             <div className="mt-8 w-full">
               <FileUpload
                 query={query}
@@ -745,8 +741,8 @@ export default function Home() {
             />
 
             <div className="fixed bottom-0 left-0 right-0 z-20 md:left-[220px]">
-              <div className="pointer-events-none h-24 bg-gradient-to-b from-transparent via-[#0a0b0e]/30 to-[#0a0b0e]" />
-              <div className="bg-[#0a0b0e] px-6 pb-4 pt-3">
+              <div className="pointer-events-none h-16 bg-gradient-to-b from-transparent to-workspace-surface" />
+              <div className="border-t-2 border-workspace-accent/25 bg-workspace-surface px-6 pb-4 pt-3">
                 <FileUpload
                   query={query}
                   setQuery={setQuery}

@@ -9,8 +9,8 @@ type AssistantLoadingProps = {
 
 export default function AssistantLoading({ stage }: AssistantLoadingProps) {
   return (
-    <span className="flex h-7 items-center gap-2">
-      <span className="relative">
+    <span className="flex h-7 items-center gap-2.5">
+      <span className="relative flex items-center">
         <AnimatePresence mode="wait">
           <motion.span
             key={stage}
@@ -18,7 +18,7 @@ export default function AssistantLoading({ stage }: AssistantLoadingProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="text-[13px] text-[#6b7280]"
+            className="text-[13px] font-medium text-workspace-text-secondary"
           >
             {loadingStages[stage]}
           </motion.span>
@@ -26,9 +26,9 @@ export default function AssistantLoading({ stage }: AssistantLoadingProps) {
       </span>
       <span className="flex items-center gap-1">
         {[0, 1, 2].map((index) => (
-          <span
+          <motion.span
             key={index}
-            className="h-1.5 w-1.5 rounded-full bg-[#4fffb0]"
+            className="h-[5px] w-[5px] rounded-full bg-workspace-accent"
             style={{
               animation: "thinking 1.4s ease-in-out infinite",
               animationDelay: `${index * 0.16}s`,
