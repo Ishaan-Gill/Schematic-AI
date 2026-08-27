@@ -82,6 +82,9 @@ export function Trust() {
           you with the answer, the query, the source context, and the ability to
           see if the logic holds.
         </p>
+        <p className="proof-section__pull">
+          ChatGPT gives you an answer. Schematic gives you the <i>receipts.</i>
+        </p>
         <dl className="proof-list">
           <div>
             <dt>
@@ -100,6 +103,16 @@ export function Trust() {
               <Search size={18} /> Review assumptions
             </dt>
             <dd>Understand the fields and model that informed it.</dd>
+          </div>
+          <div>
+            <dt>
+              <CircleCheck size={18} /> Verified, not guessed
+            </dt>
+            <dd>
+              ChatGPT and Claude can read your file, but they can&apos;t show you how
+              they got their answer. Every Schematic result comes with the exact
+              SQL and source rows behind it.
+            </dd>
           </div>
         </dl>
       </div>
