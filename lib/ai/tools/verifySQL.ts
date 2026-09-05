@@ -1,6 +1,7 @@
 import { getDuckConnection } from "@/lib/duckdb/duckdb";
 import type { TurnRuntime, ToolResult } from "../core/types";
 import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh";
+import { checkSQLSafetySync } from "@/lib/sql/sqlSafety";
 
 export async function verifySQL(
   runtime: TurnRuntime,
@@ -19,65 +20,25 @@ export async function verifySQL(
     };
   }
 
-  // Block dangerous keywords:
-  const blockKeywords = [
-    "drop",
-    "delete",
-    "update",
-    "truncate",
-    "insert",
-    "alter",
-    "create",
-  ];
+  const fail = (code: string, message: string): ToolResult<null> => ({
+    tool: "verify-sql",
+    ok: false,
+    action: "retry",
+    error: { code, message },
+  });
 
-  for (const keyword of blockKeywords) {
-    const pattern = new RegExp(`\\b${keyword}\\b`, "i");
-
-    if (pattern.test(sql)) {
-      return {
-        tool: "verify-sql",
-        ok: false,
-        action: "retry",
-        error: {
-          code: "DANGEROUS_SQL",
-          message: `Dangerous SQL detected: ${keyword.toUpperCase()}`,
-        },
-      };
-    }
-  }
-
-  // Only allow SELECT | WITH | DESCRIBE:
-  const trimmed = sql.trim().toLowerCase();
-  if (
-    !trimmed.startsWith("select") &&
-    !trimmed.startsWith("with") &&
-    !trimmed.startsWith("describe")
-  ) {
-    return {
-      tool: "verify-sql",
-      ok: false,
-      action: "retry",
-      error: {
-        code: "INVALID_SQL_TYPE",
-        message: "Only SELECT queries are allowed.",
-      },
-    };
-  }
-
-  // Detect multiple statements — a semicolon followed by
-  // more non-whitespace content means multiple statements
-  const trimmedStatement = trimmed.replace(/;\s*$/, ""); // strip trailing semicolon only
-  if (trimmedStatement.includes(";")) {
-    return {
-      tool: "verify-sql",
-      ok: false,
-      action: "retry",
-      error: {
-        code: "MULTIPLE_STATEMENTS",
-        message:
-          "Multiple SQL statements detected. Please ask one question at a time, or ask for a combined breakdown.",
-      },
-    };
+  const safetyError = checkSQLSafetySync(sql);
+  if (safetyError) {
+    const code = safetyError.startsWith("Dangerous SQL")
+      ? "DANGEROUS_SQL"
+      : safetyError.startsWith("Only SELECT")
+        ? "INVALID_SQL_TYPE"
+        : safetyError.startsWith("Multiple SQL")
+          ? "MULTIPLE_STATEMENTS"
+          : safetyError.startsWith("External file")
+            ? "DANGEROUS_SQL"
+            : "DANGEROUS_SQL";
+    return fail(code, safetyError);
   }
 
   try {

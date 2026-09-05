@@ -11,6 +11,7 @@ import { buildContextTool } from "@/lib/ai/tools/buildContext";
 import { selectTables } from "@/lib/ai/tools/selectTables";
 import { verifySQL } from "@/lib/ai/tools/verifySQL";
 import { executeSQL } from "@/lib/ai/tools/executeSQL";
+import { validateAgainstSchema } from "@/lib/sql/validateSchema";
 import { createTurnContext } from "@/lib/ai/core/createTurnContext";
 import type { ToolResult, TurnRuntime } from "@/lib/ai/core/types";
 import { normalizeQuery } from "@/lib/cache/normalizeQuery";
@@ -229,6 +230,21 @@ export const dataQuery = async ({
   const verifyResult = await verifySQL(runtime);
   if (!verifyResult.ok) return verifyResult;
 
+  // Schema allowlist: reject hallucinated tables/columns (including cached SQL)
+  // before execution. Conservative — valid analytical SQL passes through.
+  const schemaError = validateAgainstSchema(runtime.sql, schemas);
+  if (schemaError) {
+    const code = schemaError.includes("column")
+      ? "COLUMN_NOT_FOUND"
+      : "TABLE_NOT_FOUND";
+    return {
+      tool: "verify-sql",
+      ok: false,
+      action: "retry",
+      error: { code, message: schemaError },
+    };
+  }
+
   // 5. Execute SQL:
   const executeResult = await executeSQL({ runtime, signal, guard });
   if (executeResult.ok) {
@@ -330,6 +346,19 @@ export const dataQuery = async ({
 
   const fixedVerifyResult = await verifySQL(runtime);
   if (!fixedVerifyResult.ok) return fixedVerifyResult;
+
+  const fixedSchemaError = validateAgainstSchema(runtime.sql, schemas);
+  if (fixedSchemaError) {
+    const code = fixedSchemaError.includes("column")
+      ? "COLUMN_NOT_FOUND"
+      : "TABLE_NOT_FOUND";
+    return {
+      tool: "verify-sql",
+      ok: false,
+      action: "retry",
+      error: { code, message: fixedSchemaError },
+    };
+  }
 
   // 9. Execute fixed SQL:
   const fixedExecuteResult = await executeSQL({ runtime, signal, guard });

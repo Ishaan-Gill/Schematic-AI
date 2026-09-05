@@ -1,5 +1,6 @@
 import { getDuckConnection } from "@/lib/duckdb/duckdb"
 import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh"
+import { checkSQLSafetySync } from "@/lib/sql/sqlSafety"
 
 type ValidateSQLArgs = {
     sql: string
@@ -13,33 +14,9 @@ export const validateSQL = async ({
         return "Something went wrong. Please try again."
     }
 
-    // Block dangerous keywords:
-    const blockKeywords = [
-        "drop",
-        "delete",
-        "update",
-        "truncate",
-        "insert",
-        "alter",
-        "create"
-    ]
-    for (const keyword of blockKeywords) {
-        const pattern = new RegExp(`\\b${keyword}\\b`, "i")
-        if (pattern.test(sql)) {
-            return `Dangerous SQL detected: ${keyword.toUpperCase()}`
-        }
-    }
-
-    const trimmed = sql.trim().toLowerCase()
-    if (!trimmed.startsWith("select") && !trimmed.startsWith("with") && !trimmed.startsWith("describe")) {
-        return "Only SELECT queries are allowed."
-    }
-
-    // Detect multiple statements — a semicolon followed by 
-    // more non-whitespace content means multiple statements
-    const trimmedStatement = trimmed.replace(/;\s*$/, "") // strip trailing semicolon only
-    if (trimmedStatement.includes(";")) {
-        return "Multiple SQL statements detected. Please ask one question at a time, or ask for a combined breakdown."
+    const safetyError = checkSQLSafetySync(sql)
+    if (safetyError) {
+        return safetyError
     }
     
     try {

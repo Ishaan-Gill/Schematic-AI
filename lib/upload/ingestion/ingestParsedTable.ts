@@ -53,8 +53,8 @@ export const ingestParsedTable = async ({
 
   const csvText = parsedTable.csvText;
 
-  if (!parsedTable.csvText) {
-    throw new Error(`Missing csvText for table: ${tableName}`);
+  if (!parsedTable.csvText || !parsedTable.csvText.trim()) {
+    throw new Error(`This file appears to be empty.`);
   }
 
   const tempName = `${tableName}.csv`;

@@ -44,6 +44,12 @@ export const uploadDataset = async ({
 
             const parsedTables = await processFile(file)
 
+            if (!parsedTables || parsedTables.length === 0) {
+                throw new Error(
+                    "This file contains no usable data. Add data and try again."
+                )
+            }
+
             // Local accumulator
             const nextSchemas: Record<string, any[]> = {}
 

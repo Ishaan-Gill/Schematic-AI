@@ -22,12 +22,14 @@ type ChatPanelProps = {
     page?: number,
     sessionId?: string,
   ) => Promise<Record<string, unknown>[] | undefined>;
+  onExportError?: (message: string) => void;
 };
 
 export default function ChatPanel({
   messages,
   updateMessage,
   executeQuery,
+  onExportError,
 }: ChatPanelProps) {
   return (
     <section
@@ -104,8 +106,20 @@ export default function ChatPanel({
                     }}
                     onExport={async () => {
                       if (!message.generatedSQL) return;
-                      const allRows = await fetchAllRows(message.generatedSQL);
-                      exportCsv(allRows, "schematic_export");
+                      try {
+                        const allRows = await fetchAllRows(message.generatedSQL);
+                        exportCsv(allRows, "schematic_export");
+                      } catch (err) {
+                        const friendly =
+                          err instanceof Error && err.message
+                            ? err.message
+                            : "Export failed. Please try again.";
+                        if (onExportError) {
+                          onExportError(friendly);
+                        } else {
+                          updateMessage(message.id, { error: friendly });
+                        }
+                      }
                     }}
                   />
                 </div>

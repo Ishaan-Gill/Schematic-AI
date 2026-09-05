@@ -45,6 +45,7 @@ export default function Home() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
   const [workspaceReady, setWorkspaceReady] = useState(false);
+  const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const uploadControllerRef = useRef<AbortController | null>(null);
@@ -141,6 +142,7 @@ export default function Home() {
         }
 
         if (!cancelled) {
+          setWorkspaceError(null);
           setWorkspaceReady(true);
         }
 
@@ -148,10 +150,13 @@ export default function Home() {
       } catch (err) {
         console.error(err);
 
-        showToast("error", "Workspace failed to load");
+        showToast("error", "Workspace failed to load. Please reload the page and try again.");
 
         if (!cancelled) {
-          setWorkspaceReady(true);
+          // Keep the workspace not-ready so queries cannot run against an
+          // uninitialized/failed DuckDB state.
+          setWorkspaceError("Workspace failed to load. Please reload the page and try again.");
+          setWorkspaceReady(false);
         }
       }
     }
@@ -219,6 +224,10 @@ export default function Home() {
   };
 
   const handleSendMessage = async (query: string): Promise<void> => {
+    if (workspaceError) {
+      showToast("error", workspaceError, "Workspace unavailable");
+      return;
+    }
     if (!workspaceReady) {
       showToast("info", "Workspace is still loading. Please wait.");
       return;
@@ -717,6 +726,21 @@ export default function Home() {
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col md:ml-[220px] md:overflow-y-auto">
+        {workspaceError && (
+          <div
+            role="alert"
+            className="mx-6 mt-6 rounded-xl border-2 border-workspace-danger-border bg-workspace-danger-soft px-4 py-3 text-[13px] leading-6 text-workspace-danger"
+          >
+            {workspaceError}{" "}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => window.location.reload()}
+            >
+              Reload
+            </button>
+          </div>
+        )}
         {isEmptyChat ? (
           <div className="flex flex-1 flex-col items-center justify-center px-6 pb-24">
             <EmptyChat onExampleClick={(q) => setQuery(q)} />
@@ -738,6 +762,7 @@ export default function Home() {
               messages={activeSession?.messages ?? []}
               updateMessage={updateMessage}
               executeQuery={executeQuery}
+              onExportError={(message) => showToast("error", message, "Export failed")}
             />
 
             <div className="fixed bottom-0 left-0 right-0 z-20 md:left-[220px]">

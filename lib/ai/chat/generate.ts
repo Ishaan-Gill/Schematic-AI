@@ -2,6 +2,8 @@ import { generateSQLPrompt } from "@/lib/ai/prompts/generate-sql-prompt";
 import { groq } from "@/lib/ai/client";
 import { DEBUG } from "@/lib/config/debug";
 import { quoteIdentifier } from "@/lib/utils/sqlHelpers";
+import { checkSQLSafetySync } from "@/lib/sql/sqlSafety";
+import { validateAgainstSchema } from "@/lib/sql/validateSchema";
 import type { ConversationEntry } from "@/lib/ai/context/buildConversationContext";
 import type { Relationship } from "../context/relationships";
 import { ToolResult } from "../core/types";
@@ -144,6 +146,37 @@ export async function generateSQL(
           code: "INVALID_QUERY",
           message:
             "I couldn't answer this from your uploaded datasets. Try rephrasing your question.",
+        },
+      };
+    }
+
+    // Boundary: LLM output -> safety -> schema allowlist -> EXPLAIN -> execution.
+    // Reject hallucinated or dangerous SQL here before it reaches verify/execute.
+    const safetyError = checkSQLSafetySync(sql);
+    if (safetyError) {
+      return {
+        tool: "generate-sql",
+        ok: false,
+        action: "retry",
+        error: {
+          code: "DANGEROUS_SQL",
+          message: safetyError,
+        },
+      };
+    }
+
+    const schemaError = validateAgainstSchema(sql, schemas);
+    if (schemaError) {
+      const code = schemaError.includes("column")
+        ? "COLUMN_NOT_FOUND"
+        : "TABLE_NOT_FOUND";
+      return {
+        tool: "generate-sql",
+        ok: false,
+        action: "retry",
+        error: {
+          code,
+          message: schemaError,
         },
       };
     }

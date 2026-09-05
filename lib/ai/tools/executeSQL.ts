@@ -5,6 +5,7 @@ import { getDuckConnection, resetDuckConnection } from "@/lib/duckdb/duckdb";
 import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh";
 import { buildExecutableSQL } from "@/lib/sql/buildExecutableSQL";
 import { validateQueryResult } from "@/lib/sql/validateQueryResult";
+import { checkSQLSafetySync } from "@/lib/sql/sqlSafety";
 
 type ExecuteSQLArgs = {
   runtime: TurnRuntime;
@@ -54,6 +55,21 @@ export async function executeSQL({
       error: {
         code: "NO_SQL",
         message: "No SQL query is available to execute.",
+      },
+    };
+  }
+
+  // Defense-in-depth: never execute without validation, even if a caller
+  // forgets to call verifySQL/validateSQL first.
+  const safetyError = checkSQLSafetySync(sql);
+  if (safetyError) {
+    return {
+      tool: "execute-sql",
+      ok: false,
+      action: "stop",
+      error: {
+        code: "DANGEROUS_SQL",
+        message: safetyError,
       },
     };
   }

@@ -7,7 +7,7 @@ export const processFile = async (file: File) => {
     const fileError = validateFile({file})
     if (fileError) throw new Error(fileError)
 
-    if (file.name.endsWith(".csv")) {
+    if (file.name.toLowerCase().endsWith(".csv")) {
         return parseCSV(file)
     }
 
