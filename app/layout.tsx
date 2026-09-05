@@ -91,6 +91,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Analytics is opt-in via env so forks don't report to the author's property.
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
   return (
     <html
       lang="en"
@@ -107,7 +109,7 @@ export default function RootLayout({
         />
         <Analytics />
       </body>
-      <GoogleAnalytics gaId="G-ZJQ184TCL6" />
+      {gaId ? <GoogleAnalytics gaId={gaId} /> : null}
     </html>
   );
 }

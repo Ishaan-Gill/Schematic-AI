@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, type FormEvent, useEffect } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -53,9 +53,6 @@ export default function LoginPage() {
 
     router.push("/workspace");
   };
-  useEffect(() => {
-    console.log("Workspace mounted");
-  }, []);
 
   return (
     <AuthShell>
