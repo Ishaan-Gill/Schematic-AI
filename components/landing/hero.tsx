@@ -1,55 +1,33 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowDownRight, ArrowRight, Check, MoveUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowRight, Lock, MoveUpRight } from "lucide-react";
 import { AnchorLink } from "./landing-shared";
 
 function ProductFrame() {
   return (
-    <div
-      className="hero-product__frame"
-      aria-label="Schematic AI product interface example"
-    >
+    <div className="hero-product__frame">
       <div className="frame-top">
-        <span />
-        <span />
-        <span />
-        <em>schematic / analysis</em>
-        <b>VERIFIED</b>
+        <div className="frame-dots" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="frame-url" aria-hidden="true">
+          <Lock size={11} />
+          <span>getschematicai.com/workspace</span>
+        </div>
       </div>
-      <div className="frame-body">
-        <div className="frame-sidebar" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-          <span />
-        </div>
-        <div className="frame-answer">
-          <div className="frame-prompt">
-            Which products stayed profitable as acquisition cost increased?
-          </div>
-          <div className="frame-response">
-            <i>
-              <Check size={13} />
-            </i>
-            <p>
-              Three product lines held margin through the rise in acquisition
-              cost. The shift was driven by repeat purchase—not discounting.
-            </p>
-          </div>
-          <div className="frame-evidence">
-            <span>02 sources linked</span>
-            <span>View SQL</span>
-            <span>94% confidence</span>
-          </div>
-          <div className="frame-bars" aria-label="Profitability chart">
-            <b />
-            <b />
-            <b />
-            <b />
-            <b />
-          </div>
-        </div>
+      <div className="frame-shot">
+        <Image
+          src="/images/schematic-dashboard.png"
+          alt="Schematic AI workspace answering Meta Ads spend versus Shopify revenue for Q1 2024 with verified SQL results"
+          width={1926}
+          height={1280}
+          priority
+          sizes="(max-width: 860px) 100vw, 58vw"
+        />
       </div>
     </div>
   );
