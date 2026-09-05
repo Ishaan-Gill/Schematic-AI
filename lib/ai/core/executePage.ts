@@ -1,4 +1,5 @@
 import { executeSQL } from "@/lib/ai/tools/executeSQL";
+import { isActive } from "@/lib/ai/isActive";
 import { updateStoredMessage } from "@/lib/chat/updateMessage";
 import { buildExecutableSQL } from "@/lib/sql/buildExecutableSQL";
 import { validateSQL } from "@/lib/sql/validateSQL";
@@ -17,9 +18,6 @@ type ExecutePageArgs = {
   ) => void;
   sessionId?: string;
 };
-
-const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
-  !signal?.aborted && (guard?.() ?? true);
 
 export const executePage = async ({
   sql,

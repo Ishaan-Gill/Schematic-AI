@@ -1,13 +1,11 @@
+// Server-only Groq executor (called by app/api/* routes — never import from client components).
 import { generateSQLPrompt } from "@/lib/ai/prompts/generate-sql-prompt";
+import { formatTypedSchemaText } from "@/lib/ai/prompts/shared";
 import { groq } from "@/lib/ai/client";
+import { groqWithRetry } from "@/lib/ai/groqRetry";
 import { DEBUG } from "@/lib/config/debug";
-import { quoteIdentifier } from "@/lib/utils/sqlHelpers";
 import { checkSQLSafetySync } from "@/lib/sql/sqlSafety";
 import { validateAgainstSchema } from "@/lib/sql/validateSchema";
-import {
-  MAX_CONTEXT_COLUMNS,
-  MAX_CONTEXT_TABLES,
-} from "@/lib/ai/context/contextLimits";
 import type { ConversationEntry } from "@/lib/ai/context/buildConversationContext";
 import type { Relationship } from "../context/relationships";
 import { ToolResult } from "../core/types";
@@ -49,19 +47,7 @@ export async function generateSQL(
       ),
     );
 
-    const schemaText = Object.entries(filteredSchemas)
-      .slice(0, MAX_CONTEXT_TABLES)
-      .map(([tableName, cols]) => {
-        const colText = (cols as any[])
-          .slice(0, MAX_CONTEXT_COLUMNS)
-          .map(
-            (col: any) =>
-              `${quoteIdentifier(col.column_name)} (${col.column_type})`,
-          )
-          .join(", ");
-        return `${tableName}: ${colText}`;
-      })
-      .join("\n\n");
+    const schemaText = formatTypedSchemaText(filteredSchemas);
 
     const filteredRelationships = relationships.filter(
       (r: any) =>
@@ -78,36 +64,30 @@ export async function generateSQL(
       conversationContext,
     });
 
-    let completion;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        completion = await groq.chat.completions.create({
-          model: "openai/gpt-oss-120b",
-          temperature: 0.1,
-          messages: [
-            {
-              role: "system",
-              content: prompt.system,
-            },
-            {
-              role: "user",
-              content: prompt.user,
-            },
-          ],
-        }, { signal });
-        break;
-      } catch (err) {
-        if (signal?.aborted) break;
+    const result = await groqWithRetry({
+      label: "generate-sql",
+      signal,
+      call: () =>
+        groq.chat.completions.create(
+          {
+            model: "openai/gpt-oss-120b",
+            temperature: 0.1,
+            messages: [
+              {
+                role: "system",
+                content: prompt.system,
+              },
+              {
+                role: "user",
+                content: prompt.user,
+              },
+            ],
+          },
+          { signal },
+        ),
+    });
 
-        console.error(`Groq attempt (generate-sql) ${attempt} failed:`, err);
-
-        if (attempt < 2) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-      }
-    }
-
-    if (!completion) {
+    if (result.status !== "ok") {
       return {
         tool: "generate-sql",
         ok: false,
@@ -119,6 +99,8 @@ export async function generateSQL(
         },
       };
     }
+
+    const completion = result.completion;
     const raw = completion.choices[0]?.message?.content || "";
 
     if (DEBUG) {

@@ -1,3 +1,5 @@
+import { bigIntReplacer } from "@/lib/chat/toJsonSafe";
+
 type ValidateQueryResult = {
     rows: Record<string, unknown>[]
 }
@@ -8,11 +10,7 @@ export function validateQueryResult({
     if (rows.length > 1000) {
         return "Query returned too many rows."
     }
-    const resultSize = JSON.stringify(rows, (_, value) =>
-        typeof value === "bigint"
-            ? value.toString()
-            : value
-    ).length
+    const resultSize = JSON.stringify(rows, bigIntReplacer).length
     if (resultSize > 2_000_000) {
         return "Query result too large."
     }

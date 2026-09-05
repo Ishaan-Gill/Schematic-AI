@@ -8,6 +8,7 @@ type GenerateSQLPromptParams = {
 };
 
 import type { ConversationEntry } from "../context/buildConversationContext";
+import { formatDatasetHints, formatDatasetMetrics } from "./shared";
 
 export function generateSQLPrompt({
   schemaText,
@@ -182,32 +183,10 @@ export function generateSQLPrompt({
         ${timeHint ?? ""}
 				
         SEMANTIC HINTS:
-        ${Object.entries(safeDatasetContext)
-          .map(([tableName, ctx]: [string, any]) => {
-            const hints = (ctx.metadata ?? [])
-              .slice(0, 30)
-              .map(
-                (item: any) =>
-                  `  - ${item.column} → ${item.semanticRole}${item.detectedFormat ? ` (${item.detectedFormat})` : ""}${item.coercionNote ? ` — ${item.coercionNote}` : ""}`,
-              )
-              .join("\n");
-            return `${tableName}:\n${hints}`;
-          })
-          .join("\n\n")}
+        ${formatDatasetHints(safeDatasetContext)}
                             
         DERIVED METRICS:
-        ${Object.entries(safeDatasetContext)
-          .map(
-            ([tableName, ctx]: [string, any]) =>
-              (ctx.metrics ?? [])
-                .slice(0, 20)
-                .map(
-                  (metric: any) =>
-                    `- [${tableName}] ${metric.name} = ${metric.expression}`,
-                )
-                .join("\n") ?? "",
-          )
-          .join("\n")}
+        ${formatDatasetMetrics(safeDatasetContext)}
 
           
         ${

@@ -1,11 +1,8 @@
 import { quoteIdentifier } from "@/lib/utils/sqlHelpers";
+import type { DuckConnection } from "@/types/duckdb";
 
 type ColumnInfo = {
   column_name: string;
-};
-
-type DuckConnection = {
-  query: (sql: string) => Promise<unknown>;
 };
 
 type CleanValuesArgs = {

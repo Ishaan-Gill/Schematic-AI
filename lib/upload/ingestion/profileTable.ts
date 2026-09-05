@@ -1,16 +1,9 @@
 import { quoteIdentifier } from "@/lib/utils/sqlHelpers";
+import type { DuckConnection } from "@/types/duckdb";
 import type { ColumnProfile } from "../metadata/profileMemory";
 
 type ColumnInfo = {
   column_name: string;
-};
-
-type QueryResultRow = Record<string, unknown>;
-
-type DuckConnection = {
-  query: (sql: string) => Promise<{
-    toArray: () => QueryResultRow[];
-  }>;
 };
 
 type ProfileTableArgs = {

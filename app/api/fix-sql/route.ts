@@ -1,4 +1,5 @@
 import { groq } from "@/lib/ai/client";
+import { groqWithRetry } from "@/lib/ai/groqRetry";
 import { NextResponse } from "next/server"
 import { isPayloadTooLarge } from "@/lib/api/validateRequestSize"
 import { authorizeAIRequest } from "@/lib/api/authorizeAIRequest"
@@ -73,10 +74,11 @@ export async function POST(req: Request) {
         currentDateHint: typeof currentDateHint === "string" ? currentDateHint : ""
     })
 
-    let completion
-    for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-            completion = await groq.chat.completions.create({
+    const result = await groqWithRetry({
+        label: "fix-sql",
+        signal: req.signal,
+        call: () =>
+            groq.chat.completions.create({
                 model: "openai/gpt-oss-120b",
                 temperature: 0.1,
                 messages: [
@@ -90,24 +92,16 @@ export async function POST(req: Request) {
                     }
                 ]
             }, { signal: req.signal })
-            break
+    })
 
-        } catch (err) {
-            console.error(`Groq attempt (fix-sql) ${attempt} failed: `, err)
-
-            // Small delay before retry:
-            if (attempt < 2) {
-                await new Promise(resolve => setTimeout(resolve, 1000))
-            }
-        }
-    }
-
-    if (!completion) {
+    if (result.status !== "ok") {
         return NextResponse.json(
             { error: "AI generation failed. Please try again." },
             { status: 500 }
         )
     }
+
+    const completion = result.completion
 
     const raw = completion.choices[0]?.message?.content || ""
 

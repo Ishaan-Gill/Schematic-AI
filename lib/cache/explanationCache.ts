@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { DEBUG } from "@/lib/config/debug";
+import { sha256Hex } from "./sha256";
 
 type SaveCachedExplanationArgs = {
   cacheKey: string;
@@ -18,12 +19,7 @@ export async function buildExplanationCacheKey(
   userId?: string,
 ): Promise<string> {
   const scope = userId && userId.trim() ? userId.trim() : "anon";
-  const encoder = new TextEncoder();
-  const data = encoder.encode(scope + sql + schemaHashValue + context);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  return sha256Hex(scope + sql + schemaHashValue + context);
 }
 
 export async function getCachedExplanation(

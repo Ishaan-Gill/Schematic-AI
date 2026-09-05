@@ -1,18 +1,11 @@
 import { quoteIdentifier } from "@/lib/utils/sqlHelpers"
+import type { DuckConnection } from "@/types/duckdb"
 import { inferSemanticRole } from "@/lib/metadata/inferSemanticRole"
 import { detectCurrencies, type CurrencyDetection } from "@/lib/metadata/detectCurrency"
 
 type ColumnInfo = {
   column_name: string
   column_type: string
-}
-
-type QueryResultRow = Record<string, unknown>
-
-type DuckConnection = {
-  query: (sql: string) => Promise<{
-    toArray: () => QueryResultRow[]
-  }>
 }
 
 const SAMPLE_LIMIT = 500

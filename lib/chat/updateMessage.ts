@@ -1,12 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
 import { toJsonSafe } from "@/lib/chat/toJsonSafe";
+import {
+  shouldRetryWithoutNewColumns,
+  stripNewMessageColumns,
+} from "@/lib/chat/legacyColumns";
 import type { Message } from "@/types/chat";
-
-const NEW_COLUMNS = [
-  "displayed_row_count",
-  "relevant_tables",
-  "final_dataset_context",
-] as const;
 
 type UpdateStoredMessageArgs = {
   id: string;
@@ -69,16 +67,10 @@ export async function updateStoredMessage({
     .update(payload)
     .eq("id", id);
 
-  if (error && NEW_COLUMNS.some((column) => column in payload)) {
-    const legacyPayload = Object.fromEntries(
-      Object.entries(payload).filter(
-        ([column]) => !NEW_COLUMNS.includes(column as never),
-      ),
-    );
-
+  if (shouldRetryWithoutNewColumns(error, payload)) {
     ({ error } = await supabase
       .from("chat_messages")
-      .update(legacyPayload)
+      .update(stripNewMessageColumns(payload))
       .eq("id", id));
   }
 

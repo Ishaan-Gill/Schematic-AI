@@ -6,6 +6,7 @@ import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh";
 import { buildExecutableSQL } from "@/lib/sql/buildExecutableSQL";
 import { validateQueryResult } from "@/lib/sql/validateQueryResult";
 import { checkSQLSafetySync } from "@/lib/sql/sqlSafety";
+import { isActive } from "@/lib/ai/isActive";
 
 type ExecuteSQLArgs = {
   runtime: TurnRuntime;
@@ -20,9 +21,6 @@ type ExecuteSQLData = {
   hasMore: boolean;
   executionTime: number;
 };
-
-const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
-  !signal?.aborted && (guard?.() ?? true);
 
 export async function executeSQL({
   runtime,

@@ -1,5 +1,8 @@
+// Client-side orchestrator (calls /api/* over fetch — safe for client components).
 import type { ConversationEntry } from "../context/buildConversationContext";
 import type { Relationship } from "../context/relationships";
+import { isActive } from "@/lib/ai/isActive";
+import { bigIntReplacer } from "@/lib/chat/toJsonSafe";
 import { schemaHash } from "@/lib/cache/schemaHash";
 import {
   getCachedExplanation,
@@ -45,7 +48,7 @@ export const dataAnalysis = async ({
   signal,
   guard,
 }: DataAnalysisArgs): Promise<CoreResult<string>> => {
-  if (signal?.aborted || !(guard?.() ?? true)) {
+  if (!isActive(guard, signal)) {
     return { ok: false, cancelled: true, code: "REQUEST_CANCELLED" };
   }
 
@@ -71,12 +74,12 @@ export const dataAnalysis = async ({
     );
 
     const cached = await getCachedExplanation(cacheKey);
-    if (signal?.aborted || !(guard?.() ?? true)) {
+    if (!isActive(guard, signal)) {
       return { ok: false, cancelled: true, code: "REQUEST_CANCELLED" };
     }
     if (cached) return { ok: true, data: cached };
 
-    if (signal?.aborted || !(guard?.() ?? true)) {
+    if (!isActive(guard, signal)) {
       return { ok: false, cancelled: true, code: "REQUEST_CANCELLED" };
     }
 
@@ -103,11 +106,11 @@ export const dataAnalysis = async ({
           },
           turnId,
         },
-        (_, value) => (typeof value === "bigint" ? value.toString() : value),
+        bigIntReplacer,
       ),
     });
     const data = await res.json();
-    if (signal?.aborted || !(guard?.() ?? true)) {
+    if (!isActive(guard, signal)) {
       return { ok: false, cancelled: true, code: "REQUEST_CANCELLED" };
     }
 

@@ -1,4 +1,6 @@
+// Client-side orchestrator (calls /api/* over fetch — safe for client components).
 import type { ConversationEntry } from "../context/buildConversationContext";
+import { isActive } from "@/lib/ai/isActive";
 import type { CoreResult } from "./types";
 
 type LLMOrchestrateDecision = {
@@ -23,7 +25,7 @@ export const llmOrchestrate = async ({
   signal,
   guard,
 }: LLMOrchestrateArgs): Promise<CoreResult<LLMOrchestrateDecision>> => {
-  if (signal?.aborted || !(guard?.() ?? true)) {
+  if (!isActive(guard, signal)) {
     return { ok: false, cancelled: true, code: "REQUEST_CANCELLED" };
   }
 
@@ -43,7 +45,7 @@ export const llmOrchestrate = async ({
       }),
     });
     const data = await res.json();
-    if (signal?.aborted || !(guard?.() ?? true)) {
+    if (!isActive(guard, signal)) {
       return { ok: false, cancelled: true, code: "REQUEST_CANCELLED" };
     }
 

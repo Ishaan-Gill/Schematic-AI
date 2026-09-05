@@ -1,21 +1,16 @@
 import { quoteIdentifier } from "@/lib/utils/sqlHelpers"
+import type { DuckConnection } from "@/types/duckdb"
 
 type ColumnInfo = {
     column_name: string
     column_type: string
 }
 
-type QueryResultRow = Record<string, unknown>
-
 export type CoercionWarning = {
     column: string
     targetType: "DOUBLE" | "DATE"
     totalRows: number
     failedRows: number
-}
-
-type DuckConnection = {
-    query: (sql: string) => Promise<{ toArray: () => QueryResultRow[] }>
 }
 
 export const inferColumnTypes = async (

@@ -1,4 +1,6 @@
+// Server-only Groq executor (called by app/api/* routes — never import from client components).
 import { groq } from "@/lib/ai/client";
+import { groqWithRetry } from "@/lib/ai/groqRetry";
 import { DEBUG } from "@/lib/config/debug";
 import { llmOrchestratorPrompt } from "@/lib/ai/prompts/llm-orchestrator-prompt";
 import type { ConversationEntry } from "../context/buildConversationContext";
@@ -22,9 +24,6 @@ type LLMOrchestrateParams = {
   signal?: AbortSignal;
   guard?: () => boolean;
 };
-
-const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
-  !signal?.aborted && (guard?.() ?? true);
 
 const stripCodeFence = (raw: string): string => {
   const trimmed = raw.trim();
@@ -85,22 +84,12 @@ export async function llmOrchestrate({
     schemas,
   });
 
-  let completion;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    if (!isActive(guard, signal)) {
-      return {
-        tool: "llm-orchestrator",
-        ok: false,
-        action: "stop",
-        error: {
-          code: "REQUEST_CANCELLED",
-          message: "Request cancelled.",
-        },
-      };
-    }
-
-    try {
-      completion = await groq.chat.completions.create(
+  const result = await groqWithRetry({
+    label: "llm orchestrator",
+    signal,
+    guard,
+    call: () =>
+      groq.chat.completions.create(
         {
           model: "openai/gpt-oss-120b",
           temperature: 0.1,
@@ -116,30 +105,22 @@ export async function llmOrchestrate({
           ],
         },
         { signal },
-      );
-      break;
-    } catch (err) {
-      if (signal?.aborted) {
-        return {
-          tool: "llm-orchestrator",
-          ok: false,
-          action: "stop",
-          error: {
-            code: "REQUEST_CANCELLED",
-            message: "Request cancelled.",
-          },
-        };
-      }
+      ),
+  });
 
-      console.error(`Groq attempt (llm orchestrator) ${attempt} failed:`, err);
-
-      if (attempt < 2) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-    }
+  if (result.status === "cancelled") {
+    return {
+      tool: "llm-orchestrator",
+      ok: false,
+      action: "stop",
+      error: {
+        code: "REQUEST_CANCELLED",
+        message: "Request cancelled.",
+      },
+    };
   }
 
-  if (!completion) {
+  if (result.status !== "ok") {
     return {
       tool: "llm-orchestrator",
       ok: false,
@@ -150,6 +131,8 @@ export async function llmOrchestrate({
       },
     };
   }
+
+  const completion = result.completion;
 
   const raw = completion.choices[0]?.message?.content?.trim() || "";
 

@@ -1,4 +1,7 @@
+// Server-only Groq executor (called by app/api/* routes — never import from client components).
 import { groq } from "@/lib/ai/client";
+import { groqWithRetry } from "@/lib/ai/groqRetry";
+import { isActive } from "@/lib/ai/isActive";
 import { DEBUG } from "@/lib/config/debug";
 import { dataAnalysisPrompt } from "@/lib/ai/prompts/data-analysis-prompt";
 import type { ConversationEntry } from "../context/buildConversationContext";
@@ -21,9 +24,6 @@ type DataAnalysisParams = {
   signal?: AbortSignal;
   guard?: () => boolean;
 };
-
-const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
-  !signal?.aborted && (guard?.() ?? true);
 
 const ROW_LIMIT = 50;
 
@@ -96,12 +96,12 @@ export async function dataAnalysis({
     },
   });
 
-  let completion;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    if (!isActive(guard, signal)) return cancelled();
-
-    try {
-      completion = await groq.chat.completions.create(
+  const result = await groqWithRetry({
+    label: "data-analysis",
+    signal,
+    guard,
+    call: () =>
+      groq.chat.completions.create(
         {
           model: "openai/gpt-oss-120b",
           temperature: 0.3,
@@ -117,20 +117,12 @@ export async function dataAnalysis({
           ],
         },
         { signal },
-      );
-      break;
-    } catch (err) {
-      if (signal?.aborted) return cancelled();
+      ),
+  });
 
-      console.error(`Groq attempt (data-analysis) ${attempt} failed:`, err);
+  if (result.status === "cancelled") return cancelled();
 
-      if (attempt < 2) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-    }
-  }
-
-  if (!completion) {
+  if (result.status !== "ok") {
     return {
       tool: "data-analysis",
       ok: false,
@@ -142,6 +134,8 @@ export async function dataAnalysis({
       },
     };
   }
+
+  const completion = result.completion;
 
   const analysis = completion.choices[0]?.message?.content?.trim() || "";
 

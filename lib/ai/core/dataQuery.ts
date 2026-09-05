@@ -9,15 +9,19 @@ import type { ConversationEntry } from "@/lib/ai/context/buildConversationContex
 import type { Relationship } from "@/lib/ai/context/relationships";
 import { buildContextTool } from "@/lib/ai/tools/buildContext";
 import { selectTables } from "@/lib/ai/tools/selectTables";
-import { verifySQL } from "@/lib/ai/tools/verifySQL";
 import { executeSQL } from "@/lib/ai/tools/executeSQL";
-import { validateAgainstSchema } from "@/lib/sql/validateSchema";
+import { verifyGeneratedSql } from "@/lib/ai/core/verifyQuery";
+import {
+  fetchFixedSql,
+  fetchGeneratedSql,
+} from "@/lib/ai/core/queryTransport";
 import { createTurnContext } from "@/lib/ai/core/createTurnContext";
 import type { ToolResult, TurnRuntime } from "@/lib/ai/core/types";
 import { normalizeQuery } from "@/lib/cache/normalizeQuery";
 import { schemaHash } from "@/lib/cache/schemaHash";
 import { buildCacheKey } from "@/lib/cache/buildCacheKey";
 import { getCachedSQL, saveCachedSQL } from "@/lib/cache/queryCache";
+import { isActive } from "@/lib/ai/isActive";
 import {
   MAX_CONTEXT_COLUMNS,
   MAX_CONTEXT_TABLES,
@@ -44,16 +48,6 @@ type DataQueryArgs = {
   userId?: string | null;
   signal?: AbortSignal;
   guard?: () => boolean;
-};
-
-type GenerateAPIResponse = {
-  sql?: string;
-  error?: string | { code?: string; message?: string };
-};
-
-type FixSQLAPIResponse = {
-  sql?: string;
-  error?: string;
 };
 
 const rawError = (result: ToolResult<DataQueryResult>): string | undefined => {
@@ -95,9 +89,6 @@ const buildContextWarnings = (
 
   return warnings;
 };
-
-const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
-  !signal?.aborted && (guard?.() ?? true);
 
 const TIME_HINT_TEMPLATE = `
   Time-based analytics query.
@@ -184,107 +175,29 @@ export const dataQuery = async ({
         .filter(Boolean)
         .join("\n");
 
-    let data: GenerateAPIResponse;
+    const generateResult = await fetchGeneratedSql({
+      query,
+      schemas,
+      relevantTables: context.relevantTables,
+      relationships,
+      finalDatasetContext: context.finalDatasetContext,
+      conversationContext,
+      timeHint: finalTimeHint,
+      turnId,
+      signal,
+      guard,
+    });
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal,
-        body: JSON.stringify({
-          type: "generate",
-          payload: {
-            query,
-            schemas,
-            relevantTables: context.relevantTables,
-            relationships,
-            finalDatasetContext: context.finalDatasetContext,
-            conversationContext,
-            timeHint: finalTimeHint,
-          },
-          turnId,
-        }),
-      });
+    if (!generateResult.ok) return generateResult;
 
-      data = (await res.json()) as GenerateAPIResponse;
-
-      if (!isActive(guard, signal)) return cancelled;
-
-      if (!res.ok) {
-        const code =
-          typeof data.error === "object" &&
-          data.error !== null &&
-          typeof data.error.code === "string"
-            ? data.error.code
-            : "SQL_GENERATION_FAILED";
-        const message =
-          typeof data.error === "object" &&
-          data.error !== null &&
-          typeof data.error.message === "string"
-            ? data.error.message
-            : typeof data.error === "string"
-              ? data.error
-              : "Something went wrong generating your query. Please try again.";
-
-        return {
-          tool: "generate-sql",
-          ok: false,
-          action: code === "INVALID_QUERY" ? "stop" : "retry",
-          error: { code, message },
-        };
-      }
-
-      if (typeof data.sql !== "string" || !data.sql.trim()) {
-        return {
-          tool: "generate-sql",
-          ok: false,
-          action: "retry",
-          error: {
-            code: "SQL_GENERATION_FAILED",
-            message:
-              "Something went wrong generating your query. Please try again.",
-          },
-        };
-      }
-
-      runtime.sql = data.sql.trim();
-    } catch (err) {
-      if (signal?.aborted) return cancelled;
-      console.error("data-query generate failed:", err);
-
-      return {
-        tool: "generate-sql",
-        ok: false,
-        action: "retry",
-        error: {
-          code: "GENERATE_SQL_ERROR",
-          message:
-            "Something went wrong generating your query. Please try again.",
-        },
-      };
-    }
+    runtime.sql = generateResult.data;
   }
 
-  // 4. Verify SQL:
+  // 4. Verify SQL (shared safety + schema allowlist gate):
   if (!isActive(guard, signal)) return cancelled;
 
-  const verifyResult = await verifySQL(runtime);
-  if (!verifyResult.ok) return verifyResult;
-
-  // Schema allowlist: reject hallucinated tables/columns (including cached SQL)
-  // before execution. Conservative — valid analytical SQL passes through.
-  const schemaError = validateAgainstSchema(runtime.sql, schemas);
-  if (schemaError) {
-    const code = schemaError.includes("column")
-      ? "COLUMN_NOT_FOUND"
-      : "TABLE_NOT_FOUND";
-    return {
-      tool: "verify-sql",
-      ok: false,
-      action: "retry",
-      error: { code, message: schemaError },
-    };
-  }
+  const gateFailure = await verifyGeneratedSql(runtime, schemas);
+  if (gateFailure) return gateFailure;
 
   // 5. Execute SQL:
   const executeResult = await executeSQL({ runtime, signal, guard });
@@ -314,93 +227,29 @@ export const dataQuery = async ({
   // 6. Execution failed → fix SQL via HTTP:
   if (!isActive(guard, signal)) return cancelled;
 
-  let fixedSQL: string;
+  const fixResult = await fetchFixedSql({
+    userQuery: query,
+    failedSql: runtime.sql,
+    errorMessage: executeResult.error.message,
+    rawError: rawError(executeResult),
+    schemas,
+    relationships,
+    currentDateHint: getCurrentDateHint(),
+    turnId,
+    signal,
+    guard,
+  });
 
-  try {
-    const fixRes = await fetch("/api/fix-sql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal,
-      body: JSON.stringify({
-        userQuery: query,
-        failedSql: runtime.sql,
-        error: executeResult.error.message,
-        rawError: rawError(executeResult),
-        schemas,
-        relationships,
-        currentDateHint: getCurrentDateHint(),
-        turnId,
-      }),
-    });
-
-    const fixData = (await fixRes.json()) as FixSQLAPIResponse;
-
-    if (!isActive(guard, signal)) return cancelled;
-
-    if (!fixRes.ok) {
-      return {
-        tool: "fix-sql",
-        ok: false,
-        action: "retry",
-        error: {
-          code: "SQL_FIX_FAILED",
-          message:
-            typeof fixData.error === "string"
-              ? fixData.error
-              : "AI could not generate a fixed SQL query.",
-        },
-      };
-    }
-
-    if (typeof fixData.sql !== "string" || !fixData.sql.trim()) {
-      return {
-        tool: "fix-sql",
-        ok: false,
-        action: "retry",
-        error: {
-          code: "SQL_FIX_FAILED",
-          message: "AI could not generate a fixed SQL query.",
-        },
-      };
-    }
-
-    fixedSQL = fixData.sql.trim();
-  } catch (err) {
-    if (signal?.aborted) return cancelled;
-    console.error("data-query fix-sql failed:", err);
-
-    return {
-      tool: "fix-sql",
-      ok: false,
-      action: "retry",
-      error: {
-        code: "FIX_SQL_ERROR",
-        message: "Something went wrong while fixing the SQL.",
-      },
-    };
-  }
+  if (!fixResult.ok) return fixResult;
 
   // 7. Use fixed SQL:
-  runtime.sql = fixedSQL;
+  runtime.sql = fixResult.data;
 
   // 8. Verify fixed SQL:
   if (!isActive(guard, signal)) return cancelled;
 
-  const fixedVerifyResult = await verifySQL(runtime);
-  if (!fixedVerifyResult.ok) return fixedVerifyResult;
-
-  const fixedSchemaError = validateAgainstSchema(runtime.sql, schemas);
-  if (fixedSchemaError) {
-    const code = fixedSchemaError.includes("column")
-      ? "COLUMN_NOT_FOUND"
-      : "TABLE_NOT_FOUND";
-    return {
-      tool: "verify-sql",
-      ok: false,
-      action: "retry",
-      error: { code, message: fixedSchemaError },
-    };
-  }
+  const fixedGateFailure = await verifyGeneratedSql(runtime, schemas);
+  if (fixedGateFailure) return fixedGateFailure;
 
   // 9. Execute fixed SQL:
   const fixedExecuteResult = await executeSQL({ runtime, signal, guard });

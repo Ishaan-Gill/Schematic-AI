@@ -1,12 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
 import { toJsonSafe } from "@/lib/chat/toJsonSafe";
+import {
+  shouldRetryWithoutNewColumns,
+  stripNewMessageColumns,
+} from "@/lib/chat/legacyColumns";
 import type { Message } from "@/types/chat";
-
-const NEW_COLUMNS = [
-  "displayed_row_count",
-  "relevant_tables",
-  "final_dataset_context",
-] as const;
 
 type AppendMessageArgs = {
   sessionId: string;
@@ -63,12 +61,10 @@ export async function appendMessage({
 
   let { error } = await supabase.from("chat_messages").insert(payload);
 
-  if (error && NEW_COLUMNS.some((column) => column in payload)) {
-    const legacyPayload = Object.fromEntries(
-      Object.entries(payload).filter(([column]) => !NEW_COLUMNS.includes(column as never)),
-    );
-
-    ({ error } = await supabase.from("chat_messages").insert(legacyPayload));
+  if (shouldRetryWithoutNewColumns(error, payload)) {
+    ({ error } = await supabase
+      .from("chat_messages")
+      .insert(stripNewMessageColumns(payload)));
   }
 
   if (error) {

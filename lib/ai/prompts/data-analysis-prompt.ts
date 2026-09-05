@@ -1,7 +1,12 @@
-import { quoteIdentifier } from "@/lib/utils/sqlHelpers";
 import type { ConversationEntry } from "../context/buildConversationContext";
 import type { Relationship } from "../context/relationships";
 import { getCurrentDateHint } from "../timeQuery";
+import {
+  formatDatasetHints,
+  formatMetricLine,
+  formatRelationshipText,
+  formatTypedSchemaText,
+} from "./shared";
 
 export type AnalysisResultPayload = {
   query: string;
@@ -12,11 +17,6 @@ export type AnalysisResultPayload = {
   hasMore: boolean;
   normalizationNotes: string[];
   warnings: string[];
-};
-
-type ColumnLike = {
-  column_name?: string;
-  column_type?: string;
 };
 
 type SemanticHint = {
@@ -44,56 +44,18 @@ type DataAnalysisPromptParams = {
 };
 
 const formatSchemaText = (schemas: Record<string, unknown[]>): string => {
-  const entries = Object.entries(schemas);
-  if (entries.length === 0) return "No schemas available.";
-
-  return entries
-    .slice(0, 8)
-    .map(([tableName, cols]) => {
-      const colText = (cols as ColumnLike[])
-        .slice(0, 30)
-        .map(
-          (col) =>
-            `${quoteIdentifier(col.column_name ?? "")} (${col.column_type ?? "unknown"})`,
-        )
-        .join(", ");
-      return `${tableName}: ${colText}`;
-    })
-    .join("\n\n");
+  if (Object.entries(schemas).length === 0) return "No schemas available.";
+  return formatTypedSchemaText(schemas);
 };
 
-const formatRelationships = (relationships: Relationship[]): string => {
-  if (relationships.length === 0) return "No relationships detected.";
-  return relationships
-    .map(
-      (r) => `${r.fromTable}.${r.fromColumn} = ${r.toTable}.${r.toColumn}`,
-    )
-    .join("\n");
-};
+const formatRelationships = (relationships: Relationship[]): string =>
+  formatRelationshipText(relationships);
 
 const formatSemanticHints = (
   finalDatasetContext: Record<string, unknown>,
 ): string => {
-  const entries = Object.entries(finalDatasetContext);
-  if (entries.length === 0) return "None.";
-
-  return entries
-    .map(([tableName, rawCtx]) => {
-      const ctx = (rawCtx ?? {}) as DatasetEntry;
-      const hints = (ctx.metadata ?? [])
-        .slice(0, 30)
-        .map((item) => {
-          const format = item.detectedFormat
-            ? ` (${item.detectedFormat})`
-            : "";
-          const coercionNote = (item as { coercionNote?: string }).coercionNote;
-          const coercion = coercionNote ? ` — ${coercionNote}` : "";
-          return `  - ${item.column ?? ""} → ${item.semanticRole ?? "unknown"}${format}${coercion}`;
-        })
-        .join("\n");
-      return `${tableName}:\n${hints}`;
-    })
-    .join("\n\n");
+  if (Object.entries(finalDatasetContext).length === 0) return "None.";
+  return formatDatasetHints(finalDatasetContext);
 };
 
 const formatDerivedMetrics = (
@@ -102,16 +64,15 @@ const formatDerivedMetrics = (
   const entries = Object.entries(finalDatasetContext);
   if (entries.length === 0) return "None.";
 
+  // Flat across tables (unlike the per-table SQL prompts): preserves the
+  // exact historical rendering of this prompt.
   return (
     entries
       .flatMap(([tableName, rawCtx]) => {
         const ctx = (rawCtx ?? {}) as DatasetEntry;
         return (ctx.metrics ?? [])
           .slice(0, 20)
-          .map(
-            (metric) =>
-              `- [${tableName}] ${metric.name ?? ""} = ${metric.expression ?? ""}`,
-          );
+          .map((metric) => formatMetricLine(tableName, metric));
       })
       .join("\n") || "None."
   );
