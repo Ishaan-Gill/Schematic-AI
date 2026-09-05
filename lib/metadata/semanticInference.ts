@@ -4,6 +4,9 @@ import {
     CUSTOMER_KEYWORDS,
     DATE_KEYWORDS,
     PRODUCT_KEYWORDS,
+    CATEGORY_KEYWORDS,
+    isLocationLike,
+    isPercentageLike,
 } from "./semanticKeywords"
 
 type SemanticContext = {
@@ -70,28 +73,34 @@ export const inferSemanticContext = (
     }
 
     for (const column of schema) {
-        const name = column.column_name.toLowerCase()
+        const originalName: string = column.column_name
+        const name = originalName.toLowerCase()
         const type = column.column_type.toLowerCase()
 
-        // revenue
+        // revenue (percentage-like names win, mirroring inferSemanticRole:
+        // profit_margin is a ratio, not an amount)
         if (
-            includesAny(name, REVENUE_KEYWORDS)
+            includesAny(name, REVENUE_KEYWORDS) &&
+            !isPercentageLike(name)
         ) {
-            context.revenueColumns.push(name)
+            context.revenueColumns.push(originalName)
         }
 
-        // quantity
+        // quantity ("country" contains "count" — geographic names are
+        // excluded, mirroring inferSemanticRole's location precedence)
         if (
-            includesAny(name, QUANTITY_KEYWORDS)
+            includesAny(name, QUANTITY_KEYWORDS) &&
+            !isPercentageLike(name) &&
+            !isLocationLike(name)
         ) {
-            context.quantityColumns.push(name)
+            context.quantityColumns.push(originalName)
         }
 
         // customer
         if (
             includesAny(name, CUSTOMER_KEYWORDS)
         ) {
-            context.customerColumns.push(name)
+            context.customerColumns.push(originalName)
         }
 
         // dates
@@ -100,14 +109,14 @@ export const inferSemanticContext = (
             type.includes("time") ||
             includesAny(name, DATE_KEYWORDS)
         ) {
-            context.dateColumns.push(name)
+            context.dateColumns.push(originalName)
         }
 
         // product
         if (
             includesAny(name, PRODUCT_KEYWORDS)
         ) {
-            context.productColumns.push(name)
+            context.productColumns.push(originalName)
         }
 
         // categorical
@@ -117,13 +126,13 @@ export const inferSemanticContext = (
             ...context.customerColumns,
             ...context.dateColumns,
             ...context.productColumns,
-        ]
+        ].map((col) => col.toLowerCase())
         if (
             (type.includes("varchar") || type.includes("text")) &&
             !alreadyClassified.includes(name) &&
-            includesAny(name, ["category", "type", "segment", "class", "group", "tier", "status"])
+            includesAny(name, CATEGORY_KEYWORDS)
         ) {
-            context.categoryColumns.push(name)
+            context.categoryColumns.push(originalName)
         }
     }
 

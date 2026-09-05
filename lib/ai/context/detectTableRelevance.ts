@@ -1,5 +1,12 @@
 import { inferSemanticRole } from "@/lib/metadata/inferSemanticRole"
-import { quoteIdentifier } from "../../utils/sqlHelpers"
+import {
+    CUSTOMER_KEYWORDS,
+    DATE_KEYWORDS,
+    LOCATION_KEYWORDS,
+    PRODUCT_KEYWORDS,
+    QUANTITY_KEYWORDS,
+    REVENUE_KEYWORDS,
+} from "@/lib/metadata/semanticKeywords"
 
 type ColumnInfo = {
     column_name: string
@@ -85,14 +92,20 @@ export const detectTableRelevance = (
             }
         }
 
-        // Tier 3: Semantic role match
+        // Tier 3: Semantic role match.
+        // Base word lists are shared with the semantic layer; the extras
+        // are query-side words ("sold", "trend", "top", ...) with no column
+        // counterpart. "datetime" mirrors "date": varchar date columns get
+        // the datetime role but score on the same signals.
+        const dateSignals = [...DATE_KEYWORDS, "trend", "recent", "latest"]
         const semanticSignals: Record<string, string[]> = {
-            currency: ["revenue", "sales", "income", "earnings", "profit", "amount", "total", "price", "cost"],
-            quantity: ["quantity", "units", "sold", "count", "volume", "stock", "inventory"],
-            date: ["date", "month", "year", "quarter", "week", "trend", "recent", "latest"],
-            name: ["customer", "client", "buyer", "user", "top", "repeat"],
-            product: ["product", "item", "sku", "category"],
-            location: ["country", "region", "city", "where", "location", "territory"],
+            currency: [...REVENUE_KEYWORDS, "earnings"],
+            quantity: [...QUANTITY_KEYWORDS, "sold"],
+            date: dateSignals,
+            datetime: dateSignals,
+            name: [...CUSTOMER_KEYWORDS, "top", "repeat"],
+            product: [...PRODUCT_KEYWORDS, "category"],
+            location: [...LOCATION_KEYWORDS, "where"],
         }
 
         for (const col of columns) {
@@ -101,7 +114,7 @@ export const detectTableRelevance = (
             for (const signal of signals) {
                 if (q.includes(signal)) {
                     score += 1
-                    matchedOn.push(`semantic: ${col.column_name} (${role}) matched ${quoteIdentifier(signal)}`)
+                    matchedOn.push(`semantic: ${col.column_name} (${role}) matched "${signal}"`)
                     break // one match per column
                 }
             }

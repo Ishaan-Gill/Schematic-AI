@@ -80,12 +80,16 @@ export default function ChatPanel({
                         updates: {
                           page: newPage,
                         },
+                      }).catch(() => {
+                        // Persistence is best-effort; local state already updated.
                       });
                       void executeQuery(
                         message.generatedSQL,
                         message.id,
                         newPage,
-                      );
+                      ).catch(() => {
+                        // executeQuery reports failures via message state.
+                      });
                     }}
                     onNextPage={() => {
                       const newPage = (message.page ?? 0) + 1;
@@ -97,12 +101,16 @@ export default function ChatPanel({
                         updates: {
                           page: newPage,
                         },
+                      }).catch(() => {
+                        // Persistence is best-effort; local state already updated.
                       });
                       void executeQuery(
                         message.generatedSQL,
                         message.id,
                         newPage,
-                      );
+                      ).catch(() => {
+                        // executeQuery reports failures via message state.
+                      });
                     }}
                     onExport={async () => {
                       if (!message.generatedSQL) return;

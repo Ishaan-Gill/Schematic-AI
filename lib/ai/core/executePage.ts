@@ -74,13 +74,18 @@ export const executePage = async ({
     sessionId,
   );
 
-  await updateStoredMessage({
-    id: assistantMessageId,
-    updates: {
-      queryResult: rows,
-      hasMore,
-    },
-  });
+  try {
+    await updateStoredMessage({
+      id: assistantMessageId,
+      updates: {
+        queryResult: rows,
+        hasMore,
+      },
+    });
+  } catch (err) {
+    // Persistence is best-effort; local state already shows the new page.
+    console.error("Failed to persist paged results:", err);
+  }
 
   return rows;
 };

@@ -31,11 +31,13 @@ export default function ResetPasswordPage() {
     typeof window !== "undefined" ? window.location.origin : ""
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user?.aud === "authenticated") {
-        setMode("reset")
-      }
-    })
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        if (data.session?.user?.aud === "authenticated") {
+          setMode("reset")
+        }
+      })
+      .catch(() => {})
   }, [supabase])
 
   const canSendEmail = email.trim() && !loading

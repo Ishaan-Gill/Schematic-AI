@@ -1,6 +1,7 @@
 import { getDuckConnection } from "@/lib/duckdb/duckdb"
 import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh"
 import { checkSQLSafetySync } from "@/lib/sql/sqlSafety"
+import { ExplainTimeoutError, explainWithTimeout } from "@/lib/sql/explainWithTimeout"
 
 type ValidateSQLArgs = {
     sql: string
@@ -25,10 +26,13 @@ export const validateSQL = async ({
 
         await ensureWorkspaceFresh(conn)
 
-        await conn.query(`EXPLAIN ${sql}`)
+        await explainWithTimeout(conn, sql)
 
         return null
     } catch (err) {
+        if (err instanceof ExplainTimeoutError) {
+            return "Query validation timed out — please try again."
+        }
         const raw = String(err)
         console.error("SQL validation failed:", err)
 

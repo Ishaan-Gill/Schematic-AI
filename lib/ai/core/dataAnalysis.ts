@@ -22,6 +22,7 @@ type DataAnalysisArgs = {
   turnId: string;
   warnings?: string[];
   normalizationNotes?: string[];
+  userId?: string | null;
   signal?: AbortSignal;
   guard?: () => boolean;
 };
@@ -40,6 +41,7 @@ export const dataAnalysis = async ({
   turnId,
   warnings = [],
   normalizationNotes = [],
+  userId,
   signal,
   guard,
 }: DataAnalysisArgs): Promise<CoreResult<string>> => {
@@ -61,7 +63,12 @@ export const dataAnalysis = async ({
       datasetContext: finalDatasetContext,
       conversationContext,
     });
-    const cacheKey = await buildExplanationCacheKey(sql, hash, context);
+    const cacheKey = await buildExplanationCacheKey(
+      sql,
+      hash,
+      context,
+      userId ?? undefined,
+    );
 
     const cached = await getCachedExplanation(cacheKey);
     if (signal?.aborted || !(guard?.() ?? true)) {

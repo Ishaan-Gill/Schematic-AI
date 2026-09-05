@@ -4,6 +4,10 @@ import { DEBUG } from "@/lib/config/debug";
 import { quoteIdentifier } from "@/lib/utils/sqlHelpers";
 import { checkSQLSafetySync } from "@/lib/sql/sqlSafety";
 import { validateAgainstSchema } from "@/lib/sql/validateSchema";
+import {
+  MAX_CONTEXT_COLUMNS,
+  MAX_CONTEXT_TABLES,
+} from "@/lib/ai/context/contextLimits";
 import type { ConversationEntry } from "@/lib/ai/context/buildConversationContext";
 import type { Relationship } from "../context/relationships";
 import { ToolResult } from "../core/types";
@@ -46,10 +50,10 @@ export async function generateSQL(
     );
 
     const schemaText = Object.entries(filteredSchemas)
-      .slice(0, 8)
+      .slice(0, MAX_CONTEXT_TABLES)
       .map(([tableName, cols]) => {
         const colText = (cols as any[])
-          .slice(0, 30)
+          .slice(0, MAX_CONTEXT_COLUMNS)
           .map(
             (col: any) =>
               `${quoteIdentifier(col.column_name)} (${col.column_type})`,

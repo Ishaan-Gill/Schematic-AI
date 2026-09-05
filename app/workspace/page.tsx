@@ -115,7 +115,9 @@ export default function Home() {
   };
 
   useEffect(() => {
-    getCurrentUser().then(setUser);
+    getCurrentUser()
+      .then(setUser)
+      .catch(() => setUser(null));
   }, []);
 
   useEffect(() => {
@@ -473,6 +475,7 @@ export default function Home() {
               conversationContext,
               turnId,
               finalDatasetContext: {},
+              userId: user?.id,
               signal: controller.signal,
               guard: () => isControllerActive(controller),
             });
@@ -495,6 +498,7 @@ export default function Home() {
               hasMore,
               relevantTables,
               finalDatasetContext,
+              warnings,
             } = result.data;
             updateMessage(
               assistantMessage.id,
@@ -505,6 +509,7 @@ export default function Home() {
                 displayedRowCount,
                 relevantTables,
                 finalDatasetContext,
+                warnings: warnings.length > 0 ? warnings : undefined,
                 loadingStage: "analyzing",
               },
               sessionId,
@@ -552,6 +557,7 @@ export default function Home() {
                 conversationContext,
                 turnId,
                 normalizationNotes: currencyNotes,
+                userId: user?.id,
                 signal: controller.signal,
                 guard: () => isControllerActive(controller),
               });

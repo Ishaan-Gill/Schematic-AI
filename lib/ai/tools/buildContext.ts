@@ -22,16 +22,15 @@ export async function buildContextTool(
       action: "continue",
     };
   } catch (error) {
+    // Never surface DuckDB/storage internals (paths, engine errors) to the UI.
+    console.error("Dataset context build failed:", error);
     return {
       tool: "build-context",
       ok: false,
       action: "stop",
       error: {
         code: "CONTEXT_BUILD_FAILED",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to build dataset context.",
+        message: "Couldn't prepare your dataset for analysis. Please try again.",
       },
     };
   }

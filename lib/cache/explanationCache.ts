@@ -13,9 +13,13 @@ export async function buildExplanationCacheKey(
   sql: string,
   schemaHashValue: string,
   context = "",
+  // Scopes the key to one user so explanations (which embed row values)
+  // are never served across accounts sharing identical schemas.
+  userId?: string,
 ): Promise<string> {
+  const scope = userId && userId.trim() ? userId.trim() : "anon";
   const encoder = new TextEncoder();
-  const data = encoder.encode(sql + schemaHashValue + context);
+  const data = encoder.encode(scope + sql + schemaHashValue + context);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))

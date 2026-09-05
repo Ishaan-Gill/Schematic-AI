@@ -4,7 +4,10 @@ import {
     DATE_KEYWORDS,
     PRODUCT_KEYWORDS,
     CATEGORY_KEYWORDS,
-    REVENUE_KEYWORDS
+    REVENUE_KEYWORDS,
+    isIdentifierLike,
+    isLocationLike,
+    isPercentageLike,
 } from "./semanticKeywords"
 
 import { SemanticRole } from "./types";
@@ -19,42 +22,24 @@ export const inferSemanticRole = (
     const name = column.toLowerCase()
     const normalizedType = String(type).toLowerCase()
 
-    // Identifier — strict boundary check
-    if (
-        name === "id" ||
-        name.endsWith("_id") ||
-        name.startsWith("id_") ||
-        name.endsWith("_key") ||
-        name.endsWith("_code") ||
-        name.endsWith("_ref") ||
-        name.endsWith("_no") ||
-        name.endsWith("_num") ||
-        name.endsWith("_sku")
-    ) return "id"
+    // Identifier — strict boundary check (shared helper)
+    if (isIdentifierLike(name)) return "id"
 
     // Temporal
     if (includesAny(name, DATE_KEYWORDS)) return normalizedType === "varchar" ? "datetime" : "date"
-    
-    // Percentage
-    if (
-        name.includes("%") || name.includes("percent") || name.includes("pct") ||
-        name.includes("growth") || name.includes("rate") ||
-        name.includes("ratio") || name.includes("margin")
-    ) return "percentage"
+
+    // Percentage (wins over revenue: profit_margin is a ratio, not an amount)
+    if (isPercentageLike(name)) return "percentage"
 
     // Currency / Financial metric
     if (includesAny(name, REVENUE_KEYWORDS)) return "currency"
-    
+
+    // Geographic (before quantity: "country" contains the quantity
+    // substring "count" and must resolve to location)
+    if (isLocationLike(name)) return "location"
+
     // Quantity / Operational
     if (includesAny(name, QUANTITY_KEYWORDS)) return "quantity"
-
-    // Geographic
-    if (
-        name.includes("country") || name.includes("city") ||
-        name.includes("state") || name.includes("region") ||
-        name.includes("zone") || name.includes("territory") ||
-        name.includes("location") || name.includes("address")
-    ) return "location"
 
     // Entity / Person
     if (includesAny(name, CUSTOMER_KEYWORDS)) return "name"

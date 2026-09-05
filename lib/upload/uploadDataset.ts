@@ -3,6 +3,7 @@ import React from "react"
 import { getDuckConnection, getDuckDB } from "@/lib/duckdb/duckdb"
 import { ingestParsedTable } from "@/lib/upload/ingestion/ingestParsedTable"
 import { processFile } from "./handlers/processFile"
+import { friendlyUploadError } from "./validation/uploadErrors"
 import { quoteIdentifier } from "../utils/sqlHelpers"
 import type { StoredDataset } from "@/types/datasets"
 import { ToastItem } from "@/types/toast"
@@ -94,9 +95,7 @@ export const uploadDataset = async ({
 
             showToast(
                 "error",
-                error instanceof Error
-                    ? error.message
-                    : `Failed to upload ${file.name}`,
+                friendlyUploadError(error, file.name),
                 "Upload failed"
             )
         } 

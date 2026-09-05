@@ -2,6 +2,10 @@ import { getDuckConnection } from "@/lib/duckdb/duckdb";
 import type { TurnRuntime, ToolResult } from "../core/types";
 import { ensureWorkspaceFresh } from "@/lib/duckdb/ensureWorkspaceFresh";
 import { checkSQLSafetySync } from "@/lib/sql/sqlSafety";
+import {
+  ExplainTimeoutError,
+  explainWithTimeout,
+} from "@/lib/sql/explainWithTimeout";
 
 export async function verifySQL(
   runtime: TurnRuntime,
@@ -47,7 +51,7 @@ export async function verifySQL(
 
     await ensureWorkspaceFresh(conn);
 
-    await conn.query(`EXPLAIN ${sql}`);
+    await explainWithTimeout(conn, sql);
 
     return {
       tool: "verify-sql",
@@ -56,6 +60,17 @@ export async function verifySQL(
       action: "continue",
     };
   } catch (err) {
+    if (err instanceof ExplainTimeoutError) {
+      return {
+        tool: "verify-sql",
+        ok: false,
+        action: "retry",
+        error: {
+          code: "SQL_VALIDATION_TIMEOUT",
+          message: "Query validation timed out — please try again.",
+        },
+      };
+    }
     const raw = String(err);
     console.error("SQL validation failed:", err);
 

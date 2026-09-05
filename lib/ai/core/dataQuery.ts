@@ -18,6 +18,10 @@ import { normalizeQuery } from "@/lib/cache/normalizeQuery";
 import { schemaHash } from "@/lib/cache/schemaHash";
 import { buildCacheKey } from "@/lib/cache/buildCacheKey";
 import { getCachedSQL, saveCachedSQL } from "@/lib/cache/queryCache";
+import {
+  MAX_CONTEXT_COLUMNS,
+  MAX_CONTEXT_TABLES,
+} from "@/lib/ai/context/contextLimits";
 
 export type DataQueryResult = {
   sql: string;
@@ -26,6 +30,7 @@ export type DataQueryResult = {
   hasMore: boolean;
   relevantTables: string[];
   finalDatasetContext: Record<string, unknown>;
+  warnings: string[];
 };
 
 type DataQueryArgs = {
@@ -36,6 +41,7 @@ type DataQueryArgs = {
   turnId: string;
   finalDatasetContext?: Record<string, unknown>;
   timeHint?: string;
+  userId?: string | null;
   signal?: AbortSignal;
   guard?: () => boolean;
 };
@@ -57,6 +63,39 @@ const rawError = (result: ToolResult<DataQueryResult>): string | undefined => {
   return undefined;
 };
 
+/**
+ * Mirrors the server-side truncation in generate.ts (same shared limits).
+ * Warns instead of silently dropping tables/columns from the AI's context.
+ */
+const buildContextWarnings = (
+  relevantTables: string[],
+  schemas: Record<string, unknown[]>,
+): string[] => {
+  const warnings: string[] = [];
+
+  if (relevantTables.length > MAX_CONTEXT_TABLES) {
+    warnings.push(
+      `Large workspace: only the first ${MAX_CONTEXT_TABLES} of ${relevantTables.length} relevant tables were sent to the AI. Mention specific table names in your question for best results.`,
+    );
+  }
+
+  const overflowTables = relevantTables
+    .slice(0, MAX_CONTEXT_TABLES)
+    .filter((table) => (schemas[table]?.length ?? 0) > MAX_CONTEXT_COLUMNS);
+  if (overflowTables.length > 0) {
+    const shown = overflowTables.slice(0, 3).join(", ");
+    const more =
+      overflowTables.length > 3
+        ? ` and ${overflowTables.length - 3} more`
+        : "";
+    warnings.push(
+      `Wide tables (${shown}${more}): only the first ${MAX_CONTEXT_COLUMNS} columns of each were sent to the AI.`,
+    );
+  }
+
+  return warnings;
+};
+
 const isActive = (guard?: () => boolean, signal?: AbortSignal) =>
   !signal?.aborted && (guard?.() ?? true);
 
@@ -74,6 +113,7 @@ export const dataQuery = async ({
   turnId,
   finalDatasetContext = {},
   timeHint,
+  userId,
   signal,
   guard,
 }: DataQueryArgs): Promise<ToolResult<DataQueryResult>> => {
@@ -125,6 +165,7 @@ export const dataQuery = async ({
     normalizedQuery,
     schemaHash: hash,
     dateBucket: isTimeQuery(query) ? getLocalDateString() : undefined,
+    userId: userId ?? undefined,
   });
 
   const cachedSQL = await getCachedSQL(cacheKey);
@@ -265,6 +306,7 @@ export const dataQuery = async ({
         hasMore: executeResult.data.hasMore,
         relevantTables: context.relevantTables,
         finalDatasetContext: context.finalDatasetContext,
+        warnings: buildContextWarnings(context.relevantTables, schemas),
       },
     };
   }
@@ -382,6 +424,7 @@ export const dataQuery = async ({
       hasMore: fixedExecuteResult.data.hasMore,
       relevantTables: context.relevantTables,
       finalDatasetContext: context.finalDatasetContext,
+      warnings: buildContextWarnings(context.relevantTables, schemas),
     },
   };
 };

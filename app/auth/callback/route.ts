@@ -27,17 +27,14 @@ export async function GET(request: NextRequest) {
         },
       },
     );
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
-      return NextResponse.json(
-        {
-          message: error.message,
-          status: error.status,
-          code,
-        },
-        { status: 500 },
-      );
+      // Never reflect provider internals or the single-use code back to the
+      // client (log-capturable). Bounce to login with a generic slug.
+      console.error("Auth callback exchange failed:", error.message);
+
+      return NextResponse.redirect(`${origin}/login?error=auth_failed`);
     }
 
     return response;
