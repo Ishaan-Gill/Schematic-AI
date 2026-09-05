@@ -3,6 +3,7 @@ import { groqWithRetry } from "@/lib/ai/groqRetry";
 import { NextResponse } from "next/server"
 import { isPayloadTooLarge } from "@/lib/api/validateRequestSize"
 import { authorizeAIRequest } from "@/lib/api/authorizeAIRequest"
+import { claimTurn } from "@/lib/api/claimTurn"
 import { fixSQLPrompt } from "@/lib/ai/prompts/fix-sql-prompt"
 import { checkSQLSafetySync } from "@/lib/sql/sqlSafety"
 import { validateAgainstSchema } from "@/lib/sql/validateSchema"
@@ -49,6 +50,40 @@ export async function POST(req: Request) {
         turnId: typeof turnId === "string" ? turnId : undefined,
     })
     if (!auth.authorized) return auth.response
+
+    if (typeof turnId !== "string" || !turnId) {
+        return NextResponse.json(
+            { error: "Missing turn id" },
+            { status: 400 }
+        )
+    }
+
+    // Account this repair against the daily quota, exactly like /api/chat:
+    // without a claim, fix-sql spend would never create usage_turns rows and
+    // the daily count check above could never trip. An already-claimed turn
+    // (the normal in-flow case) returns "already-claimed" and proceeds.
+    try {
+        const claim = await claimTurn(auth.user.id, turnId)
+
+        if (claim === "quota-exceeded") {
+            return NextResponse.json(
+                {
+                    error:
+                        "You've reached today's free limit of 20 queries. Please come back tomorrow.",
+                },
+                {
+                    status: 429,
+                },
+            )
+        }
+    } catch (err) {
+        console.error("claim_turn failed:", err)
+
+        return NextResponse.json(
+            { error: "Unable to verify your daily quota. Please try again." },
+            { status: 503 }
+        )
+    }
 
     if (
         typeof userQuery !== "string" ||

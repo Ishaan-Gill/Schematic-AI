@@ -50,7 +50,27 @@ npm run dev            # http://localhost:3000
 
 Never commit `.env` (gitignored). Never expose `GROQ_API_KEY` to the client — all LLM calls go through `/api/chat` and `/api/fix-sql`.
 
-The app also expects these Supabase tables (plus a `datasets` storage bucket): `datasets`, `chat_sessions`, `chat_messages`, `usage_turns`, `query_cache`, `explanation_cache`.
+### Backend setup (Supabase)
+
+A fresh clone needs a configured Supabase backend — the app cannot run without it. All schema, policies, and quota logic live in `supabase/migrations/` (applied in filename order).
+
+1. **Link the project to Supabase.** Create a project at [supabase.com](https://supabase.com), then link the local CLI:
+   ```bash
+   npx supabase link --project-ref <your-project-ref>
+   ```
+2. **Run the migrations.** This creates all tables (`datasets`, `chat_sessions`, `chat_messages`, `usage_turns`, `query_cache`, `explanation_cache`), enables RLS with per-user policies, and installs the `claim_turn` / `increment_turn_calls` quota functions plus owner-scoped `datasets` storage policies:
+   ```bash
+   npx supabase db push
+   ```
+3. **Create a PRIVATE storage bucket named `datasets`.** The app uploads Parquet files to `<userId>/<file>.parquet` and mounts them via signed URLs — the bucket must exist or uploads fail. (Dashboard: Storage → New bucket → name `datasets`, Private.)
+4. **Enable email authentication.** Dashboard: Authentication → Providers → Email → enable.
+5. **Configure the `/auth/callback` redirect.** Dashboard: Authentication → URL Configuration → add `https://<your-domain>/auth/callback` (and `http://localhost:3000/auth/callback` for local dev) to Redirect URLs.
+6. **Set `GROQ_API_KEY`.** Server-side only, in `.env` (local) and your hosting provider's env settings (production). Get a key at [console.groq.com](https://console.groq.com).
+7. **Install dependencies and run:**
+   ```bash
+   npm install
+   npm run dev   # http://localhost:3000
+   ```
 
 ## Commands
 
